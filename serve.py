@@ -15,6 +15,7 @@ import sys
 import time
 
 from drift import measure
+import prosodic_measures
 
 BUNDLE = False
 
@@ -329,6 +330,21 @@ def align(cmd):
         rec_set.dbs[cmd["id"]],
         {"type": "set", "id": "meta", "key": "align", "val": alignhash},
     )
+    
+    # https://stackoverflow.com/questions/45978295/saving-a-downloaded-csv-file-using-python
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as fp:
+        w = csv.writer(fp)
+        aligncsv_url = url + '/' + uid + '/align.csv'
+        aligncsv = requests.get(aligncsv_url)
+        for line in aligncsv.iter_lines():
+            w.writerow(line.decode('utf-8').split(','))
+        fp.close()
+    aligncsvhash = guts.attach(fp.name, get_attachpath())
+
+    guts.bschange(
+        rec_set.dbs[cmd["id"]],
+        {"type": "set", "id": "meta", "key": "aligncsv", "val": aligncsvhash},
+    )
 
     return {"align": alignhash}
 
@@ -493,20 +509,22 @@ def _measure(id=None, start_time=None, end_time=None, raw=False):
         end_time = float(end_time)
 
     meta = rec_set.get_meta(id)
-    align = json.load(open(os.path.join(get_attachpath(), meta["align"])))
     pitch = [
         [float(Y) for Y in X.split(" ")]
         for X in open(os.path.join(get_attachpath(), meta["pitch"]))
     ]
 
-    m = measure.Measure([X[1] for X in pitch], align)
+    if not meta.get("csv"):
+        gen_csv({ id: id })
 
-    stats = m._raw_compute(start_time, end_time)
-    out = {"measure": m._compute_measure(stats)}
+    driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
+    gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
+
+    out = {"measure": prosodic_measures.measure(gentlecsv, driftcsv, start_time, end_time)}
     out['measure']["start_time"] = start_time if start_time is not None else 0
     out['measure']['end_time'] = end_time if end_time is not None else ((len(pitch) / 100.0) - out['measure']['start_time'])
-    if raw:
-        out["raw"] = stats
+    # if raw:
+    #     out["raw"] = stats
     return out
 
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
