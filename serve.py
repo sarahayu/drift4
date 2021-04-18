@@ -16,7 +16,7 @@ import time
 
 from drift import measure
 
-BUNDLE = True
+BUNDLE = False
 
 
 def get_ffmpeg():

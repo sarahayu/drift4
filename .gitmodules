@@ -1,9 +1,11 @@
 [submodule "ext/guts"]
 	path = ext/guts
 	url = https://github.com/strob/guts.git
+    ignore = dirty
 [submodule "ext/calc_sbpca"]
 	path = ext/calc_sbpca
 	url = https://github.com/dpwe/calc_sbpca.git
+    ignore = dirty
 [submodule "numpy-media-tricks"]
 	path = numpy-media-tricks
 	url = https://github.com/strob/numpy-media-tricks.git

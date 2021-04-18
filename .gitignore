@@ -3,3 +3,11 @@ dist/
 node_modules/
 thumbs.db
 calc_sbpca
+__pycache__/
+local/
+
+# symlinks
+guts
+nmt
+numpy-media-tricks
+serve
