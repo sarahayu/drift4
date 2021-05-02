@@ -9,6 +9,8 @@ var C = C || {
     }
 };
 
+var asdf;
+
 function cached_get_url(url, proc_fn) {
     D.urls = D.urls || {};
     if(D.urls[url + '_status'] != C.STATUS.READY) {
@@ -136,54 +138,106 @@ function render_header(root) {
 function render_uploader(root) {
     var upl = new PAL.Element("div", {
         parent: root,
-        id: "new-item",
-        classes: ['upload', 'listitem', T.drag_over ? 'drag' : ''],
-        text: T.drag_over ? "Release files to upload" : "Drag audio files here to upload",
+        id: "upload-area",
+        text: "upload file",
         events: {
             ondragover: function(ev) {
                 ev.stopPropagation();
                 ev.preventDefault();
                 ev.dataTransfer.dropEffect = "copy";
+                ev.target.textContent = "release file to upload"
 
-                T.drag_over=true;
-                render();
+                // T.drag_over=true;
+                // render();
             },
             ondragleave: function(ev) {
                 ev.stopPropagation();
                 ev.preventDefault();
+                ev.target.textContent = "upload file"
 
-                T.drag_over=false;
-                render();
+                // T.drag_over=false;
+                // render();
             },
             ondrop: function(ev) {
                 ev.stopPropagation();
                 ev.preventDefault();
 
                 console.log("drop");
-                T.drag_over=false;
-                render();
+                ev.target.textContent = "upload file"
+                // T.drag_over=false;
+                // render();
 
                 got_files(ev.dataTransfer.files);
+            },
+            onclick: function() {
+                document.getElementById("upload-button").click()
             }
         }
     });
-    new PAL.Element("br", {
-        id: "u-br",
-        parent: upl});
 
-    new PAL.Element("input", {
-        parent: upl,
+    let icon = upl.svg({
+        id: "upload-icon",
+        attrs: {
+            fill: "none",
+            width: 83,
+            height: 76,
+            viewBox: "0 0 83 76"
+        }
+    })
+
+    icon.rect({
+        attrs: {
+            x: 49.235,
+            y: 61.9727,
+            width: 15.2482,
+            height: 45.7445,
+            rx: 3.74955,
+            transform: 'rotate(-180 49.235 61.9727)',
+            fill: '#E3E3E3'
+        }
+    })
+
+    icon.path({
+        attrs: {
+            d: 'M38.6513 4.78545C40.1525 2.85539 43.0696 2.85539 44.5707 4.78545L63.5885 29.2369C65.5041 31.6998 63.749 35.2885 60.6288 35.2885L22.5932 35.2884C19.473 35.2884 17.7179 31.6998 19.6335 29.2369L38.6513 4.78545Z',
+            fill: '#E3E3E3'
+        }
+    })
+
+    icon.path({
+        attrs: {
+            d: 'M3.49048 46.7246V69.6593C3.49048 71.7301 5.16921 73.4089 7.24002 73.4089H75.9817C78.0525 73.4089 79.7312 71.7301 79.7312 69.6593V46.7246',
+            'stroke-width': 4.99939,
+            stroke: '#E3E3E3'
+        }
+    })
+
+    root.input({
         attrs: {
             type: "file",
             multiple: true
         },
-        id: "upl2",
+        id: "upload-button",
         events: {
             onchange: function(ev) {
                 got_files(ev.target.files);
             }
         }
-    });
+    })
+
+    let fileListArea = root.div({ classes: ['file-list-area'] })
+    fileListArea.p({ text: 'audio file list:' })
+    let fileList = fileListArea.ul({ classes: ['file-list'] })
+    get_docs()
+        .forEach(doc => {
+            fileList.li({
+                id: doc.id + '-listwrapper'
+            }).button({ 
+                id: doc.id + '-listitem',
+                text: doc.title
+             })
+        })
+
 }
 
 function got_files(files) {
@@ -1096,10 +1150,12 @@ function render_hamburger(root, doc) {
 function render() {
     var root = new PAL.Root();
 
-    let head = render_header(root);
-
-    render_uploader(root);
-    render_doclist(root);
+    // let head = render_header(root);
+    var main = new PAL.Element("main", {
+        parent: root
+    })
+    render_uploader(main.div({ id: 'sidebar' }));
+    render_doclist(main.div({ id: 'doclist-area' }));
 
     if(T.SHOW_HAMBURGER) {
 	      render_hamburger(root, T.SHOW_HAMBURGER.doc);
