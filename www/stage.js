@@ -9,8 +9,6 @@ var C = C || {
     }
 };
 
-var asdf;
-
 function cached_get_url(url, proc_fn) {
     D.urls = D.urls || {};
     if(D.urls[url + '_status'] != C.STATUS.READY) {
@@ -136,8 +134,7 @@ function render_header(root) {
 }
 
 function render_uploader(root) {
-    var upl = new PAL.Element("div", {
-        parent: root,
+    var upl = root.button({
         id: "upload-area",
         text: "upload file",
         events: {
@@ -233,8 +230,22 @@ function render_uploader(root) {
             fileList.li({
                 id: doc.id + '-listwrapper'
             }).button({ 
-                id: doc.id + '-listitem',
-                text: doc.title
+                text: doc.title,
+                events: {
+                    onclick: ev =>
+                    {
+                        if (has_data(doc.id))
+                        {
+                            if (T.active[doc.id])
+                                ev.currentTarget.classList.remove('active')
+                            else
+                                ev.currentTarget.classList.add('active')
+                            T.active[doc.id] = !T.active[doc.id];
+                            set_active_doc(doc);
+                            render();
+                        }
+                    }
+                    }
              })
         })
 
@@ -300,6 +311,8 @@ function render_doclist(root) {
 	          // doc ready!!
 
 	          let is_active = T.active[doc.id];
+              if (!is_active) return;
+
             let is_pending = !has_data(doc.id);
 
 	          let docitem = root.div({id: doc.id,
@@ -310,26 +323,17 @@ function render_doclist(root) {
 
 	          // Top bar
 	          let docbar = docitem.div({id: doc.id + "-bar",
-				                              classes: ['docbar'],
-				                              events: {
-					                                onclick: () => {
-					                                    if(has_data(doc.id)) {
-						                                      T.active[doc.id] = !T.active[doc.id];
-						                                      set_active_doc(doc);
-						                                      render();
-					                                    }
-					                                }
-				                              }
+				                              classes: ['docbar']
 				                             });
 
-	          // Expand
-	          docbar.span({id: doc.id + '-expand',
-			                   classes: ['expand'],
-			                   text: is_active||is_pending ? "v " : "> "});
+	        //   // Expand
+	        //   docbar.span({id: doc.id + '-expand',
+			//                    classes: ['expand'],
+			//                    text: is_active||is_pending ? "v " : "> "});
 
 	          // Title
-	          docbar.span({id: doc.id + '-name',
-			                   classes: ['name'],
+	          docbar.div({id: doc.id + '-name',
+			                   classes: ['doc-name'],
 			                   text: doc.title});
 
 
@@ -357,30 +361,75 @@ function render_doclist(root) {
                 })
             }
 
+            let dlicon = docbar.button({
+                classes: ['dl-btn'],
+                events: {
+                    onclick: () => {
+                        console.log(doc.title)
+                    },
+                }
+            })
+            .svg({ 
+                attrs: {
+                    fill: 'none',
+                    width: 28,
+                    height: 25,
+                    // viewbox: '0 0 28 12'
+                }
+            })
+
+            dlicon.rect({
+                attrs: {    
+                    x: 11.5842,
+                    y: -0.000610352,
+                    width: 4.99939,
+                    height: 14.9982,
+                    rx: 1.24985,
+                    fill: '#E3E3E3'
+                }
+            })
+
+            dlicon.path({
+                attrs: {
+                    d: 'M15.0705 18.7285C14.5701 19.3719 13.5978 19.3719 13.0974 18.7285L6.90392 10.7655C6.26539 9.94452 6.85044 8.74831 7.89049 8.74831L20.2774 8.74831C21.3175 8.74831 21.9025 9.94452 21.264 10.7655L15.0705 18.7285Z',
+                    fill: '#E3E3E3'
+                }
+            })
+
+            dlicon.path({
+                attrs: {
+                    d: 'M1.58545 14.9976V19.997C1.58545 22.0678 3.26418 23.7465 5.335 23.7465H22.8329C24.9037 23.7465 26.5824 22.0678 26.5824 19.997V14.9976',
+                    stroke: '#E3E3E3',
+                    'stroke-width': 2.4997
+                }
+            })
+
 	          // Hamburger
-	          docbar.div({id: doc.id + '-hamburger',
-			                  text: ":",
-			                  events: {
-			                      onclick: (ev) => {
-				                        console.log("hamclick");
-				                        ev.preventDefault();
-				                        ev.stopPropagation();
+	        //   docbar.div({id: doc.id + '-hamburger',
+			//                   text: ":",
+			//                   events: {
+			//                       onclick: (ev) => {
+			// 	                        console.log("hamclick");
+			// 	                        ev.preventDefault();
+			// 	                        ev.stopPropagation();
 
-				                        T.SHOW_HAMBURGER = {
-				                            $el: ev.target,
-				                            doc: doc
-				                        };
-				                        render();
+			// 	                        T.SHOW_HAMBURGER = {
+			// 	                            $el: ev.target,
+			// 	                            doc: doc
+			// 	                        };
+			// 	                        render();
 
-				                        window.onclick = (ev) => {
-				                            T.SHOW_HAMBURGER = null;
-				                            render();
-				                            window.onclick = null;
-				                        }
+			// 	                        window.onclick = (ev) => {
+			// 	                            T.SHOW_HAMBURGER = null;
+			// 	                            render();
+			// 	                            window.onclick = null;
+			// 	                        }
 
-			                      }
-			                  },
-			                  classes: ['hamburger']})
+			//                       }
+			//                   },
+			//                   classes: ['hamburger']})
+
+            let content = docitem.div({ classes: ['docitem-content'] })
 
             if(is_pending) {
                 render_paste_transcript(docitem, doc.id);
@@ -388,28 +437,66 @@ function render_doclist(root) {
 	          else if(is_active) {
 		            // Expand.
 
-                render_stats(docitem, doc);
+                // render_stats(content, doc);
+
+                let section1 = content.div({
+                    id: 'sec1',
+                    classes: ['driftitem-section', 'driftitem-top']
+                }), section2 = content.div({
+                    id: 'sec2',
+                    classes: ['driftitem-section', 'detail-wrapper']
+                }), section3 = content.div({
+                    id: 'sec3',
+                    classes: ['driftitem-section']
+                })
 
                 if(true) {//T.cur_doc == doc.id) {
                 // a play button!
-                docitem.button({id: doc.id + '-' + 'play',
-                                classes: ['playbutton'],
-                                events: {
-                                    onclick: () => {
-                                        T.cur_doc = doc.id;
-                                        toggle_playpause();
-                                    }
-                                },
-                                text: (T.audio && T.audio.paused) ? 'play' : 'pause'})
+                    let playBtn = section1.button({
+                        // id: doc.id + '-' + 'play',
+                        classes: ['play-btn'],
+                        events: {
+                            onclick: ev =>
+                            {
+                                T.cur_doc = doc.id;
+                                toggle_playpause();
+                                ev.currentTarget.lastElementChild.textContent = (T.audio && T.audio.paused) ? 'play' : 'pause'
+                            }
+                        },
+                    })
+
+                    let playIcon = playBtn.svg({
+                        attrs: {
+                            width: 54,
+                            height: 43,
+                            fill: 'none'
+                        }
+                    })
+
+                    playBtn.span({ text: 'play' })
+
+                    playIcon.path({
+                        attrs: {
+                            d: 'M52.4537 19.5745C54.1202 20.5366 54.1202 22.9419 52.4537 23.9041L20.5826 42.3049C18.9161 43.267 16.833 42.0643 16.833 40.1401L16.833 3.33844C16.833 1.41417 18.9161 0.211505 20.5826 1.17364L52.4537 19.5745Z',
+                            fill: 'white'
+                        }
+                    })
+
+                    playIcon.path({
+                        attrs: {
+                            d: 'M36.2057 19.5745C37.8721 20.5366 37.8721 22.9419 36.2057 23.9041L4.33451 42.3049C2.66805 43.267 0.584967 42.0643 0.584967 40.1401L0.584968 3.33844C0.584968 1.41417 2.66805 0.211505 4.33451 1.17364L36.2057 19.5745Z',
+                            fill: 'white'
+                        }
+                    })
                 }
 
-		            let ov_div = docitem.div({
+		            let ov_div = section1.div({
 		                id: doc.id + '-ovdiv',
 		                classes: ['overview']
 		            });
 		            render_overview(ov_div, doc);
 
-		            let det_div = docitem.div({
+		            let det_div = section2.div({
 		                id: doc.id + '-detdiv',
 		                classes: ['detail']
 		            });
@@ -420,10 +507,10 @@ function render_doclist(root) {
 
 		            render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
-                if(!T.DRAGGING) {
-                    docitem.i({id: doc.id + '-expl', text: 'selected region:'})
-                    render_stats(docitem, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
-                }
+                // if(!T.DRAGGING) {
+                //     content.i({id: doc.id + '-expl', text: 'selected region:'})
+                //     render_stats(content, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                // }
 
 	          }
 

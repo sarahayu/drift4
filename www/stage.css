@@ -1,6 +1,7 @@
 :root
 {
-    font-family: 'Nunito Sans', sans-serif;
+    font-family: 'Proxima Nova', 'Nunito Sans', sans-serif;
+    --primary-300: #83C9C4;
     --primary-400: #4DB2AA;
     --primary-700: #3F8B85;
     --neutral-400: #E5E5E5;
@@ -37,6 +38,7 @@ nav
 main
 {
     flex-grow: 1;
+    display: flex;
 }
 
 .logo
@@ -57,7 +59,8 @@ main
     display: inline-block;
 }
 
-.nav-links a:hover
+.nav-links a:hover,
+.nav-links a:focus-visible
 {
     background-color: #4DB2AA;
 }
@@ -68,7 +71,8 @@ main
     background-color: var(--primary-400);
     color: white;
     box-shadow: 0px 4.99939px 4.99939px rgba(0, 0, 0, 0.25);
-    float: left;
+    /* float: left; */
+    flex-shrink: 0;
     height: 100%;
 }
 
@@ -76,10 +80,12 @@ main
 {
     display: inline-block;
     max-width: calc(100% - 16em);
+    padding: 2em;
 }
 
 #upload-area
 {
+    display: block;
     width: 9em;
     height: 9em;
     background-color: rgba(215, 215, 215, 0.3);
@@ -91,7 +97,8 @@ main
     font-weight: 700;
 }
 
-#upload-area:hover
+#upload-area:hover,
+#upload-area:focus-visible
 {
     cursor: pointer;
     background-color: rgba(255, 255, 255, 0.3);
@@ -135,24 +142,133 @@ main
     white-space: nowrap;
     text-overflow: ellipsis;
     padding: 0.5em 1.5em;
-    background-color: inherit;
-    outline: none;
-    border: none;
-    color: inherit;
     border-radius: 0.2em;
     margin: 0.3em 0;
 }
 
-.file-list-area button:hover
+.file-list-area button:hover,
+.file-list-area button:focus-visible
 {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--primary-300);
     cursor: pointer;
 }
 
-.file-list-area button:active,
-.file-list-area button:focus
+.file-list-area button.active
 {
     background-color: var(--primary-700);
     box-shadow: inset 0px 2.4997px 2.4997px rgba(0, 0, 0, 0.25);
     transition: none;
+}
+
+.driftitem
+{
+    background-color: var(--neutral-400);
+    border-radius: 1em;
+    overflow: hidden;
+}
+
+.driftitem + .driftitem
+{
+    margin-top: 2em;
+}
+
+.docbar
+{
+    background-color: var(--primary-400);
+    color: white;
+    padding: 0.5em 2em;
+    display: flex;
+    align-items: center;
+}
+
+.doc-name
+{
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+.docitem-content
+{
+    padding: 1em;
+}
+
+.driftitem-top
+{
+    display: flex;
+    height: 5.5em;
+    background-color: inherit !important;
+    gap: 0 1em;
+}
+
+.driftitem-top > *
+{
+    height: 100%;
+    background-color: white;
+}
+
+.driftitem-section
+{
+    width: 100%;
+    background-color: white;
+}
+
+.driftitem-section + .driftitem-section
+{
+    margin-top: 1em;
+}
+
+.overview
+{
+    flex-grow: 1;
+    overflow: scroll;
+    height: 100%;
+}
+
+.detail-wrapper
+{
+    padding: 1em;
+    border-radius: 0.6em;
+}
+
+.detail
+{
+    width: 100%;
+    overflow: scroll;
+    overflow-y: hidden;
+}
+
+.play-btn
+{
+    background-color: var(--primary-400);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5em 1em;
+    border-radius: 0.6em;
+}
+
+.play-btn:hover,
+.play-btn:focus-visible
+{
+    background-color: var(--primary-300);
+}
+
+.play-btn svg
+{
+    margin-left: 0.3em;
+}
+
+.play-btn span
+{
+    margin-top: 0.3em;
+    font-size: 0.8em;
+}
+
+.sbar
+{
+    display: none;
 }

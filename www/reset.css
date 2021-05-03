@@ -20,6 +20,21 @@ time, mark, audio, video {
 	box-sizing: border-box;
 }
 
+button
+{
+    font-size: inherit;
+    background-color: inherit;
+    border: none;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+button:hover
+{
+	cursor: pointer;
+}
+
 article, aside, details, figcaption, figure, 
 footer, header, hgroup, menu, nav, section {
 	display: block;
