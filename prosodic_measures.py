@@ -8,6 +8,7 @@ import argparse
 
 from lempel_ziv_complexity import lempel_ziv_complexity
 from numba import jit
+from scipy.signal import savgol_filter
 
 def measure(gentlecsv, driftcsv, start_time, end_time):
 
@@ -65,7 +66,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             long_pause_count += 1
 
     # Pause counts
-    results["pause_count"] = pause_count
+    results["Gentle_Pause_Count"] = pause_count
 
     # while start_pause < max_pause:
     #     tmp_pause_count = 0
@@ -76,10 +77,10 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     #     temp_output.append(tmp_pause_count)
     #     start_pause += 0.5
 
-    results["long_pause_count"] = long_pause_count
+    results["Gentle_Long_Silence_Count"] = long_pause_count
 
     APL = decimal.Decimal(sum / pause_count)
-    results["average_pause_length"] = float(round(APL, 2))
+    results["Gentle_Mean_Pause_Duration"] = float(round(APL, 2))
 
     # Average pause rate per second.
     pause_count = 0
@@ -89,7 +90,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             pause_count += 1
 
     APR = decimal.Decimal(pause_count / gentle_length)
-    results["average_pause_rate"] = float(round(APR, 3))
+    results["Gentle_Pause_Rate"] = float(round(APR, 3))
 
     # Rhythmic Complexity of Pauses
     s = []
@@ -130,7 +131,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
 
     # Normalized
     CP = lempel_ziv_complexity("".join([str(i) for i in s])) / (len(s) / math.log2(len(s)))
-    results["rhythmic_complexity_of_pauses"] = CP * 100
+    results["Gentle_Complexity_All_Pauses"] = CP * 100
 
     # Output message
     print('SYSTEM: Finished calculating file')
@@ -243,7 +244,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             break
 
     AP = sum / count
-    results["average_pitch"] = AP
+    # results["average_pitch"] = AP
 
     # Pitch pre-calculations
 
@@ -259,6 +260,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     for f in f0log:
         f0mean += f
     f0mean = math.pow(2, (f0mean / len(f0log)))
+    results["Drift_f0_Mean"] = f0mean
 
     # Calculate diffoctf0
     # diffoctf0 = log2(S.SAcC.f0)-log2(f0mean);
@@ -289,7 +291,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # max(diffoctf0(ivuv))-min(diffoctf0(ivuv));
     PR = max(diffoctf0) - min(diffoctf0)
     # print('7. Pitch range:', PR, 'octaves')
-    results["pitch_range"] = PR
+    results["Drift_f0_Range"] = PR
 
     # Pitch speed and acceleration pre-calculations
 
@@ -316,7 +318,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # Pitch Speed, or speed of f0 in octaves per second
     # Pitch Acceleration, or acceleration of f0 in octaves per second squared
     f0velocity = []
-    f0accel_d1 = []
     f0accel_d2 = []
     for i in range(0, len(ixvoicedbounds)): # for i = 1:size(ixvoicedbounds,1)
         # diffocttmp = diffoctf0(ixvoicedbounds(i,1):ixvoicedbounds(i,2));
@@ -324,12 +325,13 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         diffocttmp = []
         for j in range(ixvoicedbounds[i][0], ixvoicedbounds[i][1] + 1):
             diffocttmp.append(diffoctf0[j])
+        # diffocttmpD = sgolayfilt(diffocttmpD,2,7); %smooth f0 to avoid step artifacts, esp in acceleration: span = 7, degree = 2 as per Drift3
+        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = 7)
         # f0velocity = [f0velocity; diff(diffocttmp)/ts];
         # f0accel = [f0accel; diff(diff(diffocttmp))/ts];
         for d in numpy.diff(diffocttmp):
             f0velocity.append(d/ts)
-            f0accel_d1.append(d)
-        for d in numpy.diff(f0accel_d1):
+        for d in numpy.diff(diffocttmp, n = 2):
             f0accel_d2.append(d/ts) # double diff
 
     # S.analysis.f0speed = mean(abs(f0velocity)) * sign(mean(f0velocity));
@@ -338,8 +340,8 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         sum += abs(v)
     f0velocity_mean = sum / len(f0velocity)
 
-    PS = f0velocity_mean * numpy.sign(numpy.mean(f0velocity,0))
-    results["pitch_speed"] = PS
+    PS = f0velocity_mean
+    results["Drift_f0_Mean_Abs_Velocity"] = PS
 
     # S.analysis.f0contour = mean(abs(f0accel)) * sign(mean(f0accel)); %signed directionless acceleration
     sum =  0
@@ -347,8 +349,8 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         sum += abs(v)
     f0accel_mean = sum / len(f0accel_d2)
 
-    PA = f0accel_mean * numpy.sign(numpy.mean(f0accel_d2,0))
-    results["pitch_acceleration"] = PA
+    PA = f0accel_mean
+    results["Drift_f0_Mean_Abs_Accel"] = PA
 
     # Pitch Entropy, or entropy for f0, indicating the predictability of pitch patterns
     # f0entropy = -sum(f0prob.*f0log2prob);
@@ -356,6 +358,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     for i in range(0, len(f0prob)):
         f0entropy += f0prob[i] * f0log2prob[i]
     PE = -f0entropy
-    results["pitch_entropy"] = PE
+    results["Drift_f0_Entropy"] = PE
     
     return results

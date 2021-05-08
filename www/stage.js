@@ -361,15 +361,34 @@ function render_doclist(root) {
                 })
             }
 
-            let dlicon = docbar.button({
+            let dlBtn = docbar.button({
                 classes: ['dl-btn'],
                 events: {
-                    onclick: () => {
-                        console.log(doc.title)
+                    onclick: ev => {
+                        console.log(doc.title);
+
+                        // show thing
+
+                        ev.preventDefault();
+                        ev.stopPropagation();
+
+                        T.SHOW_HAMBURGER = {
+                            $el: ev.target,
+                            doc: doc
+                        };
+                        render();
+
+                        window.onclick = (ev) => {
+                            T.SHOW_HAMBURGER = null;
+                            render();
+                            window.onclick = null;
+                        }
+            
                     },
                 }
             })
-            .svg({ 
+
+            let dlicon = dlBtn.svg({ 
                 attrs: {
                     fill: 'none',
                     width: 28,
@@ -404,6 +423,34 @@ function render_doclist(root) {
                 }
             })
 
+            let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] })
+            
+            let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
+            pregen_downloads.forEach((name) => {
+                if(!doc[name]) {
+                    return;
+                }
+                let filename = doc.title.split('.').reverse()
+                filename.shift()
+
+                let out_filename = filename.reverse().join('') + '-' + name + '.' + doc[name].split('.')[1];
+
+                dlDropdown.li({
+                    id: 'ham-' + name,
+                }).a({
+                    text: name,
+                    attrs: {
+                        href: '/media/' + doc[name],
+                        _target: '_blank',
+                        download: out_filename
+                    },
+                    events: {
+                        onclick: ev => {
+                            ev.stopPropagation()
+                        }
+                    }
+                });
+            })
 	          // Hamburger
 	        //   docbar.div({id: doc.id + '-hamburger',
 			//                   text: ":",
@@ -437,7 +484,6 @@ function render_doclist(root) {
 	          else if(is_active) {
 		            // Expand.
 
-                // render_stats(content, doc);
 
                 let section1 = content.div({
                     id: 'sec1',
@@ -506,6 +552,8 @@ function render_doclist(root) {
 		            }
 
 		            render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                    
+                render_stats(section3, doc);
 
                 // if(!T.DRAGGING) {
                 //     content.i({id: doc.id + '-expl', text: 'selected region:'})
@@ -518,7 +566,29 @@ function render_doclist(root) {
 	      })
 }
 function render_stats(root_, doc, start, end) {
-    let root = root_.div({id: 'mwrap-' + start + '-' + doc.id, classes: ['stats']});
+
+    let uid = doc.id + '-' + start + '-' + end;
+    let tableDiv = root_.div({ 
+        classes: ['table-wrapper'],
+        events: {
+            onmouseover: () => document.getElementById(uid + '-scopy').style.display = 'inline-block',
+            onmouseout: () => document.getElementById(uid + '-scopy').style.display = 'none',
+        }
+    })
+    let table = new PAL.Element('table', {
+        parent: tableDiv,
+        classes: ['stat-table'],
+    })
+    let headers = new PAL.Element('tr', {
+        parent: table,
+        classes: ['stat-header']
+    })
+    let datarow = new PAL.Element('tr', {
+        parent: table,
+        classes: ['stat-row']
+    })
+
+    // let root = root_.div({id: 'mwrap-' + start + '-' + doc.id, classes: ['stats']});
 
     let url = '/_measure?id=' + doc.id;
     if(start) {
@@ -530,48 +600,56 @@ function render_stats(root_, doc, start, end) {
 
     let stats = cached_get_url(url, JSON.parse).measure;
     if(stats) {
-        let uid = doc.id + '-' + start + '-' + end;
 
-        let statbar = root.div({id: 'sb-'+ uid, classes: ['sbar']});
+        // let statbar = root.div({id: 'sb-'+ uid, classes: ['sbar']});
 
         let keys = Object.keys(stats)
             .sort();
 
-        const cell_w = 100;
+        // const cell_w = 100;
 
         // Header
         keys
             .forEach((key,idx) => {
-                statbar.div({
-                    id: 'sb-h-' + uid + '-' + key,
-                    classes: ['sb', 'cell', 'header'],
-                    styles: {
-                        left: cell_w*idx,
-                        width: cell_w
-                    },
-                    attrs: {
-                        title: key.replace(/_/g, ' ')
-                    },
+                new PAL.Element('td', {
+                    parent: headers,
+                    id: key + '-h',
                     text: key.replace(/_/g, ' ')
-                });
+                })
+                new PAL.Element('td', {
+                    parent: datarow,
+                    id: key + '-d',
+                    text: '' + Math.round(stats[key] * 100) / 100
+                })
+                // statbar.div({
+                //     id: 'sb-h-' + uid + '-' + key,
+                //     classes: ['sb', 'cell', 'header'],
+                //     styles: {
+                //         left: cell_w*idx,
+                //         width: cell_w
+                //     },
+                //     attrs: {
+                //         title: key.replace(/_/g, ' ')
+                //     },
+                //     text: key.replace(/_/g, ' ')
+                // });
             })
 
-        keys
-            .forEach((key,idx) => {
-                statbar.div({
-                    id: 'sb-' + uid + '-' + key,
-                    classes: ['sb', 'cell'],
-                    styles: {
-                        left: cell_w*idx,
-                        top: 20,
-                        width: cell_w
-                    },
-                    text: '' + Math.round(stats[key] * 100) / 100
-                });
-            });
+        // keys
+        //     .forEach((key,idx) => {
+        //         statbar.div({
+        //             id: 'sb-' + uid + '-' + key,
+        //             classes: ['sb', 'cell'],
+        //             styles: {
+        //                 left: cell_w*idx,
+        //                 top: 20,
+        //                 width: cell_w
+        //             },
+        //             text: '' + Math.round(stats[key] * 100) / 100
+        //         });
+        //     });
 
-        let cspan = root.div({id: uid + '-cspan', styles: {textAlign: 'center'}});
-        cspan.button({id: uid + '-scopy',
+        tableDiv.button({id: uid + '-scopy',
                      classes: ['copybutton'],
                         text: 'copy data',
                         events: {
@@ -1244,9 +1322,9 @@ function render() {
     render_uploader(main.div({ id: 'sidebar' }));
     render_doclist(main.div({ id: 'doclist-area' }));
 
-    if(T.SHOW_HAMBURGER) {
-	      render_hamburger(root, T.SHOW_HAMBURGER.doc);
-    }
+    // if(T.SHOW_HAMBURGER) {
+	//       render_hamburger(root, T.SHOW_HAMBURGER.doc);
+    // }
 
     root.show();
 }

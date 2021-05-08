@@ -1,9 +1,11 @@
 :root
 {
     font-family: 'Proxima Nova', 'Nunito Sans', sans-serif;
+    color: #565656;
     --primary-300: #83C9C4;
     --primary-400: #4DB2AA;
     --primary-700: #3F8B85;
+    --neutral-300: #FBFBFB;
     --neutral-400: #E5E5E5;
     --neutral-700: #E3E3E3;
 }
@@ -81,6 +83,7 @@ main
     display: inline-block;
     max-width: calc(100% - 16em);
     padding: 2em;
+    flex-grow: 1;
 }
 
 #upload-area
@@ -164,6 +167,7 @@ main
 {
     background-color: var(--neutral-400);
     border-radius: 1em;
+    width: 100%;
     overflow: hidden;
 }
 
@@ -189,28 +193,77 @@ main
     flex-grow: 1;
 }
 
+.dl-btn
+{
+    position: relative;
+}
+
+.dl-dropdown
+{
+    display: none;
+    /* visibility: none; */
+    position: absolute;
+    top: calc(100% + 1em);
+    right: 0;
+    /* max-height: 0; */
+    background-color: var(--primary-400);
+    border-radius: 0.5em;
+    overflow: hidden;
+    transition: none;
+    box-shadow: 0px 4.99939px 4.99939px rgba(0, 0, 0, 0.25);
+}
+
+.dl-btn:focus .dl-dropdown
+{
+    display: block;
+    /* visibility: visible;
+    max-height: 100vh;
+    transition: all 0.2s ease-in; */
+}
+
+.dl-dropdown a
+{
+    display: inline-block;
+    padding: 0.5em 2em;
+    width: 100%;
+}
+/* 
+.dl-btn:focus a
+{
+    display: inline-block;
+} */
+
+.dl-dropdown a:hover,
+.dl-dropdown a:focus-visible
+{
+    background-color: var(--primary-300);
+}
+
 .docitem-content
 {
     padding: 1em;
+}
+
+.driftitem-section
+{
+    width: 100%;
+    background-color: white;
+    border-radius: 0.6em;
+    overflow: hidden;
 }
 
 .driftitem-top
 {
     display: flex;
     height: 5.5em;
-    background-color: inherit !important;
+    background-color: inherit;
     gap: 0 1em;
+    border-radius: 0;
 }
 
 .driftitem-top > *
 {
     height: 100%;
-    background-color: white;
-}
-
-.driftitem-section
-{
-    width: 100%;
     background-color: white;
 }
 
@@ -222,7 +275,7 @@ main
 .overview
 {
     flex-grow: 1;
-    overflow: scroll;
+    overflow: auto;
     height: 100%;
 }
 
@@ -235,8 +288,7 @@ main
 .detail
 {
     width: 100%;
-    overflow: scroll;
-    overflow-y: hidden;
+    overflow: auto;
 }
 
 .play-btn
@@ -268,7 +320,50 @@ main
     font-size: 0.8em;
 }
 
-.sbar
+.table-wrapper
+{
+    text-align: center;
+    overflow: auto;
+}
+
+.stat-table
+{
+    font-weight: 300;
+    font-size: 0.8em;
+    line-height: 1.2em;
+}
+
+.stat-header
+/* .stat-table td:first-child */
+{
+    font-weight: 600;
+}
+
+.stat-header
+{
+    border-bottom: 0.62px solid #D6D6D6;
+}
+
+.stat-table td
+{
+    padding: 0.5em 1em;
+    padding-top: 1em;
+    vertical-align: bottom;
+    text-align: right;
+}
+
+.stat-table td:nth-child(odd)
+{
+    background-color: var(--neutral-300);
+}
+
+
+.copybutton
 {
     display: none;
+    padding: 1em 2em;
+    font-size: 0.8rem;
+    background-color: var(--primary-400);
+    border-radius: 0.5em;
+    color: white;
 }
