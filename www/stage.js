@@ -81,6 +81,9 @@ if(!T.docs) {
 if(!T.active) {
     T.active = {};
 }
+if(!T.opened) {
+    T.opened = {};
+}
 if(!T.razors) {
     T.razors = {};
 }
@@ -134,116 +137,71 @@ function render_header(root) {
 }
 
 function render_uploader(root) {
-    var upl = root.button({
-        id: "upload-area",
-        text: "upload file",
-        events: {
-            ondragover: function(ev) {
-                ev.stopPropagation();
-                ev.preventDefault();
-                ev.dataTransfer.dropEffect = "copy";
-                ev.target.textContent = "release file to upload"
+    // var upl = root.button({
+    //     id: "upload-area",
+    //     text: "upload file",
+    //     events: {
+    //         ondragover: function(ev) {
+    //             ev.stopPropagation();
+    //             ev.preventDefault();
+    //             ev.dataTransfer.dropEffect = "copy";
+    //             ev.target.textContent = "release file to upload";
+    //         },
+    //         ondragleave: function(ev) {
+    //             ev.stopPropagation();
+    //             ev.preventDefault();
+    //             ev.target.textContent = "upload file";
+    //         },
+    //         ondrop: function(ev) {
+    //             ev.stopPropagation();
+    //             ev.preventDefault();
 
-                // T.drag_over=true;
-                // render();
-            },
-            ondragleave: function(ev) {
-                ev.stopPropagation();
-                ev.preventDefault();
-                ev.target.textContent = "upload file"
+    //             console.log("drop");
+    //             ev.target.textContent = "upload file";
 
-                // T.drag_over=false;
-                // render();
-            },
-            ondrop: function(ev) {
-                ev.stopPropagation();
-                ev.preventDefault();
+    //             got_files(ev.dataTransfer.files);
+    //         },
+    //         onclick: function() {
+    //             document.getElementById("upload-button").click()
+    //         }
+    //     }
+    // });
 
-                console.log("drop");
-                ev.target.textContent = "upload file"
-                // T.drag_over=false;
-                // render();
+    // upl.img({ attrs: {src: "upload-icon.svg"} });
 
-                got_files(ev.dataTransfer.files);
-            },
-            onclick: function() {
-                document.getElementById("upload-button").click()
-            }
-        }
-    });
+    // root.input({
+    //     attrs: {
+    //         type: "file",
+    //         multiple: true
+    //     },
+    //     id: "upload-button",
+    //     events: {
+    //         onchange: function(ev) {
+    //             got_files(ev.target.files);
+    //         }
+    //     }
+    // })
 
-    let icon = upl.svg({
-        id: "upload-icon",
-        attrs: {
-            fill: "none",
-            width: 83,
-            height: 76,
-            viewBox: "0 0 83 76"
-        }
-    })
-
-    icon.rect({
-        attrs: {
-            x: 49.235,
-            y: 61.9727,
-            width: 15.2482,
-            height: 45.7445,
-            rx: 3.74955,
-            transform: 'rotate(-180 49.235 61.9727)',
-            fill: '#E3E3E3'
-        }
-    })
-
-    icon.path({
-        attrs: {
-            d: 'M38.6513 4.78545C40.1525 2.85539 43.0696 2.85539 44.5707 4.78545L63.5885 29.2369C65.5041 31.6998 63.749 35.2885 60.6288 35.2885L22.5932 35.2884C19.473 35.2884 17.7179 31.6998 19.6335 29.2369L38.6513 4.78545Z',
-            fill: '#E3E3E3'
-        }
-    })
-
-    icon.path({
-        attrs: {
-            d: 'M3.49048 46.7246V69.6593C3.49048 71.7301 5.16921 73.4089 7.24002 73.4089H75.9817C78.0525 73.4089 79.7312 71.7301 79.7312 69.6593V46.7246',
-            'stroke-width': 4.99939,
-            stroke: '#E3E3E3'
-        }
-    })
-
-    root.input({
-        attrs: {
-            type: "file",
-            multiple: true
-        },
-        id: "upload-button",
-        events: {
-            onchange: function(ev) {
-                got_files(ev.target.files);
-            }
-        }
-    })
-
-    let fileListArea = root.div({ classes: ['file-list-area'] })
-    fileListArea.p({ text: 'audio file list:' })
-    let fileList = fileListArea.ul({ classes: ['file-list'] })
+    // let fileListArea = root.div({ classes: ['file-list-area'] })
+    // fileListArea.p({ text: 'audio file list:' })
+    // let fileList = fileListArea.ul({ classes: ['file-list'] })
     get_docs()
         .forEach(doc => {
-            fileList.li({
+            root.li({
                 id: doc.id + '-listwrapper'
             }).button({ 
                 text: doc.title,
                 events: {
                     onclick: ev =>
                     {
+                        ev.currentTarget.classList.toggle('active');
+                        T.opened[doc.id] = !T.opened[doc.id];
                         if (has_data(doc.id))
                         {
-                            if (T.active[doc.id])
-                                ev.currentTarget.classList.remove('active')
-                            else
-                                ev.currentTarget.classList.add('active')
-                            T.active[doc.id] = !T.active[doc.id];
+                            T.active[doc.id] = T.opened[doc.id];
                             set_active_doc(doc);
-                            render();
                         }
+                        render();
                     }
                     }
              })
@@ -308,56 +266,59 @@ function render_doclist(root) {
     get_docs()
         .forEach((doc) => {
 
-	          // doc ready!!
+            // doc ready!!
 
-	          let is_active = T.active[doc.id];
-              if (!is_active) return;
+            if (!T.opened[doc.id]) return;
 
+            let is_active = T.active[doc.id];
             let is_pending = !has_data(doc.id);
 
-	          let docitem = root.div({id: doc.id,
-				                            //text: doc.title,
-				                            classes: ['driftitem', is_pending ? 'pending' : (is_active ? 'active' : 'ready')]
-				                           });
+            let docitem = root.div({
+                id: doc.id,
+                classes: ['driftitem']
+            });
 
 
-	          // Top bar
-	          let docbar = docitem.div({id: doc.id + "-bar",
-				                              classes: ['docbar']
-				                             });
+            // Top bar
+            let docbar = docitem.div({
+                id: doc.id + "-bar",
+                classes: ['docbar']
+            });
 
-	        //   // Expand
-	        //   docbar.span({id: doc.id + '-expand',
-			//                    classes: ['expand'],
-			//                    text: is_active||is_pending ? "v " : "> "});
+            //   // Expand
+            //   docbar.span({id: doc.id + '-expand',
+            //                    classes: ['expand'],
+            //                    text: is_active||is_pending ? "v " : "> "});
 
-	          // Title
-	          docbar.div({id: doc.id + '-name',
-			                   classes: ['doc-name'],
-			                   text: doc.title});
+            // Title
+            docbar.div({
+                id: doc.id + '-name',
+                classes: ['doc-name'],
+                text: doc.title
+            });
 
 
-	          if(doc.upload_status && !doc.path) {
+            if (doc.upload_status && !doc.path) {
                 // Show progress
                 new PAL.Element("progress", {
-	          		    id: doc.id + '-progress',
-	          		    parent: docbar,
-	          		    attrs: {
+                    id: doc.id + '-progress',
+                    parent: docbar,
+                    attrs: {
                         max: "100",
-                        value: "" + Math.floor((100*doc.upload_status))
-	          		    },
+                        value: "" + Math.floor((100 * doc.upload_status))
+                    },
                 })
-	          }
+            }
 
-	          if(doc.align_px && !doc.align) {
+            if (doc.align_px && !doc.align) {
                 // Show progress
                 new PAL.Element("progress", {
-	          		    id: doc.id + '-align-progress',
-	          		    parent: docbar,
-	          		    attrs: {
+                    id: doc.id + '-align-progress',
+                    parent: docbar,
+                    attrs: {
                         max: "100",
-                        value: "" + Math.floor((100*doc.align_px))
-	          		    },
+                        value: "" + Math.floor((100 * doc.align_px))
+                    },
                 })
             }
 
@@ -383,51 +344,22 @@ function render_doclist(root) {
                             render();
                             window.onclick = null;
                         }
-            
+
                     },
                 }
             })
 
-            let dlicon = dlBtn.svg({ 
+            let dlicon = dlBtn.img({
                 attrs: {
-                    fill: 'none',
-                    width: 28,
-                    height: 25,
-                    // viewbox: '0 0 28 12'
-                }
-            })
-
-            dlicon.rect({
-                attrs: {    
-                    x: 11.5842,
-                    y: -0.000610352,
-                    width: 4.99939,
-                    height: 14.9982,
-                    rx: 1.24985,
-                    fill: '#E3E3E3'
-                }
-            })
-
-            dlicon.path({
-                attrs: {
-                    d: 'M15.0705 18.7285C14.5701 19.3719 13.5978 19.3719 13.0974 18.7285L6.90392 10.7655C6.26539 9.94452 6.85044 8.74831 7.89049 8.74831L20.2774 8.74831C21.3175 8.74831 21.9025 9.94452 21.264 10.7655L15.0705 18.7285Z',
-                    fill: '#E3E3E3'
-                }
-            })
-
-            dlicon.path({
-                attrs: {
-                    d: 'M1.58545 14.9976V19.997C1.58545 22.0678 3.26418 23.7465 5.335 23.7465H22.8329C24.9037 23.7465 26.5824 22.0678 26.5824 19.997V14.9976',
-                    stroke: '#E3E3E3',
-                    'stroke-width': 2.4997
+                    src: "upload-icon.svg"
                 }
             })
 
             let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] })
-            
+
             let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
             pregen_downloads.forEach((name) => {
-                if(!doc[name]) {
+                if (!doc[name]) {
                     return;
                 }
                 let filename = doc.title.split('.').reverse()
@@ -451,59 +383,58 @@ function render_doclist(root) {
                     }
                 });
             })
-	          // Hamburger
-	        //   docbar.div({id: doc.id + '-hamburger',
-			//                   text: ":",
-			//                   events: {
-			//                       onclick: (ev) => {
-			// 	                        console.log("hamclick");
-			// 	                        ev.preventDefault();
-			// 	                        ev.stopPropagation();
+            // Hamburger
+            //   docbar.div({id: doc.id + '-hamburger',
+            //                   text: ":",
+            //                   events: {
+            //                       onclick: (ev) => {
+            // 	                        console.log("hamclick");
+            // 	                        ev.preventDefault();
+            // 	                        ev.stopPropagation();
 
-			// 	                        T.SHOW_HAMBURGER = {
-			// 	                            $el: ev.target,
-			// 	                            doc: doc
-			// 	                        };
-			// 	                        render();
+            // 	                        T.SHOW_HAMBURGER = {
+            // 	                            $el: ev.target,
+            // 	                            doc: doc
+            // 	                        };
+            // 	                        render();
 
-			// 	                        window.onclick = (ev) => {
-			// 	                            T.SHOW_HAMBURGER = null;
-			// 	                            render();
-			// 	                            window.onclick = null;
-			// 	                        }
+            // 	                        window.onclick = (ev) => {
+            // 	                            T.SHOW_HAMBURGER = null;
+            // 	                            render();
+            // 	                            window.onclick = null;
+            // 	                        }
 
-			//                       }
-			//                   },
-			//                   classes: ['hamburger']})
+            //                       }
+            //                   },
+            //                   classes: ['hamburger']})
 
-            let content = docitem.div({ classes: ['docitem-content'] })
+            let content = docitem.div({ classes: ['driftitem-content'] })
 
-            if(is_pending) {
+            if (is_pending) {
+                console.log('rendering?')
                 render_paste_transcript(docitem, doc.id);
             }
-	          else if(is_active) {
-		            // Expand.
+            else if (is_active) {
+                // Expand.
 
-
-                let section1 = content.div({
+                let section1 = content.section({
                     id: 'sec1',
-                    classes: ['driftitem-section', 'driftitem-top']
-                }), section2 = content.div({
+                    classes: ['driftitem-top']
+                }), section2 = content.section({
                     id: 'sec2',
-                    classes: ['driftitem-section', 'detail-wrapper']
-                }), section3 = content.div({
+                    classes: ['detail-wrapper']
+                }), section3 = content.section({
                     id: 'sec3',
-                    classes: ['driftitem-section']
+                    classes: ['table-wrapper']
                 })
 
-                if(true) {//T.cur_doc == doc.id) {
-                // a play button!
+                if (true) {//T.cur_doc == doc.id) {
+                    // a play button!
                     let playBtn = section1.button({
                         // id: doc.id + '-' + 'play',
                         classes: ['play-btn'],
                         events: {
-                            onclick: ev =>
-                            {
+                            onclick: ev => {
                                 T.cur_doc = doc.id;
                                 toggle_playpause();
                                 ev.currentTarget.lastElementChild.textContent = (T.audio && T.audio.paused) ? 'play' : 'pause'
@@ -511,48 +442,27 @@ function render_doclist(root) {
                         },
                     })
 
-                    let playIcon = playBtn.svg({
-                        attrs: {
-                            width: 54,
-                            height: 43,
-                            fill: 'none'
-                        }
-                    })
-
-                    playBtn.span({ text: 'play' })
-
-                    playIcon.path({
-                        attrs: {
-                            d: 'M52.4537 19.5745C54.1202 20.5366 54.1202 22.9419 52.4537 23.9041L20.5826 42.3049C18.9161 43.267 16.833 42.0643 16.833 40.1401L16.833 3.33844C16.833 1.41417 18.9161 0.211505 20.5826 1.17364L52.4537 19.5745Z',
-                            fill: 'white'
-                        }
-                    })
-
-                    playIcon.path({
-                        attrs: {
-                            d: 'M36.2057 19.5745C37.8721 20.5366 37.8721 22.9419 36.2057 23.9041L4.33451 42.3049C2.66805 43.267 0.584967 42.0643 0.584967 40.1401L0.584968 3.33844C0.584968 1.41417 2.66805 0.211505 4.33451 1.17364L36.2057 19.5745Z',
-                            fill: 'white'
-                        }
-                    })
+                    playBtn.img({ attrs: { src: "play-icon.svg"} });
+                    playBtn.span({ text: 'play' });
                 }
 
-		            let ov_div = section1.div({
-		                id: doc.id + '-ovdiv',
-		                classes: ['overview']
-		            });
-		            render_overview(ov_div, doc);
+                let ov_div = section1.div({
+                    id: doc.id + '-ovdiv',
+                    classes: ['overview']
+                });
+                render_overview(ov_div, doc);
 
-		            let det_div = section2.div({
-		                id: doc.id + '-detdiv',
-		                classes: ['detail']
-		            });
+                let det_div = section2.div({
+                    id: doc.id + '-detdiv',
+                    classes: ['detail']
+                });
 
-		            if(!(doc.id in T.selections)) {
-		                T.selections[doc.id] = {start_time: 0, end_time: 20};
-		            }
+                if (!(doc.id in T.selections)) {
+                    T.selections[doc.id] = { start_time: 0, end_time: 20 };
+                }
 
-		            render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
-                    
+                render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+
                 render_stats(section3, doc);
 
                 // if(!T.DRAGGING) {
@@ -560,7 +470,7 @@ function render_doclist(root) {
                 //     render_stats(content, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
                 // }
 
-	          }
+            }
 
 
 	      })
@@ -575,16 +485,13 @@ function render_stats(root_, doc, start, end) {
             onmouseout: () => document.getElementById(uid + '-scopy').style.display = 'none',
         }
     })
-    let table = new PAL.Element('table', {
-        parent: tableDiv,
+    let table = tableDiv.table({
         classes: ['stat-table'],
     })
-    let headers = new PAL.Element('tr', {
-        parent: table,
+    let headers = table.tr({
         classes: ['stat-header']
     })
-    let datarow = new PAL.Element('tr', {
-        parent: table,
+    let datarow = table.tr({
         classes: ['stat-row']
     })
 
@@ -603,8 +510,7 @@ function render_stats(root_, doc, start, end) {
 
         // let statbar = root.div({id: 'sb-'+ uid, classes: ['sbar']});
 
-        let keys = Object.keys(stats)
-            .sort();
+        let keys = Object.keys(stats);
 
         // const cell_w = 100;
 
@@ -898,7 +804,7 @@ function render_pitch(root, id, seq, attrs) {
 }
 
 function render_detail(root, doc, start_time, end_time) {
-    if(!render_is_ready(root)) {
+    if(!render_is_ready(root, doc.id)) {
 	      return
     }
 
@@ -1073,7 +979,7 @@ function render_detail(root, doc, start_time, end_time) {
 }
 
 function render_overview(root, doc) {
-    if(!render_is_ready(root)) {
+    if(!render_is_ready(root, doc.id)) {
 	      return
     }
 
@@ -1250,16 +1156,17 @@ function render_overview(root, doc) {
 
 }
 
-function render_is_ready(root) {
-    if(!T.docs[T.cur_doc]) {
+function render_is_ready(root, docid) {
+    if(!T.docs[docid] || !get_data(docid)) {
         new PAL.Element("div", {
             parent: root,
-            text: "Loading..."
+            text: "Loading... If this is taking too long, try reuploading this data file"
         });
-        return;
-    }
 
-    return get_data(T.cur_doc);
+        return false;
+    }
+    
+    return true;
 }
 
 function delete_action(doc) {
@@ -1313,20 +1220,14 @@ function render_hamburger(root, doc) {
 }
 
 function render() {
-    var root = new PAL.Root();
 
-    // let head = render_header(root);
-    var main = new PAL.Element("main", {
-        parent: root
-    })
-    render_uploader(main.div({ id: 'sidebar' }));
-    render_doclist(main.div({ id: 'doclist-area' }));
-
-    // if(T.SHOW_HAMBURGER) {
-	//       render_hamburger(root, T.SHOW_HAMBURGER.doc);
-    // }
-
-    root.show();
+    var fileList = new PAL.ExistingRoot("div", { id: "file-list"}),
+        doclistArea = new PAL.ExistingRoot("main", { id: "doclist-area" })
+    render_uploader(fileList);
+    render_doclist(doclistArea);
+    
+    fileList.show();
+    doclistArea.show();
 }
 
 function fr2x(fr) {
@@ -1392,6 +1293,5 @@ if(!T.ticking) {
     T.ticking = true;
     tick();
 }
-
 
 render();

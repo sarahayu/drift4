@@ -1,34 +1,171 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="reset.css" />
     <link rel="stylesheet" href="stage.css" />
-    <link rel="stylesheet" href="style.css" />    
-    <link rel="stylesheet" href="reset.css" />    
     <script src="farming.js"></script>
     <script src="palilalia.js"></script>
     <script src="attachments.js"></script>
     <script src="babysteps.js"></script>
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" >
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="palilalia-plus.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
+
   <body>
     <nav>
-      <div class="logo">drift4</div>
       <ul class="nav-links">
-        <li><a href="#">source code</a></li>
-        <li><a href="#">instructions</a></li>
-        <li><a href="#">about drift</a></li>
+        <li class="has-dropdown" tabindex="0"><span>ABOUT &#9660;</span>
+            <ul>
+                <li><a href="#" target="_blank">ABOUT DRIFT</a></li>
+                <li><a href="https://lowerquality.com/gentle/" target="_blank">ABOUT GENTLE</a></li>
+                <li><a href="#" target="_blank">ABOUT VOXIT</a></li>
+            </ul>
+        </li>
+        <li><a href="https://github.com/strob/drift3/" target="_blank">SOURCE CODE</a></li>
+        <li><a href="#" target="_blank">INSTRUCTIONS</a></li>
       </ul>
     </nav>
-    <!-- <main>
-      <div class="upload-area">
-
-      </div>
-      <div id="doclist-area">
-        
-      </div>
-    </main> -->
+    <div id="sidebar">
+        <div class="sidetop">
+            <h1>Drift4</h1>
+            <p>prosodic measure analysis</p>
+            <button id="upload-area">
+                <span>UPLOAD AUDIO FILE</span>
+                <img src="upload-icon.svg" alt="upload icon">
+            </button>
+            <input id="upload-button" type="file" multiple="true" />
+        </div>
+        <div class="file-list-area">
+            <div class="file-list-header">
+                <p>AUDIO FILE LIST:</p>
+                <button>...</button>
+            </div>
+            <ul class="file-list" id="file-list">
+                <!-- <li id="8fabae00-listwrapper">
+                  <button>Meeting Zhongli's Pet Dragon (Genshin Impact).mp3</button>
+                </li>
+                <li id="42ecf6e8-listwrapper">
+                  <button>TOP (Tower of God OP).mp3</button>
+                </li> -->
+            </ul>
+        </div>
+    </div>
+    <main id="doclist-area">
+        <!-- <div id="f2800feb" class="active driftitem">
+          <div id="f2800feb-bar" class="docbar">
+            <div id="f2800feb-name" class="doc-name">
+              Take Over (ft. Jeremy McKinnon (A Day To Remember), MAX, Henry)
+              Worlds 2020 - League of Legend.mp3
+            </div>
+            <button class="dl-btn">
+              ...
+              <ul class="dl-dropdown">
+                <li id="ham-csv">
+                  <a
+                    href="/media/a8/2831edc51af4608bce0f4e4b233a76e1c68bdc.csv"
+                    _target="_blank"
+                    download="Take Over (ft Jeremy McKinnon (A Day To Remember), MAX, Henry) Worlds 2020 - League of Legend-csv.csv"
+                    >csv</a
+                  >
+                </li>
+                <li id="ham-mat">
+                  <a
+                    href="/media/4b/bf3302c40995e08ec01f72e359970047be942b.mat"
+                    _target="_blank"
+                    download="Take Over (ft Jeremy McKinnon (A Day To Remember), MAX, Henry) Worlds 2020 - League of Legend-mat.mat"
+                    >mat</a
+                  >
+                </li>
+                <li id="ham-align">
+                  <a
+                    href="/media/1a/8a03804074129611dd5f97e4f3356ce3cfccba.json"
+                    _target="_blank"
+                    download="Take Over (ft Jeremy McKinnon (A Day To Remember), MAX, Henry) Worlds 2020 - League of Legend-align.json"
+                    >align</a
+                  >
+                </li>
+                <li id="ham-pitch">
+                  <a
+                    href="/media/9b/d8448d42c84d213fe70d44439354195f47b275.txt"
+                    _target="_blank"
+                    download="Take Over (ft Jeremy McKinnon (A Day To Remember), MAX, Henry) Worlds 2020 - League of Legend-pitch.txt"
+                    >pitch</a
+                  >
+                </li>
+              </ul>
+            </button>
+          </div>
+          <div class="driftitem-content">
+            <section id="sec1" class="driftitem-section driftitem-top">
+              <button class="play-btn">
+                  <img data-src="play-icon" alt="play icon">
+                  <span>play</span>
+              </button>
+              <div id="f2800feb-ovdiv" class="overview">                
+              </div>
+            </section>
+            <section id="sec3" class="driftitem-section">
+              <div class="table-wrapper">
+                <table class="stat-table">
+                  <tr class="stat-header">
+                    <td id="Drift_f0_Entropy-h">Drift f0 Entropy</td>
+                    <td id="Drift_f0_Mean-h">Drift f0 Mean</td>
+                    <td id="Drift_f0_Mean_Abs_Accel-h">
+                      Drift f0 Mean Abs Accel
+                    </td>
+                    <td id="Drift_f0_Mean_Abs_Velocity-h">
+                      Drift f0 Mean Abs Velocity
+                    </td>
+                    <td id="Drift_f0_Range-h">Drift f0 Range</td>
+                    <td id="Gentle_Complexity_All_Pauses-h">
+                      Gentle Complexity All Pauses
+                    </td>
+                    <td id="Gentle_Long_Silence_Count-h">
+                      Gentle Long Silence Count
+                    </td>
+                    <td id="Gentle_Mean_Pause_Duration-h">
+                      Gentle Mean Pause Duration
+                    </td>
+                    <td id="Gentle_Pause_Count-h">Gentle Pause Count</td>
+                    <td id="Gentle_Pause_Rate-h">Gentle Pause Rate</td>
+                    <td id="WPM-h">WPM</td>
+                    <td id="end_time-h">end time</td>
+                    <td id="start_time-h">start time</td>
+                  </tr>
+                  <tr class="stat-row">
+                    <td id="Drift_f0_Entropy-d">0.83</td>
+                    <td id="Drift_f0_Mean-d">87.6</td>
+                    <td id="Drift_f0_Mean_Abs_Accel-d">0.18</td>
+                    <td id="Drift_f0_Mean_Abs_Velocity-d">0.29</td>
+                    <td id="Drift_f0_Range-d">1.58</td>
+                    <td id="Gentle_Complexity_All_Pauses-d">28.78</td>
+                    <td id="Gentle_Long_Silence_Count-d">3</td>
+                    <td id="Gentle_Mean_Pause_Duration-d">0.41</td>
+                    <td id="Gentle_Pause_Count-d">6</td>
+                    <td id="Gentle_Pause_Rate-d">0.08</td>
+                    <td id="WPM-d">30</td>
+                    <td id="end_time-d">225.07</td>
+                    <td id="start_time-d">0</td>
+                  </tr>
+                </table>
+                <button
+                  id="f2800feb-undefined-undefined-scopy"
+                  class="copybutton"
+                >
+                  copy data
+                </button>
+              </div>
+            </section>
+          </div>
+        </div> -->
+    </main>
     <script src="script.js"></script>
   </body>
 </html>

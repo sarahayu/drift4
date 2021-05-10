@@ -51,7 +51,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # We do not consider pauses less than 100 ms because fully continuous speech also naturally has such brief gaps in energy,
     # nor do we consider pauses that exceed 3,000 ms (that is, 3 seconds), because they are quite rare.
     sum = 0
-    start_pause = 0.5
     min_pause = 0.1
     max_pause = 3 
     pause_count = 0
@@ -161,7 +160,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         # End time
         if end_time and float(end_time) < float(measures[0]):
             continue
-        # if argument.remove is '0':
         # Ignore first line and filter out integer pitch values
         # Voiced pitch only
         if skip or not measures[1]:
@@ -182,69 +180,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             run = False
             end = temp
             ixtmp.append([start,end])
-        # elif argument.remove is '1':
-        #     # Ignore first line and filter out integer pitch values
-        #     # Voiced pitch only
-        #     if skip or not measures[1]:
-        #         skip = False
-        #         continue
-        #     elif float(measures[1]).is_integer() is False:
-        #         drift_time.append(float(measures[0]))
-        #         drift_pitch.append(float(measures[1]))
-        #         index += 1
-        #         # Find voiced periods
-        #         if (run is False): # start of pitch
-        #             start = index
-        #             run = True
-        #         else: # run is true so save pitch to record the end
-        #             temp = index 
-        #     # ixtmp
-        #     elif float(measures[1]).is_integer() is True and run is True:
-        #         run = False
-        #         end = temp
-        #         ixtmp.append([start,end])
-        # elif argument.remove is '2':
-        #     # Ignore first line and filter out integer pitch values
-        #     # Voiced pitch only
-        #     if skip or not measures[1]:
-        #         skip = False
-        #         continue
-        #     elif float(measures[1]) not in pitch_multiples:
-        #         drift_time.append(float(measures[0]))
-        #         drift_pitch.append(float(measures[1]))
-        #         index += 1
-        #         # Find voiced periods
-        #         if (run is False): # start of pitch
-        #             start = index
-        #             run = True
-        #         else: # run is true so save pitch to record the end
-        #             temp = index 
-        #     # ixtmp
-        #     elif float(measures[1]) in pitch_multiples and run is True:
-        #         run = False
-        #         end = temp
-        #         ixtmp.append([start,end])
-
-    # Integer counts
-    if float(measures[1]) == 0:
-        zero_count += 1
-    elif float(measures[1]).is_integer():
-        int_count += 1
-
-    # Average Pitch (mean f0, or fundamental frequency, sampled every 10 milliseconds), of each voice in Hertz
-    count = 0
-    sum = 0
-    m = decimal.Decimal(str(drift_time[0]))
-    while True:
-        if float(m) in drift_time:
-            count += 1
-            sum += drift_pitch[drift_time.index(float(m))]
-        m += decimal.Decimal('.1') # sampled every 10 ms
-        if (m > drift_time[-1]):
-            break
-
-    AP = sum / count
-    # results["average_pitch"] = AP
 
     # Pitch pre-calculations
 
