@@ -187,24 +187,34 @@ function render_uploader(root) {
     // let fileList = fileListArea.ul({ classes: ['file-list'] })
     get_docs()
         .forEach(doc => {
-            root.li({
-                id: doc.id + '-listwrapper'
-            }).button({ 
-                text: doc.title,
+            let listItem = root.li({ 
+                id: doc.id + '-listwrapper' ,
                 events: {
-                    onclick: ev =>
-                    {
+                    onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
                         T.opened[doc.id] = !T.opened[doc.id];
-                        if (has_data(doc.id))
-                        {
+                        if (has_data(doc.id)) {
                             T.active[doc.id] = T.opened[doc.id];
                             set_active_doc(doc);
                         }
                         render();
                     }
+                }
+            });
+
+            listItem.button({ classes: ["dragger"] })
+                .img({ attrs: { src: "hamburger.svg", alt: "drag indicator" } });
+            listItem.span({ text: doc.title });
+            listItem.button({ 
+                classes: ["deleter"],
+                events: {
+                    onclick: evnt => {
+                        evnt.stopPropagation();
+                        delete_action(doc);
                     }
+                }
              })
+            .img({ attrs: { src: "delete.svg", alt: "delete icon" } });
         })
 
 }

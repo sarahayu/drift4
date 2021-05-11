@@ -4,6 +4,7 @@
     color: #565656;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
+    --primary-350: #E4924A;
     --primary-400: #D58139;
     --accent-400: #B95949;
     --accent-700: #80372B;
@@ -16,16 +17,15 @@
 
 html
 {
-    height: 100%;
 }
 
 body
 {
+    min-height: 100vh;
     background-color: var(--neutral-400);
     display: grid;
-    grid-template-columns: 15rem 1fr;
+    grid-template-columns: 18rem 1fr;
     grid-template-rows: min-content 1fr;
-    height: 100%;
 }
 
 button,
@@ -126,7 +126,6 @@ nav
     z-index: 1;
     grid-column: 1 / 1;
     grid-row: 1 / -1;
-    height: 100%;
 }
 
 .sidetop
@@ -157,7 +156,7 @@ nav
 #upload-area
 {
     width: 100%;
-    background-color: rgba(215, 215, 215, 0.3);
+    background-color: var(--primary-300);
     margin-top: 4em;
     display: flex;
     justify-content: space-between;
@@ -173,7 +172,7 @@ nav
 #upload-area:focus-visible
 {
     cursor: pointer;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--primary-200);
 }
 
 #upload-area img
@@ -195,37 +194,100 @@ nav
 
 .file-list-header
 {
-    padding: 0.5em 2em;
     font-size: 0.9em;
     font-weight: 700;
+    padding: 0 1em;
+    padding-left: 2em;
     display: flex;
+    align-items: center;
     justify-content: space-between;
+}
+
+.file-list-header:hover,
+.file-list-header:focus-within
+{
+    background-color: var(--primary-300);
+}
+
+.file-list-header button
+{
+    min-height: 0;
+    transition-duration: 0s;
+    padding: 1em 1.75em;
+}
+
+.file-list-header button:hover,
+.file-list-header button:focus
+{
+    transition-duration: 0.1s;
+    background-color: var(--accent-700);
+}
+
+.file-list
+{
+    padding-bottom: 2rem;
+}
+
+.file-list li
+{
+    overflow: hidden;
+    width: calc(100% - 2em);    
+    text-align: left;
+    margin: 0.1em 0;
+    border-radius: 0 100vh 100vh 0;
+    display: flex;
+    align-items: center;
+}
+
+.file-list li span
+{
+    flex-grow: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.file-list li:hover,
+.file-list li:focus-visible
+{
+    transition: background-color 0.1s;
+    background-color: var(--primary-350);
+    cursor: pointer;
+}
+
+.file-list li.active
+{
+    background-color: var(--accent-700);
+    transition: none;
 }
 
 .file-list button
 {
-    width: calc(100% - 2em);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    padding: 0.75em 1.5em;
-    text-align: left;
-    margin: 0.3em 0;
-    border-radius: 0 100vh 100vh 0;
-}
-
-.file-list button:hover,
-.file-list button:focus-visible
-{
-    background-color: var(--primary-200);
-    cursor: pointer;
-}
-
-.file-list button.active
-{
-    background-color: var(--accent-700);
-    box-shadow: inset 0px 2.4997px 2.4997px rgba(0, 0, 0, 0.25);
     transition: none;
+    align-self: stretch;
+    padding: 1em 1em;
+    visibility: hidden;
+}
+
+.file-list button > *
+{
+    display: block;
+}
+
+.file-list li:hover button,
+.file-list li:focus-visible button
+{
+    visibility: visible;
+}
+
+.file-list li.active button
+{
+    visibility: hidden;
+}
+
+.file-list button:last-child
+{
+    padding-right: 1em;
 }
 
 main
