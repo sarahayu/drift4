@@ -2,6 +2,7 @@
 {
     font-family: 'Futura', 'Nunito Sans', sans-serif;
     color: #565656;
+    font-weight: 500;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
     --primary-350: #E4924A;
@@ -48,7 +49,6 @@ nav
 
 .nav-links
 {
-    font-weight: 600;
     display: flex;
 }
 
@@ -138,7 +138,6 @@ nav
 .sidetop p
 {
     font-style: italic;
-    font-weight: 600;
     margin-left: 1rem;
 }
 
@@ -166,6 +165,12 @@ nav
     padding: 1em 2em;
     font-weight: 700;
     box-shadow: 0px 0px 12px 0px #80372B33;
+}
+
+/* prevent jittering when dragging file over child span */
+#upload-area *
+{
+    pointer-events: none;
 }
 
 #upload-area:hover,
@@ -228,7 +233,7 @@ nav
     padding-bottom: 2rem;
 }
 
-.file-list li
+.list-item
 {
     overflow: hidden;
     width: calc(100% - 2em);    
@@ -239,7 +244,7 @@ nav
     align-items: center;
 }
 
-.file-list li span
+.list-item span
 {
     flex-grow: 1;
     overflow: hidden;
@@ -247,25 +252,26 @@ nav
     text-overflow: ellipsis;
 }
 
-.file-list li:hover,
-.file-list li:focus-visible
+.list-item:hover,
+.list-item:focus-visible
 {
     transition: background-color 0.1s;
     background-color: var(--primary-350);
     cursor: pointer;
 }
 
-.file-list li.active
+.list-item.active
 {
     background-color: var(--accent-700);
     transition: none;
 }
 
-.file-list button
+.list-item button,
+.list-item > img
 {
     transition: none;
     align-self: stretch;
-    padding: 1em 1em;
+    padding: 1em;
     visibility: hidden;
 }
 
@@ -274,20 +280,12 @@ nav
     display: block;
 }
 
-.file-list li:hover button,
-.file-list li:focus-visible button
+.list-item:hover button,
+.list-item:hover > img,
+.list-item:focus-visible button,
+.list-item:focus-visible > img
 {
     visibility: visible;
-}
-
-.file-list li.active button
-{
-    visibility: hidden;
-}
-
-.file-list button:last-child
-{
-    padding-right: 1em;
 }
 
 main

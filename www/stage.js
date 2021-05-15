@@ -118,77 +118,13 @@ function set_active_doc(doc) {
     }
 }
 
-function render_header(root) {
-    var head = root.div({
-        id: 'head'
-    });
-
-    head.div({
-        id: 'logo',
-        text: "drift3",
-        events: {
-            onclick: () => {
-                window.location.hash = "";
-            }
-        }
-    });
-
-    return head;
-}
-
 function render_uploader(root) {
-    // var upl = root.button({
-    //     id: "upload-area",
-    //     text: "upload file",
-    //     events: {
-    //         ondragover: function(ev) {
-    //             ev.stopPropagation();
-    //             ev.preventDefault();
-    //             ev.dataTransfer.dropEffect = "copy";
-    //             ev.target.textContent = "release file to upload";
-    //         },
-    //         ondragleave: function(ev) {
-    //             ev.stopPropagation();
-    //             ev.preventDefault();
-    //             ev.target.textContent = "upload file";
-    //         },
-    //         ondrop: function(ev) {
-    //             ev.stopPropagation();
-    //             ev.preventDefault();
 
-    //             console.log("drop");
-    //             ev.target.textContent = "upload file";
-
-    //             got_files(ev.dataTransfer.files);
-    //         },
-    //         onclick: function() {
-    //             document.getElementById("upload-button").click()
-    //         }
-    //     }
-    // });
-
-    // upl.img({ attrs: {src: "upload-icon.svg"} });
-
-    // root.input({
-    //     attrs: {
-    //         type: "file",
-    //         multiple: true
-    //     },
-    //     id: "upload-button",
-    //     events: {
-    //         onchange: function(ev) {
-    //             got_files(ev.target.files);
-    //         }
-    //     }
-    // })
-
-    // let fileListArea = root.div({ classes: ['file-list-area'] })
-    // fileListArea.p({ text: 'audio file list:' })
-    // let fileList = fileListArea.ul({ classes: ['file-list'] })
     get_docs()
         .forEach(doc => {
             let listItem = root.li({ 
-                id: doc.id + '-listwrapper' ,
+                id: doc.id + '-listwrapper',
+                classes: ['list-item', T.opened[doc.id] ? 'active' : ''],
                 events: {
                     onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
@@ -202,8 +138,7 @@ function render_uploader(root) {
                 }
             });
 
-            listItem.button({ classes: ["dragger"] })
-                .img({ attrs: { src: "hamburger.svg", alt: "drag indicator" } });
+            listItem.img({ attrs: { src: "hamburger.svg", alt: "drag indicator" } });
             listItem.span({ text: doc.title });
             listItem.button({ 
                 classes: ["deleter"],
@@ -234,6 +169,7 @@ function got_files(files) {
                 FARM.post_json("/_rec/_create", drift_doc, (ret) => {
 
                     T.docs[ret.id] = ret;
+                    T.opened[ret.id] = true;
                     render();
 
                     attach.put_file(file, function(x) {
@@ -280,7 +216,6 @@ function render_doclist(root) {
 
             if (!T.opened[doc.id]) return;
 
-            let is_active = T.active[doc.id];
             let is_pending = !has_data(doc.id);
 
             let docitem = root.div({
@@ -294,11 +229,6 @@ function render_doclist(root) {
                 id: doc.id + "-bar",
                 classes: ['docbar']
             });
-
-            //   // Expand
-            //   docbar.span({id: doc.id + '-expand',
-            //                    classes: ['expand'],
-            //                    text: is_active||is_pending ? "v " : "> "});
 
             // Title
             docbar.div({
@@ -332,100 +262,14 @@ function render_doclist(root) {
                 })
             }
 
-            let dlBtn = docbar.button({
-                classes: ['dl-btn'],
-                events: {
-                    onclick: ev => {
-                        console.log(doc.title);
-
-                        // show thing
-
-                        ev.preventDefault();
-                        ev.stopPropagation();
-
-                        T.SHOW_HAMBURGER = {
-                            $el: ev.target,
-                            doc: doc
-                        };
-                        render();
-
-                        window.onclick = (ev) => {
-                            T.SHOW_HAMBURGER = null;
-                            render();
-                            window.onclick = null;
-                        }
-
-                    },
-                }
-            })
-
-            let dlicon = dlBtn.img({
-                attrs: {
-                    src: "upload-icon.svg"
-                }
-            })
-
-            let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] })
-
-            let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
-            pregen_downloads.forEach((name) => {
-                if (!doc[name]) {
-                    return;
-                }
-                let filename = doc.title.split('.').reverse()
-                filename.shift()
-
-                let out_filename = filename.reverse().join('') + '-' + name + '.' + doc[name].split('.')[1];
-
-                dlDropdown.li({
-                    id: 'ham-' + name,
-                }).a({
-                    text: name,
-                    attrs: {
-                        href: '/media/' + doc[name],
-                        _target: '_blank',
-                        download: out_filename
-                    },
-                    events: {
-                        onclick: ev => {
-                            ev.stopPropagation()
-                        }
-                    }
-                });
-            })
-            // Hamburger
-            //   docbar.div({id: doc.id + '-hamburger',
-            //                   text: ":",
-            //                   events: {
-            //                       onclick: (ev) => {
-            // 	                        console.log("hamclick");
-            // 	                        ev.preventDefault();
-            // 	                        ev.stopPropagation();
-
-            // 	                        T.SHOW_HAMBURGER = {
-            // 	                            $el: ev.target,
-            // 	                            doc: doc
-            // 	                        };
-            // 	                        render();
-
-            // 	                        window.onclick = (ev) => {
-            // 	                            T.SHOW_HAMBURGER = null;
-            // 	                            render();
-            // 	                            window.onclick = null;
-            // 	                        }
-
-            //                       }
-            //                   },
-            //                   classes: ['hamburger']})
-
-            let content = docitem.div({ classes: ['driftitem-content'] })
+            render_hamburger(docbar, doc);
 
             if (is_pending) {
-                console.log('rendering?')
                 render_paste_transcript(docitem, doc.id);
             }
-            else if (is_active) {
+            else {
                 // Expand.
+                let content = docitem.div({ classes: ['driftitem-content'] })
 
                 let section1 = content.section({
                     id: 'sec1',
@@ -438,23 +282,19 @@ function render_doclist(root) {
                     classes: ['table-wrapper']
                 })
 
-                if (true) {//T.cur_doc == doc.id) {
-                    // a play button!
-                    let playBtn = section1.button({
-                        // id: doc.id + '-' + 'play',
-                        classes: ['play-btn'],
-                        events: {
-                            onclick: ev => {
-                                T.cur_doc = doc.id;
-                                toggle_playpause();
-                                ev.currentTarget.lastElementChild.textContent = (T.audio && T.audio.paused) ? 'play' : 'pause'
-                            }
-                        },
-                    })
+                let playBtn = section1.button({
+                    classes: ['play-btn'],
+                    events: {
+                        onclick: ev => {
+                            T.cur_doc = doc.id;
+                            toggle_playpause();
+                            ev.currentTarget.lastElementChild.textContent = (T.audio && T.audio.paused) ? 'play' : 'pause'
+                        }
+                    },
+                })
 
-                    playBtn.img({ attrs: { src: "play-icon.svg"} });
-                    playBtn.span({ text: 'play' });
-                }
+                playBtn.img({ attrs: { src: "play-icon.svg"} });
+                playBtn.span({ text: 'play' });
 
                 let ov_div = section1.div({
                     id: doc.id + '-ovdiv',
@@ -490,10 +330,10 @@ function render_stats(root_, doc, start, end) {
     let uid = doc.id + '-' + start + '-' + end;
     let tableDiv = root_.div({ 
         classes: ['table-wrapper'],
-        events: {
-            onmouseover: () => document.getElementById(uid + '-scopy').style.display = 'inline-block',
-            onmouseout: () => document.getElementById(uid + '-scopy').style.display = 'none',
-        }
+        // events: {
+        //     onmouseover: () => document.getElementById(uid + '-scopy').style.display = 'inline-block',
+        //     onmouseout: () => document.getElementById(uid + '-scopy').style.display = 'none',
+        // }
     })
     let table = tableDiv.table({
         classes: ['stat-table'],
@@ -565,31 +405,31 @@ function render_stats(root_, doc, start, end) {
         //         });
         //     });
 
-        tableDiv.button({id: uid + '-scopy',
-                     classes: ['copybutton'],
-                        text: 'copy data',
-                        events: {
-                            onclick: (ev) => {
-                                let cliptxt = '';
-                                keys.forEach((key) =>{
-                                    cliptxt += key + '\t';
-                                });
-                                cliptxt += '\n';
-                                keys.forEach((key) =>{
-                                    cliptxt += stats[key] + '\t';
-                                });
-                                cliptxt += '\n'
+        // tableDiv.button({id: uid + '-scopy',
+        //              classes: ['copybutton'],
+        //                 text: 'copy data',
+        //                 events: {
+        //                     onclick: (ev) => {
+        //                         let cliptxt = '';
+        //                         keys.forEach((key) =>{
+        //                             cliptxt += key + '\t';
+        //                         });
+        //                         cliptxt += '\n';
+        //                         keys.forEach((key) =>{
+        //                             cliptxt += stats[key] + '\t';
+        //                         });
+        //                         cliptxt += '\n'
 
-                                // Create, select, copy, and remove a textarea.
-                                let $el = document.createElement('textarea');
-                                $el.textContent = cliptxt;
-                                document.body.appendChild($el);
-                                $el.select();
-                                document.execCommand("copy");
-                                document.body.removeChild($el);
-                            }
-                        }
-                       });
+        //                         // Create, select, copy, and remove a textarea.
+        //                         let $el = document.createElement('textarea');
+        //                         $el.textContent = cliptxt;
+        //                         document.body.appendChild($el);
+        //                         $el.select();
+        //                         document.execCommand("copy");
+        //                         document.body.removeChild($el);
+        //                     }
+        //                 }
+        //                });
     }
 
 }
@@ -1188,45 +1028,43 @@ function delete_action(doc) {
 
 
 function render_hamburger(root, doc) {
-    let ham = root.div({id: 'hamburger',
-			                  styles: {
-			                      top: T.SHOW_HAMBURGER.$el.parentElement.parentElement.offsetTop
-			                  },
-			                  //text: 'ham'
-		                   });
+    
+    let dlBtn = root.button({
+        classes: ['dl-btn'],
+        events: {
+            onclick: ev => {
+                console.log(doc.title);
+
+                // might change this later, for now button does nothing
+            },
+        }
+    })
+
+    dlBtn.img({ attrs: { src: "upload-icon.svg" } });
+
+    let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] });
 
     let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
-    pregen_downloads.forEach((name) => {
-        if(!doc[name]) {
+    pregen_downloads.forEach(name => {
+        if (!doc[name]) {
             return;
         }
-        let out_filename = doc.title.split('.')[0] + '-' + name + '.' + doc[name].split('.')[1];
+        let filename = doc.title.split('.').reverse()
+        filename.shift()
 
-	      ham.a({
-	          id: 'ham-' + name,
-	          text: name,
+        let out_filename = filename.reverse().join('') + '-' + name + '.' + doc[name].split('.')[1];
+
+        dlDropdown.li({
+            id: 'ham-' + name,
+        }).a({
+            text: name,
             attrs: {
                 href: '/media/' + doc[name],
                 _target: '_blank',
                 download: out_filename
             }
-	      });
-    });
-
-
-    let actions = ['delete'];
-    actions.forEach((name) => {
-	      ham.div({
-	          id: 'ham-' + name,
-	          text: name,
-	          events: {
-		            onclick: (ev) => {
-		                console.log("click", name);
-                    window[name + '_action'](doc);
-		            }
-	          }
-	      });
-    });
+        });
+    })
 }
 
 function render() {
@@ -1298,6 +1136,38 @@ function tick() {
 
     window.requestAnimationFrame(tick);
 }
+
+(function() {
+    const $uplArea = document.getElementById("upload-area");
+
+    $uplArea.ondragover = function(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "copy";
+        ev.currentTarget.children[0].textContent = "RELEASE FILE TO UPLOAD";
+    },
+    $uplArea.ondragleave = function(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+    },
+    $uplArea.ondrop = function(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        console.log("drop");
+        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+
+        got_files(ev.dataTransfer.files);
+    },
+    $uplArea.onclick = function() {
+        document.getElementById("upload-button").click()
+    }
+
+    document.getElementById("upload-button").onchange = function(ev) {
+        got_files(ev.target.files);
+    };
+})()
 
 if(!T.ticking) {
     T.ticking = true;

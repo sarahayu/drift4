@@ -10,8 +10,6 @@
     PAL.ExistingRoot.prototype = new PAL.Element;
     PAL.ExistingRoot.prototype.renderElement = function (node) {
         node = node || {};
-
-        console.log(this._attrs.id, document.getElementById(this._attrs.id))
     
         this.$el = node.$el || document.getElementById(this._attrs.id);
     
