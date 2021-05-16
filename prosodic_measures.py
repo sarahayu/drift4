@@ -6,7 +6,7 @@ import sys
 import os
 import argparse
 
-from lempel_ziv_complexity import lempel_ziv_complexity
+# from lempel_ziv_complexity import lempel_ziv_complexity
 from numba import jit
 from scipy.signal import savgol_filter
 
@@ -26,6 +26,9 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     for row in gentle:
         # Save measurements as list elements
         measures = row[0].split(',')
+        # for some reason, rows might be empty. Faulty csv file perhaps?
+        if len(measures) != 4:
+            continue
         # Start time
         if start_time and measures[2] and float(start_time) > round(float(measures[2]) * 10000)/10000:
             continue
@@ -65,7 +68,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             long_pause_count += 1
 
     # Pause counts
-    results["Gentle_Pause_Count"] = pause_count
+    results["Gentle_Pause_Count_>_100ms"] = pause_count
 
     # while start_pause < max_pause:
     #     tmp_pause_count = 0
@@ -76,7 +79,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     #     temp_output.append(tmp_pause_count)
     #     start_pause += 0.5
 
-    results["Gentle_Long_Silence_Count"] = long_pause_count
+    results["Gentle_Long_Pause_Count_>_3000ms"] = long_pause_count
 
     APL = decimal.Decimal(sum / pause_count)
     results["Gentle_Mean_Pause_Duration"] = float(round(APL, 2))
@@ -129,7 +132,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
                     break
 
     # Normalized
-    CP = lempel_ziv_complexity("".join([str(i) for i in s])) / (len(s) / math.log2(len(s)))
+    CP = lempel_ziv_complexity("".join([str(i) for i in s])) / ((len(s) - 1) / math.log2(len(s) - 1))
     results["Gentle_Complexity_All_Pauses"] = CP * 100
 
     # Output message
@@ -294,5 +297,34 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         f0entropy += f0prob[i] * f0log2prob[i]
     PE = -f0entropy
     results["Drift_f0_Entropy"] = PE
+
+    results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
     
     return results
+
+# https://en.wikipedia.org/wiki/Lempel-Ziv_complexity
+# TODO: optimize, probably by porting from matlab code. For now, just use wikipedia pseudocode
+def lempel_ziv_complexity(S):
+    i = 0
+    C = 1
+    u = 1
+    v = 1
+    n = len(S)
+    vmax = v
+    while u + v <= n:
+        if S[i + v - 1] == S[u + v - 1]:
+            v = v + 1
+        else:
+            vmax = max(v, vmax)
+            i = i + 1
+            if i == u:  # all the pointers have been treated
+                C = C + 1
+                u = u + vmax
+                v = 1
+                i = 0
+                vmax = v
+            else:
+                v = 1
+    if v != 1:
+        C = C+1
+    return C
