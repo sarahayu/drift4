@@ -1,8 +1,9 @@
 :root
 {
-    font-family: 'Futura', 'Nunito Sans', sans-serif;
+    font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;
     color: #565656;
     font-weight: 500;
+    font-size: 0.9em;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
     --primary-350: #E4924A;
@@ -14,10 +15,6 @@
     --neutral-375: #F4F4F4;
     --neutral-400: #E5E5E5;
     --neutral-700: #E3E3E3;
-}
-
-html
-{
 }
 
 body
@@ -43,8 +40,10 @@ nav
     color: var(--primary-400);
     align-items: center;
     justify-content: flex-end;
-    padding: 0 2em;
+    padding: 0 1.75em;
     display: flex;
+    font-size: 1.1em;
+    font-weight: 600;
 }
 
 .nav-links
@@ -92,8 +91,27 @@ nav
     position: relative;
 }
 
+.has-dropdown > :first-child
+{
+    position: relative;
+}
+
+.has-dropdown > :first-child::after
+{
+    content: '';
+    height: 7px;
+    width: 13px;
+    display: inline-block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-left: 0.5em;
+    background-image: url(dropdown.svg);
+}
+
 .has-dropdown > ul
 {
+    font-weight: 600;
     white-space: nowrap;
     background-color: var(--neutral-375);
     display: none;
@@ -110,6 +128,12 @@ nav
     font-size: 0.8em;
     padding: 1.8em 1em;
     padding-right: 3em;
+}
+
+/* is there a better way to do this https://css-tricks.com/change-color-of-svg-on-hover/ */
+.has-dropdown:hover > :first-child::after
+{
+    filter: brightness(0) saturate(100%) invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
 }
 
 .has-dropdown:hover > ul,
@@ -143,13 +167,12 @@ nav
 
 .sidetop h1
 {
-    font-size: 1.5em;
+    font-size: 2em;
 }
 
 .sidetop p
 {
     margin-top: 1em;
-    font-size: 0.8em;
     line-height: 1.75em;
 }
 
@@ -161,10 +184,10 @@ nav
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 0.75em;
     border-radius: 100vh;
     padding: 1em 2em;
     font-weight: 700;
+    font-size: 0.8em;
     box-shadow: 0px 0px 12px 0px #80372B33;
 }
 
@@ -194,13 +217,12 @@ nav
 
 .file-list-area
 {
-    font-size: 0.8em;
-    margin-top: 7em;
+    margin-top: 5em;
 }
 
 .file-list-header
 {
-    font-size: 0.9em;
+    font-size: 0.8em;
     font-weight: 700;
     padding: 0 1em;
     padding-left: 2em;
@@ -272,7 +294,7 @@ nav
 {
     transition: none;
     align-self: stretch;
-    padding: 1em;
+    padding: 0.75em 1em;
     visibility: hidden;
 }
 
@@ -292,7 +314,7 @@ nav
 main
 {
     min-width: 0;
-    padding: 2em;
+    padding: 2.5em;
 }
 
 .driftitem
@@ -300,22 +322,33 @@ main
     background-color: var(--neutral-350);
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
     box-shadow: 0px 4px 25px -11px #00000040;
 }
 
 .driftitem + .driftitem
 {
-    margin-top: 2em;
+    margin-top: 2.5em;
 }
 
 .docbar
 {
+    font-weight: 300;
+    font-size: 1.3em;
     background-color: var(--primary-400);
     color: white;
-    padding: 0.5em 2em;
+    padding: 0 1.5em;
     display: flex;
     align-items: center;
+}
+
+.docbar > img:first-child
+{
+    margin-right: 0.5em;
+}
+
+.docbar > img:first-child:hover
+{
+    cursor: pointer;
 }
 
 .doc-name
@@ -332,33 +365,50 @@ main
     position: relative;
 }
 
-.dl-dropdown
+.dl-btn
 {
-    display: none;
-    /* visibility: none; */
-    position: absolute;
-    top: calc(100% + 1em);
-    right: 0;
-    /* max-height: 0; */
-    background-color: var(--primary-400);
-    overflow: hidden;
-    transition: none;
-    box-shadow: 0px 4.99939px 4.99939px rgba(0, 0, 0, 0.25);
+    min-height: 0;
+    transition-duration: 0s;
+    padding: 0.5em 1.2em;
 }
 
-.dl-btn:focus .dl-dropdown
+.dl-btn:hover,
+.dl-btn:focus
+{
+    transition-duration: 0.1s;
+    background-color: var(--accent-700);
+}
+
+.dl-dropdown
+{
+    white-space: nowrap;
+    font-size: 0.6em;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    color: var(--accent-700);
+    overflow: hidden;
+    transition: none;
+    box-shadow: 0px 3px 7px -3px rgba(0, 0, 0, 0.25);
+}
+
+.dl-btn:focus .dl-dropdown,
+.dl-btn:hover .dl-dropdown
 {
     display: block;
-    /* visibility: visible;
-    max-height: 100vh;
-    transition: all 0.2s ease-in; */
 }
 
 .dl-dropdown a
 {
+    text-align: left;
     display: inline-block;
-    padding: 0.5em 2em;
+    padding: 1.75em 1.5em;
     width: 100%;
+    padding-right: 2em;
 }
 /* 
 .dl-btn:focus a
@@ -369,23 +419,28 @@ main
 .dl-dropdown a:hover,
 .dl-dropdown a:focus-visible
 {
-    background-color: var(--primary-200);
+    background-color: var(--accent-700);
+    color: white;
 }
 
 .driftitem-content
 {
-    padding: 1em;
+    padding: 1.5em;
 }
 
-.driftitem-content section:not(.driftitem-top)
+.driftitem-content section
 {
     width: 100%;
+}
+
+.driftitem-content section:not(:first-child)
+{
     background-color: white;
-    overflow: hidden;
 }
 
 .driftitem-top
 {
+    font-size: 1.1em;
     display: flex;
     height: 5.5em;
     gap: 0 1em;
@@ -405,8 +460,16 @@ main
 .overview
 {
     flex-grow: 1;
-    overflow: auto;
     height: 100%;
+    overflow: auto;
+}
+
+.loading-placement
+{
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .detail-wrapper
@@ -453,27 +516,35 @@ main
 {
     text-align: center;
     overflow: auto;
+    display: flex;
+    min-width: 100%;
+    align-items: center;
 }
 
 .stat-table
 {
     font-weight: 300;
-    font-size: 0.8em;
     line-height: 1.2em;
 }
 
-.stat-header
-/* .stat-table td:first-child */
+.stat-table th
 {
     font-weight: 600;
 }
 
-.stat-header
+.stat-table th:first-child
+{
+    position: sticky;
+    left: 0;
+    border-left: 1.25px solid #DDDDDD;
+}
+
+.stat-header th
 {
     border-bottom: 0.62px solid #D6D6D6;
 }
 
-.stat-table td
+.stat-table tr > *
 {
     padding: 0.5em 1em;
     padding-top: 1em;
@@ -481,11 +552,73 @@ main
     text-align: right;
 }
 
-.stat-table td:nth-child(odd)
+.stat-table tr > :nth-child(odd)
 {
     background-color: var(--neutral-300);
 }
 
+.table-loading
+{
+    flex-grow: 1;
+    font-size: 1.25em;
+    font-weight: 300;
+}
+
+.driftitem textarea
+{
+    width: 100%;
+    box-sizing: border-box;
+    border: 2px solid rgba(128, 55, 43, 0.2);
+    resize: none;
+    font-family: inherit;
+    color: rgba(86, 86, 86, 0.73);
+    padding: 0.5em;
+}
+
+.bottom-wrapper
+{
+    margin-top: 1em;
+    display: flex;
+    align-items: center;
+}
+
+.bottom-wrapper progress
+{
+    appearance: none;
+    margin-left: 1.2em;
+    height: 0.7em;
+    flex-grow: 1;
+}
+
+.bottom-wrapper progress::-webkit-progress-bar
+{
+    background-color: #DCDCDC;
+    border-radius: 100vh;
+    overflow: hidden;
+}
+
+.bottom-wrapper progress::-webkit-progress-value
+{
+    background-color: var(--accent-700);
+}
+
+.setts-btn
+{
+    text-transform: uppercase;
+    color: white;
+    background-color: var(--primary-300);
+    border-radius: 100vh;
+    font-size: 0.7em;
+    padding: 1em 1.25em;
+    font-weight: 600;
+    box-shadow: 0px 0px 12px 0px rgba(128, 55, 43, 0.2);
+}
+
+.setts-btn:disabled
+{
+    pointer-events: none;
+    background-color: #C2C0C0;
+}
 
 .copybutton
 {

@@ -230,6 +230,8 @@ function render_doclist(root) {
                 classes: ['docbar']
             });
 
+            docbar.img({ attrs: { src: "tictactoe.svg" } });
+
             // Title
             docbar.div({
                 id: doc.id + '-name',
@@ -237,35 +239,10 @@ function render_doclist(root) {
                 text: doc.title
             });
 
-
-            if (doc.upload_status && !doc.path) {
-                // Show progress
-                new PAL.Element("progress", {
-                    id: doc.id + '-progress',
-                    parent: docbar,
-                    attrs: {
-                        max: "100",
-                        value: "" + Math.floor((100 * doc.upload_status))
-                    },
-                })
-            }
-
-            if (doc.align_px && !doc.align) {
-                // Show progress
-                new PAL.Element("progress", {
-                    id: doc.id + '-align-progress',
-                    parent: docbar,
-                    attrs: {
-                        max: "100",
-                        value: "" + Math.floor((100 * doc.align_px))
-                    },
-                })
-            }
-
             render_hamburger(docbar, doc);
 
             if (is_pending) {
-                render_paste_transcript(docitem, doc.id);
+                render_paste_transcript(docitem.div({ classes: ['driftitem-content'] }), doc);
             }
             else {
                 // Expand.
@@ -313,7 +290,7 @@ function render_doclist(root) {
 
                 render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
-                render_stats(section3, doc);
+                render_stats(section3, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
                 // if(!T.DRAGGING) {
                 //     content.i({id: doc.id + '-expl', text: 'selected region:'})
@@ -340,34 +317,36 @@ function render_stats(root_, doc, start, end) {
     })
     let headers = table.tr({
         classes: ['stat-header']
-    })
-    let datarow = table.tr({
+    }), datarow = table.tr({
         classes: ['stat-row']
+    }), datarow2 = table.tr({
+        classes: ['stat-row2']
     })
+
+    headers.th({})
+    datarow.th({ text: "full clip" })
+    datarow2.th({ text: "selection" })
 
     // let root = root_.div({id: 'mwrap-' + start + '-' + doc.id, classes: ['stats']});
 
-    let url = '/_measure?id=' + doc.id;
+    let url = '/_measure?id=' + doc.id, timedURL = url;
     if(start) {
-        url += '&start_time=' + start;
+        timedURL += '&start_time=' + start;
     }
     if(end) {
-        url += '&end_time=' + end;
+        timedURL += '&end_time=' + end;
     }
 
-    let stats = cached_get_url(url, JSON.parse).measure;
+    let stats = cached_get_url(url, JSON.parse).measure,
+        timedStats = cached_get_url(timedURL, JSON.parse).measure;
     if(stats) {
 
-        // let statbar = root.div({id: 'sb-'+ uid, classes: ['sbar']});
-
         let keys = Object.keys(stats);
-
-        // const cell_w = 100;
 
         // Header
         keys
             .forEach((key,idx) => {
-                new PAL.Element('td', {
+                new PAL.Element('th', {
                     parent: headers,
                     id: key + '-h',
                     text: key.replace(/_/g, ' ')
@@ -377,33 +356,12 @@ function render_stats(root_, doc, start, end) {
                     id: key + '-d',
                     text: '' + Math.round(stats[key] * 100) / 100
                 })
-                // statbar.div({
-                //     id: 'sb-h-' + uid + '-' + key,
-                //     classes: ['sb', 'cell', 'header'],
-                //     styles: {
-                //         left: cell_w*idx,
-                //         width: cell_w
-                //     },
-                //     attrs: {
-                //         title: key.replace(/_/g, ' ')
-                //     },
-                //     text: key.replace(/_/g, ' ')
-                // });
+                new PAL.Element('td', {
+                    parent: datarow2,
+                    id: key + '-d',
+                    text: '' + (timedStats ? Math.round(timedStats[key] * 100) / 100 : 'n/a')
+                })
             })
-
-        // keys
-        //     .forEach((key,idx) => {
-        //         statbar.div({
-        //             id: 'sb-' + uid + '-' + key,
-        //             classes: ['sb', 'cell'],
-        //             styles: {
-        //                 left: cell_w*idx,
-        //                 top: 20,
-        //                 width: cell_w
-        //             },
-        //             text: '' + Math.round(stats[key] * 100) / 100
-        //         });
-        //     });
 
         // tableDiv.button({id: uid + '-scopy',
         //              classes: ['copybutton'],
@@ -431,34 +389,35 @@ function render_stats(root_, doc, start, end) {
         //                 }
         //                });
     }
+    else {
+        tableDiv.div({ text: "Loading...", classes: ["table-loading"] })
+    }
 
 }
 
-function render_paste_transcript(root, docid) {
+function render_paste_transcript(root, doc) {
 
-    root.div({
-        id: "ptrans-" + docid,
-        classes: ['paste'],
-        text: "paste in a transcript to continue"
-    });
+    let docid = doc.id;
 
     root.textarea({
         id: 'tscript-' + docid,
         classes: ['ptext'],
+        attrs: {
+            placeholder: "Enter Gentle Transcript here...",
+            rows: 5
+        },
         events: {
             onclick: (ev) => {
                 ev.stopPropagation();
             }
         }
     });
-    new PAL.Element("br", {
-        id: 'br-' + docid,
-        parent: root
-    });
 
+    let bottomWrapper = root.div({ classes: ["bottom-wrapper"] });
     new PAL.Element("button", {
-        parent: root,
+        parent: bottomWrapper,
         text: "set transcript",
+        classes: ["setts-btn"],
         events: {
             onclick: function(ev) {
 
@@ -467,7 +426,9 @@ function render_paste_transcript(root, docid) {
 
                 // prevent dual-submission...
                 this.disabled = true;
-                this.textContent = "aligning transcript...";
+                this.textContent = "setting...";
+
+                document.getElementById('tscript-' + docid).disabled = true;
 
                 var txt = document.getElementById('tscript-' + docid).value;
                 if(txt) {
@@ -502,6 +463,30 @@ function render_paste_transcript(root, docid) {
             }
         }
     });
+    
+    if (doc.upload_status && !doc.path) {
+        // Show progress
+        new PAL.Element("progress", {
+            id: doc.id + '-progress',
+            parent: bottomWrapper,
+            attrs: {
+                max: "100",
+                value: "" + Math.floor((100 * doc.upload_status))
+            },
+        })
+    }
+
+    if (doc.align_px && !doc.align) {
+        // Show progress
+        new PAL.Element("progress", {
+            id: doc.id + '-align-progress',
+            parent: bottomWrapper,
+            attrs: {
+                max: "100",
+                value: "" + Math.floor((100 * doc.align_px))
+            },
+        })
+    }
 }
 
 function parse_pitch(pitch) {
@@ -833,8 +818,6 @@ function render_overview(root, doc) {
 	      return
     }
 
-    let overview = root.div({id: doc.id + '-oview', unordered: true});
-
     let width = document.body.clientWidth;
     let height = 50;
 
@@ -1010,6 +993,7 @@ function render_is_ready(root, docid) {
     if(!T.docs[docid] || !get_data(docid)) {
         new PAL.Element("div", {
             parent: root,
+            classes: ["loading-placement"],
             text: "Loading... If this is taking too long, try reuploading this data file"
         });
 
@@ -1040,7 +1024,7 @@ function render_hamburger(root, doc) {
         }
     })
 
-    dlBtn.img({ attrs: { src: "upload-icon.svg" } });
+    dlBtn.img({ attrs: { src: "ellipsis.svg" } });
 
     let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] });
 
@@ -1057,7 +1041,7 @@ function render_hamburger(root, doc) {
         dlDropdown.li({
             id: 'ham-' + name,
         }).a({
-            text: name,
+            text: "download " + name,
             attrs: {
                 href: '/media/' + doc[name],
                 _target: '_blank',
