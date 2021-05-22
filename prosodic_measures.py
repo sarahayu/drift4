@@ -68,7 +68,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             long_pause_count += 1
 
     # Pause counts
-    results["Gentle_Pause_Count_>_100ms"] = pause_count
+    results["Gentle_Pause_Count_>100ms"] = pause_count
 
     # while start_pause < max_pause:
     #     tmp_pause_count = 0
@@ -79,9 +79,12 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     #     temp_output.append(tmp_pause_count)
     #     start_pause += 0.5
 
-    results["Gentle_Long_Pause_Count_>_3000ms"] = long_pause_count
+    results["Gentle_Long_Pause_Count_>3000ms"] = long_pause_count
 
-    APL = decimal.Decimal(sum / pause_count)
+    if pause_count == 0:
+        APL = 0
+    else:
+        APL = decimal.Decimal(sum / pause_count)
     results["Gentle_Mean_Pause_Duration"] = float(round(APL, 2))
 
     # Average pause rate per second.

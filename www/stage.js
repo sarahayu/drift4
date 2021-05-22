@@ -263,21 +263,24 @@ function render_doclist(root) {
                     classes: ['play-btn'],
                     events: {
                         onclick: ev => {
-                            T.cur_doc = doc.id;
+                            set_active_doc(doc);
                             toggle_playpause();
-                            ev.currentTarget.lastElementChild.textContent = (T.audio && T.audio.paused) ? 'play' : 'pause'
                         }
                     },
                 })
 
                 playBtn.img({ attrs: { src: "play-icon.svg"} });
-                playBtn.span({ text: 'play' });
+                playBtn.span({ text: (T.cur_doc != doc.id || !T.audio || T.audio.paused) ? 'play' : 'pause' });
 
                 let ov_div = section1.div({
                     id: doc.id + '-ovdiv',
                     classes: ['overview']
                 });
-                render_overview(ov_div, doc);
+
+                ov_div.p({ text: "Drag to select a region" })
+                render_overview(ov_div.div({ classes: ['overview-wrapper'] }), doc);
+
+                let timeframeInfo = section1.div({ classes: ['timeframe-wrapper'] });
 
                 let det_div = section2.div({
                     id: doc.id + '-detdiv',
@@ -290,7 +293,7 @@ function render_doclist(root) {
 
                 render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
-                render_stats(section3, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                render_stats(section3, timeframeInfo, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
                 // if(!T.DRAGGING) {
                 //     content.i({id: doc.id + '-expl', text: 'selected region:'})
@@ -302,10 +305,10 @@ function render_doclist(root) {
 
 	      })
 }
-function render_stats(root_, doc, start, end) {
+function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
 
     let uid = doc.id + '-' + start + '-' + end;
-    let tableDiv = root_.div({ 
+    let tableDiv = mainTableRoot.div({ 
         classes: ['table-wrapper'],
         // events: {
         //     onmouseover: () => document.getElementById(uid + '-scopy').style.display = 'inline-block',
@@ -313,21 +316,32 @@ function render_stats(root_, doc, start, end) {
         // }
     })
     let table = tableDiv.table({
-        classes: ['stat-table'],
+        classes: ['stat-table drift-table'],
     })
+
     let headers = table.tr({
         classes: ['stat-header']
-    }), datarow = table.tr({
-        classes: ['stat-row']
-    }), datarow2 = table.tr({
-        classes: ['stat-row2']
-    })
+    }), 
+    datarow = table.tr({ id: uid + '-row1' }), 
+    datarow2 = table.tr({ id: uid + '-row2' });
 
     headers.th({})
     datarow.th({ text: "full clip" })
     datarow2.th({ text: "selection" })
 
-    // let root = root_.div({id: 'mwrap-' + start + '-' + doc.id, classes: ['stats']});
+    let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
+    let tfh = timeframe.tr({ id: uid + '-tfh' }),
+        tfb = timeframe.tr({ id: uid + '-tfb' });
+    
+    Object.entries({
+        'full clip length': Math.round(doc.cliplen * 10) / 10 + 's', 
+        'region start': Math.round(start * 10) / 10 || '0' + 's', 
+        'region end': Math.round(end * 10) / 10 + 's', 
+        'region length': Math.round((end - start) * 10) / 10 + 's'
+    }).forEach(([label, data], i) => {
+        tfh.th({ text: label });
+        tfb.td({ id: uid + '-tfb' + i, text: data });
+    });
 
     let url = '/_measure?id=' + doc.id, timedURL = url;
     if(start) {
@@ -337,11 +351,12 @@ function render_stats(root_, doc, start, end) {
         timedURL += '&end_time=' + end;
     }
 
+    console.log('trying to get measure data')
     let stats = cached_get_url(url, JSON.parse).measure,
         timedStats = cached_get_url(timedURL, JSON.parse).measure;
     if(stats) {
 
-        let keys = Object.keys(stats);
+        let keys = Object.keys(stats).slice(2);
 
         // Header
         keys
@@ -399,25 +414,28 @@ function render_paste_transcript(root, doc) {
 
     let docid = doc.id;
 
-    root.textarea({
-        id: 'tscript-' + docid,
-        classes: ['ptext'],
-        attrs: {
-            placeholder: "Enter Gentle Transcript here...",
-            rows: 5
-        },
-        events: {
-            onclick: (ev) => {
-                ev.stopPropagation();
+    const readyForTranscript = !(doc.upload_status && !doc.path);
+
+    if (readyForTranscript)
+        root.textarea({
+            id: 'tscript-' + docid,
+            classes: ['ptext'],
+            attrs: {
+                placeholder: "Enter Gentle Transcript here...",
+                rows: 5
+            },
+            events: {
+                onclick: (ev) => {
+                    ev.stopPropagation();
+                }
             }
-        }
-    });
+        });
 
     let bottomWrapper = root.div({ classes: ["bottom-wrapper"] });
-    new PAL.Element("button", {
-        parent: bottomWrapper,
-        text: "set transcript",
+    bottomWrapper.button({
+        text: readyForTranscript ? "set transcript" : "uploading...",
         classes: ["setts-btn"],
+        attrs: { disabled: readyForTranscript ? null : true },
         events: {
             onclick: function(ev) {
 
@@ -653,7 +671,8 @@ function render_detail(root, doc, start_time, end_time) {
 	      id: doc.id + '-svg-',
 	      attrs: {
 	          width: seg_w,
-	          height: T.PITCH_H
+	          height: T.PITCH_H,
+              style: "background-color: rgb(249,249,249)"
 	      },
 	      events: {
 	          onclick: (ev) => {
@@ -680,11 +699,11 @@ function render_detail(root, doc, start_time, end_time) {
 		                  y1: y_px,
 		                  x2: seg_w,
 		                  y2: y_px,
-		                  stroke: '#C4D5D9'
+		                  stroke: '#CECECE'
 		              }})
         if(!(yval in {150: true, 250: true, 300: true, 350: true})) {
 	          svg.text({id: doc.id + '-seg-' + '-axistxt-' + yval,
-		                  text: '' + yval + 'Hz',
+		                  text: '' + yval,
 		                  attrs: {
 		                      x: 0,
 		                      y: y_px,
@@ -704,10 +723,10 @@ function render_detail(root, doc, start_time, end_time) {
 		                  y1: 0,
 		                  x2: x_px,
 		                  y2: T.PITCH_H,
-		                  stroke: '#C4D5D9'
+		                  stroke: '#CECECE'
 		              }})
 	      svg.text({id: doc.id + '-seg-' + '-xaxistxt-' + x,
-		              text: '' + x + 's',
+		              text: '' + x,
 		              attrs: {
 		                  x: x_px + 2,
 		                  y: T.PITCH_H - 2,
@@ -735,7 +754,8 @@ function render_detail(root, doc, start_time, end_time) {
 	          svg, doc.id + '-sspath-',
 	          seq_stats.smoothed,
 	          {
-		            stroke: '#8D78B9',
+		            stroke: '#D58139',
+                    opacity: "60%",
 		            'stroke-width': 3,
 	          }
 	      );
@@ -756,7 +776,7 @@ function render_detail(root, doc, start_time, end_time) {
 			                    y1: cy - (h/2),
 			                    x2: fr2x(r_idx),
 			                    y2: cy + (h/2),
-			                    stroke: 'black',
+			                    stroke: 'rgba(0,0,0,0.2)',
 			                    'stroke-width': 2,
 		                  }})
 	      });
@@ -823,12 +843,16 @@ function render_overview(root, doc) {
 
     let align = get_cur_align(doc.id);
     let duration = align.segments[align.segments.length-1].end;
+    
+    // TODO move this somewhere else
+    T.docs[doc.id].cliplen = duration;
 
     let svg = root.svg({
 	      id: doc.id + '-svg-overview',
 	      attrs: {
 	          width: width,
-	          height: height
+	          height: height,
+              style: "background-color: #F7F7F7"
 	      },
 	      events: {
 	          onmousedown: (ev) => {
@@ -898,7 +922,7 @@ function render_overview(root, doc) {
 				                          y: 0,
 				                          width: width * (wd.end-wd.start) / duration,
 				                          height: height,
-				                          fill: 'rgba(0,0,0,0.1)'
+				                          fill: '#D9D9D9'
 			                        }})
 		            }
 		            else {
@@ -921,7 +945,7 @@ function render_overview(root, doc) {
 				                              y: y,
 				                              width: width * (wd.end-wd.start) / duration,
 				                              height: 2,
-				                              fill: 'rgba(0,0,200,0.3)'
+				                              fill: '#E4B186'
 				                          }})
 		                }
 		            }
@@ -967,14 +991,14 @@ function render_overview(root, doc) {
             last_x = x;
             show_secs = true;
         }
-	      svg.line({id: doc.id + '-ov-' + '-xaxis-' + x,
-		              attrs: {
-		                  x1: x_px,
-		                  y1: height,
-		                  x2: x_px,
-		                  y2: height - (show_secs ? 10 : 5),
-		                  stroke: '#C4D5D9'
-		              }})
+	    //   svg.line({id: doc.id + '-ov-' + '-xaxis-' + x,
+		//               attrs: {
+		//                   x1: x_px,
+		//                   y1: height,
+		//                   x2: x_px,
+		//                   y2: height - (show_secs ? 10 : 5),
+		//                   stroke: '#C4D5D9'
+		//               }})
         if(show_secs) {
 	          svg.text({id: doc.id + '-ov-' + '-xaxistxt-' + x,
 		                  text: '' + x + 's',
@@ -1026,7 +1050,7 @@ function render_hamburger(root, doc) {
 
     dlBtn.img({ attrs: { src: "ellipsis.svg" } });
 
-    let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown'] });
+    let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown rightedge'] });
 
     let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
     pregen_downloads.forEach(name => {
@@ -1039,7 +1063,7 @@ function render_hamburger(root, doc) {
         let out_filename = filename.reverse().join('') + '-' + name + '.' + doc[name].split('.')[1];
 
         dlDropdown.li({
-            id: 'ham-' + name,
+            id: `ham-${name}-${doc.id}`,
         }).a({
             text: "download " + name,
             attrs: {
@@ -1049,6 +1073,22 @@ function render_hamburger(root, doc) {
             }
         });
     })
+    
+    dlDropdown.li({
+        id: `ham-del-${doc.id}`,
+    }).a({
+        text: "delete audioclip",
+        attrs: {
+            href: '#'
+        },
+        events: {
+            onclick: ev => {
+                ev.preventDefault();
+                delete_action(doc);
+            }
+        }
+    });
+    
 }
 
 function render() {
