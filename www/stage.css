@@ -509,6 +509,43 @@ main
 .detail
 {
     width: 100%;
+    display: flex;
+    position: relative;
+}
+
+.detail::before,
+.detail::after
+{
+    font-weight: 600;
+    z-index: 1;
+    width: 5ch;
+    text-align: right;
+}
+
+.detail::before
+{
+    content: 'pitch (hz)';
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+}
+
+.detail::after
+{
+    content: 'seconds';
+    position: absolute;
+    bottom: 20px;
+    left: 50px;
+}
+
+.x-axis
+{
+    flex-shrink: 0;
+    border-right: 2px solid #DCDCDC;
+}
+
+.main-graph-wrapper
+{
     overflow: auto;
     position: relative;
 }
@@ -568,7 +605,8 @@ main
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 22ch;
+    width: 10ch;
+    flex-shrink: 0;
     border-radius: 0.6em;
     font-weight: 600;
     font-style: italic;
@@ -727,6 +765,7 @@ main
 .driftitem ::-webkit-scrollbar-track 
 {
     background: #E3E3E3;
+    border-radius: 100vh;
 }
 
 .driftitem ::-webkit-scrollbar-thumb 

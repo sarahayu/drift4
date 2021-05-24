@@ -670,12 +670,21 @@ function render_detail(root, doc, start_time, end_time) {
 
     const seg_w = t2x(duration);
 
-    let svg = root.svg({
+    let xAxisSvg = root.svg({
+        id: doc.id + '-axis-svg-',
+        attrs: {
+            width: 50,
+            height: T.PITCH_H + 1,  /* 1 additional pixel so right border perfectly ends on the bottom of the y-axis */
+            class: 'x-axis',
+        },
+    })
+
+    let mainGraphWrapper = root.div({ classes: ['main-graph-wrapper'] });
+    let svg = mainGraphWrapper.svg({
 	      id: doc.id + '-svg-',
 	      attrs: {
 	          width: seg_w,
-	          height: T.PITCH_H,
-              style: "background-color: rgb(249,249,249)"
+	          height: T.PITCH_H + 35
 	      },
 	      events: {
 	          onclick: (ev) => {
@@ -699,8 +708,28 @@ function render_detail(root, doc, start_time, end_time) {
 	      }
     });
 
+    svg.rect({id: doc.id + '-d-bg',
+        attrs: {
+            x: 0,
+            y: 0,
+            width: '100%',
+            height: T.PITCH_H,
+            fill: 'rgb(249,249,249)'
+        }
+   })
+   
+   svg.line({id: doc.id + '-seg-' + '-axis-0',
+   attrs: {
+       x1: 0,
+       y1: T.PITCH_H,
+       x2: seg_w,
+       y2: T.PITCH_H,
+       'stroke-width': 2,
+       stroke: '#DCDCDC'
+   }})
+
     // Draw axes
-    var y_axes = [50, 100, 150, 200, 250, 300, 350, 400, 450];
+    var y_axes = [50, 100, 200, 250, 300, 350, 400];
     y_axes.forEach((yval) => {
         var y_px = pitch2y(yval);
 
@@ -710,14 +739,14 @@ function render_detail(root, doc, start_time, end_time) {
 		                  y1: y_px,
 		                  x2: seg_w,
 		                  y2: y_px,
-		                  stroke: '#CECECE'
+		                  stroke: '#DCDCDC'
 		              }})
         if(!(yval in {150: true, 250: true, 300: true, 350: true})) {
-	          svg.text({id: doc.id + '-seg-' + '-axistxt-' + yval,
+	          xAxisSvg.text({id: doc.id + '-seg-' + '-axistxt-' + yval,
 		                  text: '' + yval,
 		                  attrs: {
-		                      x: 0,
-		                      y: y_px,
+		                      x: '30%',
+		                      y: y_px + 5,
 		                      class: 'axis',
 		                      fill: '#3B5161'
 		                  }})
@@ -726,6 +755,7 @@ function render_detail(root, doc, start_time, end_time) {
 
     // ...and x-axis
     for(let x=Math.ceil(start_time); x<end_time; x++) {
+        if (x == 0) continue;
         var x_px = t2x(x - start_time);
 
 	      svg.line({id: doc.id + '-seg-' + '-xaxis-' + x,
@@ -734,13 +764,13 @@ function render_detail(root, doc, start_time, end_time) {
 		                  y1: 0,
 		                  x2: x_px,
 		                  y2: T.PITCH_H,
-		                  stroke: '#CECECE'
+		                  stroke: '#DCDCDC'
 		              }})
 	      svg.text({id: doc.id + '-seg-' + '-xaxistxt-' + x,
 		              text: '' + x,
 		              attrs: {
-		                  x: x_px + 2,
-		                  y: T.PITCH_H - 2,
+		                  x: x_px - 2,
+		                  y: T.PITCH_H + 16,
 		                  class: 'axis',
 		                  fill: '#3B5161'
 		              }})
@@ -854,7 +884,7 @@ function render_detail(root, doc, start_time, end_time) {
                         fill: '#80372B'
                     }
                 });
-        let tag = root.div({
+        let tag = mainGraphWrapper.div({
             classes: ['infotag'],
             attrs: {
                 style: `left: ${hovX + 10}px; top: ${T.PITCH_H / 2}px;`
