@@ -71,7 +71,7 @@ function get_data(docid) {
 
 T.XSCALE = 300;
 T.PITCH_H= 250;
-T.LPAD = 50;
+T.LPAD = 0;
 T.MAX_A= 15;
 
 if(!T.docs) {
@@ -114,7 +114,10 @@ function get_docs() {
 function set_active_doc(doc) {
     if(doc.id !== T.cur_doc) {
 	      T.cur_doc = doc.id;
+          if (T.audio) T.audio.pause();
 	      T.audio = new Audio('/media/' + doc.path);
+          if (T.razors[doc.id])
+            T.audio.currentTime = T.razors[doc.id];
     }
 }
 
@@ -679,12 +682,20 @@ function render_detail(root, doc, start_time, end_time) {
 		            ev.preventDefault();
 
 		            // Seek!
-		            let t = start_time + x2t(ev.clientX + svg.$el.parentElement.scrollLeft);
+		            let t = start_time + x2t(ev.offsetX);
 		            T.razors[doc.id] = t;
 		            set_active_doc(doc);
 		            T.audio.currentTime = t;
 		            render();
-	          }
+	          },
+              onmousemove: ev => {
+                    T.razors[doc.id + '-hover'] = start_time + x2t(ev.offsetX);
+		            render();
+              },
+              onmouseleave: ev => {
+                    delete T.razors[doc.id + '-hover'];
+                    render();
+              }
 	      }
     });
 
@@ -826,9 +837,37 @@ function render_detail(root, doc, start_time, end_time) {
 		                  y: 0,
 		                  width: 2,
 		                  height: T.PITCH_H,
-		                  fill: 'red'
+		                  fill: T.razors[doc.id + '-hover'] ? 'rgba(128, 55, 43, 0.4)' : '#80372B'
 		              }
 		             });
+    }
+
+    if(T.razors[doc.id + '-hover'])
+    {
+        const hovX = t2x(T.razors[doc.id + '-hover'] - start_time);
+        svg.rect({id: doc.id + '-d-razor-hover',
+                    attrs: {
+                        x: hovX,
+                        y: 0,
+                        width: 2,
+                        height: T.PITCH_H,
+                        fill: '#80372B'
+                    }
+                });
+        let tag = root.div({
+            classes: ['infotag'],
+            attrs: {
+                style: `left: ${hovX + 10}px; top: ${T.PITCH_H / 2}px;`
+            }
+        }).div({});
+        Object.entries({
+            time: Math.round(T.razors[doc.id + '-hover'] * 100) / 100,
+            pitch: get_cur_pitch(doc.id)[Math.round(T.razors[doc.id + '-hover'] * 100)] || 'N/A'
+        }).forEach(([label, val], i) => {
+            let half = tag.div({ id: doc.id + '-tag-' + i });
+            half.span({ text: label });
+            half.span({ text: val });
+        })
     }
 
 }
@@ -844,7 +883,7 @@ function render_overview(root, doc) {
     let align = get_cur_align(doc.id);
     let duration = align.segments[align.segments.length-1].end;
     
-    // TODO move this somewhere else
+    // TODO move this somewhere else?
     T.docs[doc.id].cliplen = duration;
 
     let svg = root.svg({
@@ -859,13 +898,13 @@ function render_overview(root, doc) {
 		            ev.preventDefault();
 
 		            // Compute time for razor (XXX: make selection?)
-		            let t1 = (ev.clientX / width) * duration;
+		            let t1 = (ev.offsetX / width) * duration;
 		            let t2 = t1;
 
                 T.DRAGGING = true;
 
 		            window.onmousemove = (ev) => {
-		                t2 = (ev.clientX / width) * duration;
+		                t2 = (ev.offsetX / width) * duration;
 
 		                if(Math.abs(t2 - t1) > 0.2) {
 
@@ -958,12 +997,10 @@ function render_overview(root, doc) {
 	      svg.rect({id: doc.id + '-o-selection',
 		              attrs: {
 		                  x: width * (sel.start_time / duration),
-		                  y: 0,
+		                  y: height - 3,
 		                  width: width * ((sel.end_time - sel.start_time) / duration),
-		                  height: height,
-		                  stroke: 'black',
-		                  'stroke-width': 2,
-		                  fill: 'none'
+		                  height: 3,
+		                  fill: 'rgba(128, 55, 43, 1)'
 		              }
 		             });
     }
@@ -975,7 +1012,7 @@ function render_overview(root, doc) {
 		                  y: 0,
 		                  width: 2,
 		                  height: height,
-		                  fill: 'red'
+		                  fill: 'rgba(128, 55, 43, 0.4)'
 		              }
 		             });
     }

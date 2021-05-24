@@ -4,6 +4,7 @@
     color: #565656;
     font-weight: 500;
     font-size: 0.9em;
+    --primary-50: #f3d2b5;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
     --primary-350: #E4924A;
@@ -131,7 +132,8 @@ nav
 }
 
 /* is there a better way to do this https://css-tricks.com/change-color-of-svg-on-hover/ */
-.has-dropdown:hover > :first-child::after
+.has-dropdown:hover > :first-child::after,
+.has-dropdown:focus-visible > :first-child::after
 {
     filter: brightness(0) saturate(100%) invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
 }
@@ -330,24 +332,6 @@ main
     margin-top: 2.5em;
 }
 
-.driftitem ::-webkit-scrollbar 
-{
-    height: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.driftitem ::-webkit-scrollbar-track 
-{
-    background: #E3E3E3;
-    border-radius: 100vh;
-}
-
-.driftitem ::-webkit-scrollbar-thumb 
-{
-    background: #F4F4F4;
-    border-radius: 100vh;
-}
-
 .docbar
 {
     font-weight: 300;
@@ -427,6 +411,7 @@ main
 .dl-btn:hover .dl-dropdown
 {
     display: block;
+    z-index: 1;
 }
 
 .dl-dropdown a
@@ -525,6 +510,52 @@ main
 {
     width: 100%;
     overflow: auto;
+    position: relative;
+}
+
+.infotag
+{
+    position: absolute;
+    color: white;
+    font-size: 1.2em;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.infotag > div
+{    
+    background-color: var(--accent-700);
+    display: flex;
+    border-radius: 0.5em;
+    overflow: hidden;
+    box-shadow: 0px 4.99939489364624px 4.99939489364624px 0px rgba(0, 0, 0, 0.1);
+}
+
+.infotag::after
+{
+    content: '';
+    position: absolute;
+    border: 10px solid transparent;
+    border-right-color: var(--accent-700);
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%)
+}
+
+.infotag > div div:last-child
+{
+    background-color: var(--accent-400);
+}
+
+.infotag span
+{
+    display: block;
+    margin: 0.5em 1em;
+}
+
+.infotag span:last-child
+{
+    font-weight: 300;
 }
 
 .play-btn
@@ -537,7 +568,7 @@ main
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0.5em 1.25em;
+    width: 22ch;
     border-radius: 0.6em;
     font-weight: 600;
     font-style: italic;
@@ -685,12 +716,66 @@ main
     background-color: #C2C0C0;
 }
 
-.copybutton
+/* SCROLLBARS SCROLLBARS SCROLLBARS AND THEY DONT EVEN WORK ANYWHERE ELSE BUT CHROME */
+
+
+.driftitem ::-webkit-scrollbar
+{
+    height: 0.5rem;
+}
+
+.driftitem ::-webkit-scrollbar-track 
+{
+    background: #E3E3E3;
+}
+
+.driftitem ::-webkit-scrollbar-thumb 
+{
+    background: #F4F4F4;
+    border-radius: 100vh;
+}
+
+.driftitem ::-webkit-scrollbar-button
+{
+    height: 0.5rem;
+    width: 0.5rem;
+}
+
+.driftitem ::-webkit-scrollbar-button:single-button
+{
+    border-radius: 0 100vh 100vh 0;
+}
+
+.driftitem ::-webkit-scrollbar-button:end:increment,
+.driftitem ::-webkit-scrollbar-button:end:decrement
+{
+    display: block;
+}
+
+.driftitem ::-webkit-scrollbar-button:end:increment
+{
+    background:
+        linear-gradient(210deg, #E3E3E3 40%, rgba(0, 0, 0, 0) 41%),
+        linear-gradient(330deg, #E3E3E3 40%, rgba(0, 0, 0, 0) 41%),
+        linear-gradient(90deg, #E3E3E3 30%, rgba(0, 0, 0, 0) 31%);
+    background-color: white;
+}
+
+.driftitem ::-webkit-scrollbar-button:end:decrement
+{
+    background:
+    linear-gradient(30deg, #E3E3E3 40%, rgba(0, 0, 0, 0) 41%),
+    linear-gradient(150deg, #E3E3E3 40%, rgba(0, 0, 0, 0) 41%),
+    linear-gradient(270deg, #E3E3E3 30%, rgba(0, 0, 0, 0) 31%);
+    background-color: white;
+}
+
+.driftitem ::-webkit-scrollbar-button:start
 {
     display: none;
-    padding: 1em 2em;
-    font-size: 0.8rem;
-    background-color: var(--primary-400);
-    border-radius: 0.5em;
-    color: white;
+}
+
+.table-wrapper ::-webkit-scrollbar-thumb 
+{
+    background: #D6D6D6;
 }
