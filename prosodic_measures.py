@@ -47,7 +47,10 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # Speaking rate calculated as words per minute, or WPM.
     # Divided by the length of the recording and normalized if the recording was longer
     # or shorter than one minute to reflect the speaking rate for 60 seconds.
-    WPM = math.floor(gentle_wordcount / (gentle_length / 60))
+    if gentle_length == 0:
+        WPM = 0
+    else:
+        WPM = math.floor(gentle_wordcount / (gentle_length / 60))
     results["WPM"] = WPM
 
     # Pause counts and average pause length.
@@ -94,36 +97,24 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         if tmp >= 0.1 and tmp <= 3:
             pause_count += 1
 
-    APR = decimal.Decimal(pause_count / gentle_length)
+    if gentle_length != 0:
+        APR = decimal.Decimal(pause_count / gentle_length)
+    else:
+        APR = 0
     results["Gentle_Pause_Rate"] = float(round(APR, 3))
 
     # Rhythmic Complexity of Pauses
     s = []
-    m = decimal.Decimal(str(gentle_start[0]))
 
-    for x in range(0, len(gentle_end)):
-        while x != len(gentle_end) - 1:
-            start = decimal.Decimal(str(gentle_start[x]))
-            next = decimal.Decimal(str(gentle_start[x + 1]))
-            end = decimal.Decimal(str(gentle_end[x]))
-            pause_length = decimal.Decimal(gentle_start[x + 1] - gentle_end[x])
-            # Sampled every 10 ms
-            if (m >= start and m <= end): # voiced
-                s.append(1)
-                m += decimal.Decimal('.01')
-            else:
-                while (m > end and m < next):
-                    if (pause_length >= 0.1 and pause_length <= 3):
-                        s.append(0)
-                    else:
-                        s.append(1)
-                    m += decimal.Decimal('.01')
-                break
-
-        if (x == len(gentle_end) - 1):
-            start = decimal.Decimal(str(gentle_start[x]))
-            end = decimal.Decimal(str(gentle_end[x]))
-            while True:
+    if len(gentle_end) > 1:
+        m = decimal.Decimal(str(gentle_start[0]))
+        for x in range(0, len(gentle_end)):
+            while x != len(gentle_end) - 1:
+                start = decimal.Decimal(str(gentle_start[x]))
+                next = decimal.Decimal(str(gentle_start[x + 1]))
+                end = decimal.Decimal(str(gentle_end[x]))
+                pause_length = decimal.Decimal(gentle_start[x + 1] - gentle_end[x])
+                # Sampled every 10 ms
                 if (m >= start and m <= end): # voiced
                     s.append(1)
                     m += decimal.Decimal('.01')
@@ -131,11 +122,30 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
                     while (m > end and m < next):
                         if (pause_length >= 0.1 and pause_length <= 3):
                             s.append(0)
+                        else:
+                            s.append(1)
                         m += decimal.Decimal('.01')
                     break
 
+            if (x == len(gentle_end) - 1):
+                start = decimal.Decimal(str(gentle_start[x]))
+                end = decimal.Decimal(str(gentle_end[x]))
+                while True:
+                    if (m >= start and m <= end): # voiced
+                        s.append(1)
+                        m += decimal.Decimal('.01')
+                    else:
+                        while (m > end and m < next):
+                            if (pause_length >= 0.1 and pause_length <= 3):
+                                s.append(0)
+                            m += decimal.Decimal('.01')
+                        break
+
     # Normalized
-    CP = lempel_ziv_complexity("".join([str(i) for i in s])) / ((len(s) - 1) / math.log2(len(s) - 1))
+    if len(s) != 0:
+        CP = lempel_ziv_complexity("".join([str(i) for i in s])) / ((len(s) - 1) / math.log2(len(s) - 1))
+    else:
+        CP = 0
     results["Gentle_Complexity_All_Pauses"] = CP * 100
 
     # Output message
@@ -152,11 +162,13 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     index = -1
     zero_count = 0
     int_count = 0
-    drift = csv.reader(driftcsv, delimiter=' ')
+    temp = None
+    # set skipinitialspace to True so csv can read transcript that have commas
+    drift = csv.reader(driftcsv, skipinitialspace=True)
     i = 1
-    for row in drift:
+    for measures in drift:
         # Save measurements as list elements
-        measures = row[0].split(',')
+        # measures = row[0].split(',')
         if init:
             init = False
             continue
@@ -184,7 +196,10 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         # ixtmp
         elif float(measures[1]) == 0 and run is True:
             run = False
-            end = temp
+            if temp:
+                end = temp
+            else:
+                end = start
             ixtmp.append([start,end])
 
     # Pitch pre-calculations
@@ -200,7 +215,8 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     f0mean = 0
     for f in f0log:
         f0mean += f
-    f0mean = math.pow(2, (f0mean / len(f0log)))
+    if len(f0log) != 0:
+        f0mean = math.pow(2, (f0mean / len(f0log)))
     results["Drift_f0_Mean"] = f0mean
 
     # Calculate diffoctf0
@@ -216,8 +232,9 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # Calculate f0prob (probability distribution)
     # f0prob = f0hist./sum(f0hist);
     f0prob = []
-    for f in f0hist:
-        f0prob.append(f / f0hist.sum())
+    if f0hist.sum() != 0:
+        for f in f0hist:
+            f0prob.append(f / f0hist.sum())
 
     # Calculate f0log2prob
     # f0log2prob = log2(f0prob);
@@ -230,7 +247,10 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
 
     # Pitch Range, in octaves (range of f0)
     # max(diffoctf0(ivuv))-min(diffoctf0(ivuv));
-    PR = max(diffoctf0) - min(diffoctf0)
+    if len(diffoctf0) != 0:
+        PR = max(diffoctf0) - min(diffoctf0)
+    else:
+        PR = 0
     # print('7. Pitch range:', PR, 'octaves')
     results["Drift_f0_Range"] = PR
 
@@ -242,8 +262,11 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # vdurthresh = round(dminvoice/ts);
     # ts = S.refinedF0Structure.temporalPositions(2)-S.refinedF0Structure.temporalPositions(1);
     dminvoice = .100
-    ts = drift_time[1] - drift_time[0]
-    vdurthresh = decimal.Decimal(dminvoice / ts)
+    if len(drift_time) != 0:
+        ts = drift_time[1] - drift_time[0]
+        vdurthresh = decimal.Decimal(dminvoice / ts)
+    else:
+        vdurthresh = 0
     vdurthresh = round(vdurthresh, 0)
 
     # ixallvoicebounds = ixtmp{2};
@@ -279,18 +302,22 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     sum =  0
     for v in f0velocity:
         sum += abs(v)
-    f0velocity_mean = sum / len(f0velocity)
+    if len(f0velocity) != 0:
+        PS = sum / len(f0velocity)
+    else:
+        PS = 0
 
-    PS = f0velocity_mean
     results["Drift_f0_Mean_Abs_Velocity"] = PS
 
     # S.analysis.f0contour = mean(abs(f0accel)) * sign(mean(f0accel)); %signed directionless acceleration
     sum =  0
     for v in f0accel_d2:
         sum += abs(v)
-    f0accel_mean = sum / len(f0accel_d2)
+    if len(f0accel_d2) != 0:
+        PA = sum / len(f0accel_d2)
+    else:
+        PA = 0
 
-    PA = f0accel_mean
     results["Drift_f0_Mean_Abs_Accel"] = PA
 
     # Pitch Entropy, or entropy for f0, indicating the predictability of pitch patterns
@@ -301,7 +328,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     PE = -f0entropy
     results["Drift_f0_Entropy"] = PE
 
-    results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
+    # results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
     
     return results
 

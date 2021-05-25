@@ -464,7 +464,7 @@ main
 
 .driftitem-top > :last-child
 {
-    flex: 1 0 20em;
+    flex: 0 0 20em;
 }
 
 .driftitem-content section + section
@@ -477,6 +477,9 @@ main
     flex-grow: 1;
     overflow: hidden;
     padding: 0.25em 1em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .overview p
@@ -496,9 +499,9 @@ main
 .loading-placement
 {
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
 }
 
 .detail-wrapper
@@ -513,16 +516,15 @@ main
     position: relative;
 }
 
-.detail::before,
-.detail::after
+.detail.loaded::before,
+.detail.loaded::after
 {
     font-weight: 600;
-    z-index: 1;
     width: 5ch;
     text-align: right;
 }
 
-.detail::before
+.detail.loaded::before
 {
     content: 'pitch (hz)';
     position: absolute;
@@ -530,7 +532,7 @@ main
     left: 0;
 }
 
-.detail::after
+.detail.loaded::after
 {
     content: 'seconds';
     position: absolute;
@@ -548,6 +550,7 @@ main
 {
     overflow: auto;
     position: relative;
+    flex-grow: 1;
 }
 
 .infotag
@@ -657,8 +660,14 @@ main
     background-color: var(--neutral-300);
 }
 
+.timeframe-wrapper
+{
+    background-color: #F4F4F4;
+}
+
 .timeframe-table
 {
+    background-color: white;
     font-size: 1rem;
 }
 

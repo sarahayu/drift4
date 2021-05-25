@@ -281,7 +281,7 @@ function render_doclist(root) {
                 });
 
                 ov_div.p({ text: "Drag to select a region" })
-                render_overview(ov_div.div({ classes: ['overview-wrapper'] }), doc);
+                render_overview(ov_div.div({ id: doc.id + '-ov-wrapper', classes: ['overview-wrapper'] }), doc);
 
                 let timeframeInfo = section1.div({ classes: ['timeframe-wrapper'] });
 
@@ -354,7 +354,6 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         timedURL += '&end_time=' + end;
     }
 
-    console.log('trying to get measure data')
     let stats = cached_get_url(url, JSON.parse).measure,
         timedStats = cached_get_url(timedURL, JSON.parse).measure;
     if(stats) {
@@ -653,7 +652,8 @@ function render_pitch(root, id, seq, attrs) {
 	      attrs: Object.assign({
 	          d: ps,
 	          'stroke-width': 1,
-	          fill: 'none'
+	          fill: 'none',
+              'stroke-linecap': 'round'
 	      }, attrs||{})
     });
 
@@ -664,6 +664,7 @@ function render_detail(root, doc, start_time, end_time) {
 	      return
     }
 
+    root._attrs.classes.push('loaded');
     let segs = get_cur_align(doc.id).segments;
     end_time = Math.min(end_time, segs[segs.length-1].end);
     let duration = end_time - start_time;
@@ -708,15 +709,15 @@ function render_detail(root, doc, start_time, end_time) {
 	      }
     });
 
-    svg.rect({id: doc.id + '-d-bg',
-        attrs: {
-            x: 0,
-            y: 0,
-            width: '100%',
-            height: T.PITCH_H,
-            fill: 'rgb(249,249,249)'
-        }
-   })
+//     svg.rect({id: doc.id + '-d-bg',
+//         attrs: {
+//             x: 0,
+//             y: 0,
+//             width: '100%',
+//             height: T.PITCH_H,
+//             fill: 'rgb(249,249,249)'
+//         }
+//    })
    
    svg.line({id: doc.id + '-seg-' + '-axis-0',
    attrs: {
@@ -729,29 +730,51 @@ function render_detail(root, doc, start_time, end_time) {
    }})
 
     // Draw axes
-    var y_axes = [50, 100, 200, 250, 300, 350, 400];
-    y_axes.forEach((yval) => {
+    var colors =  { 50: "#DADADA", 100: "#E0E0E0", 200: "#E5E5E5", 400: "#F0F0F0" };
+    let lastYPx = T.PITCH_H;
+    for (let yval = 50; yval <= 400; yval += 50) {
         var y_px = pitch2y(yval);
+        let color = colors[yval];
 
-	      svg.line({id: doc.id + '-seg-' + '-axis-' + yval,
-		              attrs: {
-		                  x1: 0,
-		                  y1: y_px,
-		                  x2: seg_w,
-		                  y2: y_px,
-		                  stroke: '#DCDCDC'
-		              }})
-        if(!(yval in {150: true, 250: true, 300: true, 350: true})) {
-	          xAxisSvg.text({id: doc.id + '-seg-' + '-axistxt-' + yval,
-		                  text: '' + yval,
-		                  attrs: {
-		                      x: '30%',
-		                      y: y_px + 5,
-		                      class: 'axis',
-		                      fill: '#3B5161'
-		                  }})
+        // add color change for desired intervals
+        if(color) {
+
+            svg.rect({
+                id: doc.id + '-d-bg-' + yval,
+                attrs: {
+                    x: 0,
+                    y: y_px,
+                    width: '100%',
+                    height: lastYPx - y_px,
+                    fill: color,
+                    opacity: 0.2
+                }
+            })
+
+            xAxisSvg.text({
+                id: doc.id + '-seg-' + '-axistxt-' + yval,
+                text: '' + yval,
+                attrs: {
+                    x: '30%',
+                    y: y_px + 5,
+                    class: 'axis',
+                    fill: '#3B5161'
+                }
+            })
+
+            lastYPx = y_px;
         }
-    });
+    
+        svg.line({id: doc.id + '-seg-' + '-axis-' + yval,
+        attrs: {
+            x1: 0,
+            y1: y_px,
+            x2: seg_w,
+            y2: y_px,
+            "stroke-width": color ? 1 : 0.5,
+            stroke: '#DCDCDC',
+        }});
+    }
 
     // ...and x-axis
     for(let x=Math.ceil(start_time); x<end_time; x++) {
@@ -780,16 +803,6 @@ function render_detail(root, doc, start_time, end_time) {
 	      get_cur_pitch(doc.id).slice(Math.round(start_time*100),
 				                            Math.round(end_time*100)));
 
-    render_pitch(
-	      svg, doc.id + '-spath-',
-	      get_cur_pitch(doc.id).slice(Math.round(start_time*100),
-				                            Math.round(end_time)),
-	      {
-	          stroke: '#CCBDED',
-	          'stroke-width': 1,
-	      }
-    );
-
     if(seq_stats) {
 	      render_pitch(
 	          svg, doc.id + '-sspath-',
@@ -817,7 +830,7 @@ function render_detail(root, doc, start_time, end_time) {
 			                    y1: cy - (h/2),
 			                    x2: fr2x(r_idx),
 			                    y2: cy + (h/2),
-			                    stroke: 'rgba(0,0,0,0.2)',
+			                    stroke: 'rgba(0,0,0,0.1)',
 			                    'stroke-width': 2,
 		                  }})
 	      });
@@ -907,11 +920,12 @@ function render_overview(root, doc) {
 	      return
     }
 
-    let width = document.body.clientWidth;
-    let height = 50;
-
     let align = get_cur_align(doc.id);
     let duration = align.segments[align.segments.length-1].end;
+
+    let width = duration * 10;
+    // let width = (document.getElementById(root._id) || {}).clientWidth || document.body.clientWidth;
+    let height = 50;
     
     // TODO move this somewhere else?
     T.docs[doc.id].cliplen = duration;
@@ -920,8 +934,7 @@ function render_overview(root, doc) {
 	      id: doc.id + '-svg-overview',
 	      attrs: {
 	          width: width,
-	          height: height,
-              style: "background-color: #F7F7F7"
+	          height: height + 8,
 	      },
 	      events: {
 	          onmousedown: (ev) => {
@@ -979,6 +992,30 @@ function render_overview(root, doc) {
 	      }
     });
 
+    svg.rect({
+        id: doc.id + '-svg-overview-bg',
+        attrs: {
+            x: 0,
+            y: 0,
+            width: '100%',
+            height: height,
+            fill: '#F7F7F7'
+        }
+    })
+
+    svg.line({
+        id: doc.id + '-svg-overview-selection',
+        attrs: {
+            x1: 2,
+            y1: height + 6,
+            x2: width - 2,
+            y2: height + 6,
+            stroke: '#E3E3E3',
+            'stroke-width': 4,
+            'stroke-linecap': 'round'
+        }
+    })
+
     align.segments
 	      .forEach((seg, seg_idx) => {
 	          seg.wdlist.forEach((wd,wd_idx) => {
@@ -1024,15 +1061,19 @@ function render_overview(root, doc) {
     if(T.selections[doc.id]) {
 	      let sel = T.selections[doc.id];
 
-	      svg.rect({id: doc.id + '-o-selection',
-		              attrs: {
-		                  x: width * (sel.start_time / duration),
-		                  y: height - 3,
-		                  width: width * ((sel.end_time - sel.start_time) / duration),
-		                  height: 3,
-		                  fill: 'rgba(128, 55, 43, 1)'
-		              }
-		             });
+
+          svg.line({
+            id: doc.id + '-o-selection',
+            attrs: {
+                x1: Math.max(width * (sel.start_time / duration), 2), /* veeery particular, but take max and min for x2 so we can see the nice rounded svg edges */
+                y1: height + 6,
+                x2: Math.min(width * (sel.end_time / duration), width - 2),
+                y2: height + 6,
+                stroke: 'rgba(128, 55, 43, 1)',
+                'stroke-width': 4,
+                'stroke-linecap': 'round'
+            }
+        })
     }
 
     if(T.cur_doc == doc.id && T.razors[doc.id]) {
@@ -1073,7 +1114,8 @@ function render_overview(root, doc) {
 		                      x: x_px + 2,
 		                      y: height - 2,
 		                      class: 'axis',
-		                      fill: '#3B5161'
+		                      fill: '#3B5161',
+                              opacity: 0.5
 		                  }})
         }
     }
