@@ -259,7 +259,7 @@ function render_doclist(root) {
                     classes: ['detail-wrapper']
                 }), section3 = content.section({
                     id: 'sec3',
-                    classes: ['table-wrapper']
+                    classes: ['table-section']
                 })
 
                 let playBtn = section1.button({
@@ -296,7 +296,7 @@ function render_doclist(root) {
 
                 render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
-                render_stats(section3, timeframeInfo, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
 
                 // if(!T.DRAGGING) {
                 //     content.i({id: doc.id + '-expl', text: 'selected region:'})
@@ -337,8 +337,8 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         tfb = timeframe.tr({ id: uid + '-tfb' });
     
     Object.entries({
-        'full clip length': Math.round(doc.cliplen * 10) / 10 + 's', 
-        'region start': Math.round(start * 10) / 10 || '0' + 's', 
+        'full voiced period': Math.round(doc.cliplen * 10) / 10 + 's', 
+        'region start': (Math.round(start * 10) / 10 || '0') + 's', 
         'region end': Math.round(end * 10) / 10 + 's', 
         'region length': Math.round((end - start) * 10) / 10 + 's'
     }).forEach(([label, data], i) => {
@@ -379,32 +379,40 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                     text: '' + (timedStats ? Math.round(timedStats[key] * 100) / 100 : 'n/a')
                 })
             })
+        
+            
+        mainTableRoot.button({ 
+            text: 'Copy to Clipboard', 
+            classes: ['copy-btn'],
+            events: {
+                onclick: () => {
+                    let cliptxt = '\t';
+                    keys.forEach((key) =>{
+                        cliptxt += key + '\t';
+                    });
+                    cliptxt += '\nfull clip\t';
+                    keys.forEach((key) =>{
+                        cliptxt += stats[key] + '\t';
+                    });
+                    cliptxt += '\nselection\t';
+                    keys.forEach((key) =>{
+                        cliptxt += timedStats[key] + '\t';
+                    });
+                    cliptxt += '\n';    
 
-        // tableDiv.button({id: uid + '-scopy',
-        //              classes: ['copybutton'],
-        //                 text: 'copy data',
-        //                 events: {
-        //                     onclick: (ev) => {
-        //                         let cliptxt = '';
-        //                         keys.forEach((key) =>{
-        //                             cliptxt += key + '\t';
-        //                         });
-        //                         cliptxt += '\n';
-        //                         keys.forEach((key) =>{
-        //                             cliptxt += stats[key] + '\t';
-        //                         });
-        //                         cliptxt += '\n'
-
-        //                         // Create, select, copy, and remove a textarea.
-        //                         let $el = document.createElement('textarea');
-        //                         $el.textContent = cliptxt;
-        //                         document.body.appendChild($el);
-        //                         $el.select();
-        //                         document.execCommand("copy");
-        //                         document.body.removeChild($el);
-        //                     }
-        //                 }
-        //                });
+                    // Create, select, copy, and remove a textarea.
+                    let $el = document.createElement('textarea');
+                    $el.textContent = cliptxt;
+                    document.body.appendChild($el);
+                    $el.select();
+                    document.execCommand("copy");
+                    document.body.removeChild($el);
+                    document.getElementById('copied-alert').classList.add('visible');
+                    setTimeout(() => 
+                    document.getElementById('copied-alert').classList.remove('visible'), 2000);
+                }
+            }
+        });
     }
     else {
         tableDiv.div({ text: "Loading...", classes: ["table-loading"] })

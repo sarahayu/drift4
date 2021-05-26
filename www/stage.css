@@ -3,12 +3,13 @@
     font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;
     color: #565656;
     font-weight: 500;
-    font-size: 0.9em;
+    font-size: 90%;
     --primary-50: #f3d2b5;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
     --primary-350: #E4924A;
     --primary-400: #D58139;
+    --accent-300: #bd6d5e;
     --accent-400: #B95949;
     --accent-700: #80372B;
     --neutral-300: #FBFBFB;
@@ -45,6 +46,11 @@ nav
     display: flex;
     font-size: 1.1em;
     font-weight: 600;
+}
+
+table
+{
+    font-size: 0.9rem;
 }
 
 .nav-links
@@ -142,6 +148,7 @@ nav
 .has-dropdown:focus-visible > ul
 {
     display: block;
+    z-index: 1;
 }
 
 #sidebar
@@ -152,6 +159,11 @@ nav
     z-index: 1;
     grid-column: 1 / 1;
     grid-row: 1 / -1;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidetop
@@ -219,7 +231,11 @@ nav
 
 .file-list-area
 {
-    margin-top: 5em;
+    padding-top: 5em;
+    flex-grow: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .file-list-header
@@ -255,7 +271,9 @@ nav
 
 .file-list
 {
+    min-height: 0;
     padding-bottom: 2rem;
+    overflow: auto;
 }
 
 .list-item
@@ -627,6 +645,36 @@ main
     font-size: 0.8em;
 }
 
+.table-section
+{
+    position: relative;
+}
+
+.table-section:hover .copy-btn
+{
+    display: block;
+}
+
+.copy-btn
+{
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    z-index: 1;
+    padding: 1em 1.5em;
+    border-radius: 100vh;
+    background-color: var(--accent-400);
+    color: white;
+    font-style: italic;
+    box-shadow: 0px 0px 6px 0px #00000040;
+}
+
+.copy-btn:hover
+{
+    background-color: var(--accent-300);
+}
+
 .table-wrapper
 {
     text-align: center;
@@ -640,6 +688,7 @@ main
 {
     font-weight: 300;
     line-height: 1.2em;
+    opacity: 0.9;
 }
 
 .drift-table th
@@ -668,7 +717,6 @@ main
 .timeframe-table
 {
     background-color: white;
-    font-size: 1rem;
 }
 
 .timeframe-table tr:not(:first-child) > td
@@ -763,7 +811,58 @@ main
     background-color: #C2C0C0;
 }
 
+#copied-alert
+{
+    position: fixed;
+    top: 100vh;
+    left: 50vw;
+    font-size: 1.2rem;
+    transform: translate(-50%, 200%);
+    display: block;
+    color: white;
+    background-color: var(--accent-400);
+    border-radius: 100vh;
+    padding: 0.5em 1em;
+    font-weight: 300;
+    font-style: italic;
+    opacity: 0;
+    transition: all ease 0.2s;
+}
+
+#copied-alert.visible
+{
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 1em));
+}
+
+@media (prefers-reduced-motion)
+{
+    #copied-alert
+    {
+        transform: translate(-50%, calc(-100% - 1em));
+        transition-property: opacity;
+    }
+}
+
 /* SCROLLBARS SCROLLBARS SCROLLBARS AND THEY DONT EVEN WORK ANYWHERE ELSE BUT CHROME */
+
+.file-list-area ::-webkit-scrollbar
+{
+    width: 0.5rem;
+}
+
+.file-list-area ::-webkit-scrollbar-track 
+{
+    background: transparent;
+    border-radius: 100vh;
+}
+
+.file-list-area ::-webkit-scrollbar-thumb 
+{
+    background: var(--primary-300);
+    border-radius: 100vh;
+}
+
 
 
 .driftitem ::-webkit-scrollbar
