@@ -88,7 +88,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         APL = 0
     else:
         APL = decimal.Decimal(sum / pause_count)
-    results["Gentle_Mean_Pause_Duration"] = float(round(APL, 2))
+    results["Gentle_Mean_Pause_Duration_(sec)"] = float(round(APL, 2))
 
     # Average pause rate per second.
     pause_count = 0
@@ -101,7 +101,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         APR = decimal.Decimal(pause_count / gentle_length)
     else:
         APR = 0
-    results["Gentle_Pause_Rate"] = float(round(APR, 3))
+    results["Gentle_Pause_Rate_(pause/sec)"] = float(round(APR, 3))
 
     # Rhythmic Complexity of Pauses
     s = []
@@ -217,7 +217,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         f0mean += f
     if len(f0log) != 0:
         f0mean = math.pow(2, (f0mean / len(f0log)))
-    results["Drift_f0_Mean"] = f0mean
+    results["Drift_f0_Mean_(hz)"] = f0mean
 
     # Calculate diffoctf0
     # diffoctf0 = log2(S.SAcC.f0)-log2(f0mean);
@@ -252,7 +252,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     else:
         PR = 0
     # print('7. Pitch range:', PR, 'octaves')
-    results["Drift_f0_Range"] = PR
+    results["Drift_f0_Range_(octaves)"] = PR
 
     # Pitch speed and acceleration pre-calculations
 
@@ -307,7 +307,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     else:
         PS = 0
 
-    results["Drift_f0_Mean_Abs_Velocity"] = PS
+    results["Drift_f0_Mean_Abs_Velocity_(octaves/sec)"] = PS
 
     # S.analysis.f0contour = mean(abs(f0accel)) * sign(mean(f0accel)); %signed directionless acceleration
     sum =  0
@@ -318,7 +318,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     else:
         PA = 0
 
-    results["Drift_f0_Mean_Abs_Accel"] = PA
+    results["Drift_f0_Mean_Abs_Accel_(octaves/sec^2)"] = PA
 
     # Pitch Entropy, or entropy for f0, indicating the predictability of pitch patterns
     # f0entropy = -sum(f0prob.*f0log2prob);

@@ -113,10 +113,10 @@ function get_docs() {
 }
 function set_active_doc(doc) {
     if(doc.id !== T.cur_doc) {
-	      T.cur_doc = doc.id;
-          if (T.audio) T.audio.pause();
-	      T.audio = new Audio('/media/' + doc.path);
-          if (T.razors[doc.id])
+        T.cur_doc = doc.id;
+        if (T.audio) T.audio.pause();
+        T.audio = new Audio('/media/' + doc.path);
+        if (T.razors[doc.id])
             T.audio.currentTime = T.razors[doc.id];
     }
 }
@@ -131,10 +131,24 @@ function render_uploader(root) {
                 events: {
                     onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
-                        T.opened[doc.id] = !T.opened[doc.id];
-                        if (has_data(doc.id)) {
-                            T.active[doc.id] = T.opened[doc.id];
-                            set_active_doc(doc);
+                        if (T.opened[doc.id])
+                        {
+                            delete T.opened[doc.id];
+                            console.log(T.cur_doc, doc.id)
+                            if (T.cur_doc === doc.id)
+                            {
+                                delete T.cur_doc;
+                                if (T.audio) T.audio.pause();
+                                delete T.audio;
+                            }
+                        }
+                        else
+                        {
+                            T.opened[doc.id] = true;
+                            if (has_data(doc.id)) {
+                                T.active[doc.id] = T.opened[doc.id];
+                                set_active_doc(doc);
+                            }
                         }
                         render();
                     }
@@ -211,7 +225,15 @@ function got_files(files) {
 }
 
 function render_doclist(root) {
-    // XXX: preload list of docs
+    // XXX: preload list of 
+    if (get_docs().length == 0) document.getElementById('nofiles').classList.remove('disabled');
+    else 
+    {
+        document.getElementById('nofiles').classList.add('disabled');
+        if (Object.keys(T.opened).length === 0) document.getElementById('noneselected').classList.remove('disabled');
+        else document.getElementById('noneselected').classList.add('disabled');
+    }
+
     get_docs()
         .forEach((doc) => {
 
@@ -291,12 +313,19 @@ function render_doclist(root) {
                 });
 
                 if (!(doc.id in T.selections)) {
-                    T.selections[doc.id] = { start_time: 0, end_time: 20 };
+                    let segments = (get_cur_align(doc.id) || {}).segments;
+                    if (segments)
+                    {
+                        let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
+                        T.selections[doc.id] = { start_time: start, end_time: end };
+                    }
                 }
 
-                render_detail(det_div, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                let { start_time, end_time } = T.selections[doc.id] || {};
 
-                render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
+                render_detail(det_div, doc, start_time, end_time);
+
+                render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
 
                 // if(!T.DRAGGING) {
                 //     content.i({id: doc.id + '-expl', text: 'selected region:'})
@@ -329,33 +358,62 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     datarow2 = table.tr({ id: uid + '-row2' });
 
     headers.th({})
-    datarow.th({ text: "full clip" })
+    datarow.th({ text: "full transcript duration" })
     datarow2.th({ text: "selection" })
 
     let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
     let tfh = timeframe.tr({ id: uid + '-tfh' }),
         tfb = timeframe.tr({ id: uid + '-tfb' });
+
+    let segments = (get_cur_align(doc.id) || {}).segments;
+    let fullTSDuration;
+    let url, timedURL;
+    let stats, timedStats;
+    if (segments)
+    {
+        fullTSDuration = segments[segments.length - 1].end - segments[0].start;
+        url = '/_measure?id=' + doc.id, timedURL = url;
+        url += `&start_time=${ segments[0].start }&end_time=${ segments[segments.length - 1].end }`;
+        
+        if(start) {
+            timedURL += '&start_time=' + start;
+        }
+        if(end) {
+            timedURL += '&end_time=' + end;
+        }
+    
+        stats = cached_get_url(url, JSON.parse).measure,
+            timedStats = cached_get_url(timedURL, JSON.parse).measure;
+    }
     
     Object.entries({
-        'full voiced period': Math.round(doc.cliplen * 10) / 10 + 's', 
-        'region start': (Math.round(start * 10) / 10 || '0') + 's', 
-        'region end': Math.round(end * 10) / 10 + 's', 
-        'region length': Math.round((end - start) * 10) / 10 + 's'
+        'full transcript duration': Math.round(fullTSDuration * 10) / 10 + 's', 
+        'selection start': (Math.round(start * 10) / 10 || '0') + 's', 
+        'selection end': Math.round(end * 10) / 10 + 's', 
+        'selection length': Math.round((end - start) * 10) / 10 + 's'
     }).forEach(([label, data], i) => {
         tfh.th({ text: label });
-        tfb.td({ id: uid + '-tfb' + i, text: data });
+        if (i == 1 || i == 2)
+        {
+            tfb.td({ id: uid + '-tfb' + i, classes: ['editable'] }).input({ 
+                attrs: { value: data },
+                events: {
+                    onblur: ev => {
+                        console.log('asdf')
+                        ev.currentTarget.value += 's';
+                    },
+                    onfocus: ev => {
+                        let { value } = ev.currentTarget
+                        if (value.slice(-1) === 's')
+                            ev.currentTarget.value = value.slice(0, -1);
+                    }
+                }
+            });
+        }
+        else
+            tfb.td({ id: uid + '-tfb' + i, text: data });
     });
-
-    let url = '/_measure?id=' + doc.id, timedURL = url;
-    if(start) {
-        timedURL += '&start_time=' + start;
-    }
-    if(end) {
-        timedURL += '&end_time=' + end;
-    }
-
-    let stats = cached_get_url(url, JSON.parse).measure,
-        timedStats = cached_get_url(timedURL, JSON.parse).measure;
+    
     if(stats) {
 
         let keys = Object.keys(stats).slice(2);
@@ -390,14 +448,18 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                     keys.forEach((key) =>{
                         cliptxt += key + '\t';
                     });
+                    cliptxt += "start_time\tend_time\t"
                     cliptxt += '\nfull clip\t';
                     keys.forEach((key) =>{
                         cliptxt += stats[key] + '\t';
                     });
+
+                    cliptxt += segments[0].start + '\t' + segments[segments.length - 1].end + '\t';
                     cliptxt += '\nselection\t';
                     keys.forEach((key) =>{
                         cliptxt += timedStats[key] + '\t';
                     });
+                    cliptxt += start + '\t' + end + '\t';
                     cliptxt += '\n';    
 
                     // Create, select, copy, and remove a textarea.
@@ -454,7 +516,7 @@ function render_paste_transcript(root, doc) {
 
                 // prevent dual-submission...
                 this.disabled = true;
-                this.textContent = "setting...";
+                this.textContent = "aligning transcript...";
 
                 document.getElementById('tscript-' + docid).disabled = true;
 
@@ -688,6 +750,17 @@ function render_detail(root, doc, start_time, end_time) {
         },
     })
 
+    xAxisSvg.line({
+        attrs: {
+            'stroke-width': 2,
+            stroke: '#DCDCDC',
+            x1: 49,            
+            y1: 0,
+            x2: 49,
+            y2: T.PITCH_H + 1,
+        }
+    })
+
     let mainGraphWrapper = root.div({ classes: ['main-graph-wrapper'] });
     let svg = mainGraphWrapper.svg({
 	      id: doc.id + '-svg-',
@@ -882,7 +955,7 @@ function render_detail(root, doc, start_time, end_time) {
 
 
     if(T.cur_doc == doc.id && T.razors[doc.id]) {
-	      svg.rect({id: doc.id + '-d-razor',
+	      svg.rect({id: 'd-razor-' + doc.id,
 		              attrs: {
 		                  x: t2x(T.razors[doc.id] - start_time),
 		                  y: 0,
@@ -921,6 +994,39 @@ function render_detail(root, doc, start_time, end_time) {
         })
     }
 
+    let dl_btn = root.button({
+        classes: ['dl-svg-btn'],
+        events: {
+            onclick: ev => {
+                let container = ev.currentTarget.parentElement;
+                let svg1 = container.children[0].cloneNode(true), svg2 = container.children[1].children[0].cloneNode(true);
+                svg2.setAttribute("x", svg1.width.baseVal.value);
+                let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+                svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;`);
+                svgWhole.setAttribute("width", svg1.width.baseVal.value + svg2.width.baseVal.value);
+                svgWhole.setAttribute("height", svg2.height.baseVal.value);
+                svgWhole.appendChild(svg1);
+                svgWhole.appendChild(svg2);
+                let razor = svgWhole.querySelector('#' + 'd-razor-' + doc.id);
+                if (razor) razor.remove();
+                
+                // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
+                let svgBlob = new Blob([svgWhole.outerHTML], {type:"image/svg+xml;charset=utf-8"});
+                let svgUrl = URL.createObjectURL(svgBlob);
+                let downloadLink = document.createElement("a");
+                downloadLink.href = svgUrl;
+                downloadLink.download = "newesttree.svg";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
+        }
+    });
+
+    dl_btn.span({ text: "Download Graph" });
+    dl_btn.img({ attrs: { src: 'download-icon.svg' } });
+
 }
 
 function render_overview(root, doc) {
@@ -934,9 +1040,6 @@ function render_overview(root, doc) {
     let width = duration * 10;
     // let width = (document.getElementById(root._id) || {}).clientWidth || document.body.clientWidth;
     let height = 50;
-    
-    // TODO move this somewhere else?
-    T.docs[doc.id].cliplen = duration;
 
     let svg = root.svg({
 	      id: doc.id + '-svg-overview',
@@ -1147,6 +1250,7 @@ function render_is_ready(root, docid) {
 function delete_action(doc) {
     FARM.post_json("/_rec/_remove", {id: doc.id}, (ret) => {
 	      delete T.docs[ret.remove];
+          delete T.opened[ret.remove];
 	      render();
     });
 }
@@ -1249,6 +1353,8 @@ function pitch2y(p, p_h) {
 }
 function toggle_playpause() {
 	  if(T.audio) {
+          if (!T.razors[T.cur_doc])
+            T.audio.currentTime = get_cur_align(T.cur_doc).segments[0].start;
 	      if(T.audio.paused) {
 		        T.audio.play();
 	      }

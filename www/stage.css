@@ -335,6 +335,61 @@ main
 {
     min-width: 0;
     padding: 2.5em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.startcard
+{
+    width: 50%;
+    padding: 4.5em;
+    background-color: white;
+    border: 1px solid var(--primary-400);
+    padding-bottom: 3em;
+}
+
+.startcard.disabled
+{
+    display: none;
+}
+
+.startcard h2,
+.startcard a
+{
+    text-transform: uppercase;
+}
+
+.startcard h2
+{
+    color: var(--accent-700);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 2em;
+}
+
+.startcard p
+{
+    font-size: 1.2em;
+    margin: 1.5em 0;
+}
+
+.startcard a
+{
+    font-size: 1.3em;
+    display: inline-block;
+    padding: 0.5em 1em;
+    color: white;
+    background-color: var(--primary-300);
+    border-radius: 100vh;
+    box-shadow: 0px 0px 12px 0px #80372B33;
+}
+
+.startcard a:hover,
+.startcard a:focus-visible
+{
+    background-color: var(--primary-200);
 }
 
 .driftitem
@@ -558,10 +613,49 @@ main
     left: 50px;
 }
 
+.dl-svg-btn
+{
+    display: none;
+    background-color: var(--accent-400);
+    color: white;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 2em;
+    padding: 0.5em;
+    border-radius: 100vh;
+    align-items: center;
+    box-shadow: 0px 0px 6px 0px #00000040;
+}
+
+.detail.loaded .dl-svg-btn
+{
+    display: flex;
+}
+
+.dl-svg-btn span
+{
+    text-align: center;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.2s;
+    font-style: italic;
+}
+
+.dl-svg-btn:hover span
+{
+    width: 17ch;
+}
+
+.dl-svg-btn img
+{
+    height: 100%;
+}
+
 .x-axis
 {
     flex-shrink: 0;
-    border-right: 2px solid #DCDCDC;
 }
 
 .main-graph-wrapper
@@ -719,6 +813,26 @@ main
     background-color: white;
 }
 
+.timeframe-table td.editable
+{
+    padding: 0;
+}
+
+.timeframe-table input
+{
+    font-weight: inherit;
+    padding: 0.75em 1em;
+    font-size: inherit;
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+    text-align: right;
+    background-color: inherit;
+    border: none;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+}
+
 .timeframe-table tr:not(:first-child) > td
 {
     background-color: #F4F4F4;
@@ -827,6 +941,7 @@ main
     font-style: italic;
     opacity: 0;
     transition: all ease 0.2s;
+    box-shadow: 0px 0px 6px 0px #00000040;
 }
 
 #copied-alert.visible
@@ -841,6 +956,11 @@ main
     {
         transform: translate(-50%, calc(-100% - 1em));
         transition-property: opacity;
+    }
+    
+    .dl-svg-btn span
+    {
+        transition: none;
     }
 }
 
