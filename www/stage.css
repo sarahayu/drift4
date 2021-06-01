@@ -836,6 +836,7 @@ main
 .timeframe-table tr:not(:first-child) > td
 {
     background-color: #F4F4F4;
+    vertical-align: middle;
 }
 
 .stat-table th:first-child

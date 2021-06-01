@@ -115,7 +115,13 @@ function set_active_doc(doc) {
     if(doc.id !== T.cur_doc) {
         T.cur_doc = doc.id;
         if (T.audio) T.audio.pause();
+        
         T.audio = new Audio('/media/' + doc.path);
+        T.audio.addEventListener("canplaythrough", () => {
+            T.docs[doc.id].duration = T.audio.duration;
+            render();
+        });
+        
         if (T.razors[doc.id])
             T.audio.currentTime = T.razors[doc.id];
     }
@@ -134,7 +140,6 @@ function render_uploader(root) {
                         if (T.opened[doc.id])
                         {
                             delete T.opened[doc.id];
-                            console.log(T.cur_doc, doc.id)
                             if (T.cur_doc === doc.id)
                             {
                                 delete T.cur_doc;
@@ -326,12 +331,6 @@ function render_doclist(root) {
                 render_detail(det_div, doc, start_time, end_time);
 
                 render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
-
-                // if(!T.DRAGGING) {
-                //     content.i({id: doc.id + '-expl', text: 'selected region:'})
-                //     render_stats(content, doc, T.selections[doc.id].start_time, T.selections[doc.id].end_time);
-                // }
-
             }
 
 
@@ -342,10 +341,6 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     let uid = doc.id + '-' + start + '-' + end;
     let tableDiv = mainTableRoot.div({ 
         classes: ['table-wrapper'],
-        // events: {
-        //     onmouseover: () => document.getElementById(uid + '-scopy').style.display = 'inline-block',
-        //     onmouseout: () => document.getElementById(uid + '-scopy').style.display = 'none',
-        // }
     })
     let table = tableDiv.table({
         classes: ['stat-table drift-table'],
@@ -368,7 +363,6 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     let segments = (get_cur_align(doc.id) || {}).segments;
     let fullTSDuration;
     let url, timedURL;
-    let stats, timedStats;
     if (segments)
     {
         fullTSDuration = segments[segments.length - 1].end - segments[0].start;
@@ -381,9 +375,12 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         if(end) {
             timedURL += '&end_time=' + end;
         }
-    
-        stats = cached_get_url(url, JSON.parse).measure,
-            timedStats = cached_get_url(timedURL, JSON.parse).measure;
+        
+        if (!T.DRAGGING)
+        {
+            T.docs[doc.id].stats = cached_get_url(url, JSON.parse).measure;
+            T.docs[doc.id].timedStats = cached_get_url(timedURL, JSON.parse).measure;
+        }
     }
     
     Object.entries({
@@ -396,17 +393,53 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         if (i == 1 || i == 2)
         {
             tfb.td({ id: uid + '-tfb' + i, classes: ['editable'] }).input({ 
-                attrs: { value: data },
+                attrs: { value: data, step: 0.1 },
                 events: {
+                    onkeydown: ev => {
+                        if (ev.keyCode == 13)
+                        {
+                            ev.preventDefault();
+                            ev.currentTarget.blur();
+                        }
+                    },
                     onblur: ev => {
-                        console.log('asdf')
+                        let { value } = ev.currentTarget;
+                        value = parseFloat(value);
+                        const [thisTime, otherTime] = i == 1 ? ['start_time','end_time'] : ['end_time','start_time'];
+                        let error;
+
+                        if ((!value && value != 0) || value < 0) error = 'Time must be positive and non-null!';
+                        else
+                        {
+                            if (T.selections[doc.id][thisTime] != value)
+                            {
+                                let otherValue = T.selections[doc.id][otherTime];
+                                if ((i == 1 && value >= otherValue) || (i == 2 && value <= otherValue)) error = 'Invalid range!';
+                                else if (Math.abs(value - otherValue) > 30 || Math.abs(value - otherValue) < 0.2) error = 'Range must be between 0.2s and 30s';
+                                else
+                                {
+                                    ev.currentTarget.value = T.selections[doc.id][thisTime] = Math.min(value, T.docs[doc.id].duration); 
+                                    render();
+                                }
+                            }
+                        }
+                         
+                        if (error)
+                        {
+                            ev.currentTarget.value = T.selections[doc.id][thisTime];
+                            alert(error);
+                        }
+                        ev.currentTarget.value = Math.round(ev.currentTarget.value * 10) / 10;
+                        ev.currentTarget.setAttribute("type", "text");
                         ev.currentTarget.value += 's';
                     },
                     onfocus: ev => {
                         let { value } = ev.currentTarget
                         if (value.slice(-1) === 's')
                             ev.currentTarget.value = value.slice(0, -1);
-                    }
+                            
+                        ev.currentTarget.setAttribute("type", "number");
+                    },
                 }
             });
         }
@@ -414,6 +447,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
             tfb.td({ id: uid + '-tfb' + i, text: data });
     });
     
+    const { stats, timedStats } = T.docs[doc.id];
     if(stats) {
 
         let keys = Object.keys(stats).slice(2);
@@ -736,7 +770,6 @@ function render_detail(root, doc, start_time, end_time) {
 
     root._attrs.classes.push('loaded');
     let segs = get_cur_align(doc.id).segments;
-    end_time = Math.min(end_time, segs[segs.length-1].end);
     let duration = end_time - start_time;
 
     const seg_w = t2x(duration);
@@ -789,16 +822,6 @@ function render_detail(root, doc, start_time, end_time) {
               }
 	      }
     });
-
-//     svg.rect({id: doc.id + '-d-bg',
-//         attrs: {
-//             x: 0,
-//             y: 0,
-//             width: '100%',
-//             height: T.PITCH_H,
-//             fill: 'rgb(249,249,249)'
-//         }
-//    })
    
    svg.line({id: doc.id + '-seg-' + '-axis-0',
    attrs: {
@@ -1035,7 +1058,7 @@ function render_overview(root, doc) {
     }
 
     let align = get_cur_align(doc.id);
-    let duration = align.segments[align.segments.length-1].end;
+    let duration = T.docs[doc.id].duration;
 
     let width = duration * 10;
     // let width = (document.getElementById(root._id) || {}).clientWidth || document.body.clientWidth;
@@ -1210,14 +1233,7 @@ function render_overview(root, doc) {
             last_x = x;
             show_secs = true;
         }
-	    //   svg.line({id: doc.id + '-ov-' + '-xaxis-' + x,
-		//               attrs: {
-		//                   x1: x_px,
-		//                   y1: height,
-		//                   x2: x_px,
-		//                   y2: height - (show_secs ? 10 : 5),
-		//                   stroke: '#C4D5D9'
-		//               }})
+        
         if(show_secs) {
 	          svg.text({id: doc.id + '-ov-' + '-xaxistxt-' + x,
 		                  text: '' + x + 's',
@@ -1234,7 +1250,7 @@ function render_overview(root, doc) {
 }
 
 function render_is_ready(root, docid) {
-    if(!T.docs[docid] || !get_data(docid)) {
+    if(!T.docs[docid] || !get_data(docid) || !T.docs[docid].duration) {
         new PAL.Element("div", {
             parent: root,
             classes: ["loading-placement"],
