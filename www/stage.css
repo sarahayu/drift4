@@ -643,7 +643,8 @@ main
     font-style: italic;
 }
 
-.dl-svg-btn:hover span
+.dl-svg-btn:hover span,
+.dl-svg-btn:focus-visible span
 {
     width: 17ch;
 }
@@ -742,9 +743,18 @@ main
 .table-section
 {
     position: relative;
+    border-left: 1.25px solid #DDDDDD;
 }
 
-.table-section:hover .copy-btn
+.table-section > span
+{
+    display: inline-block;
+    padding: 0.5em 1em;
+    width: 100%;
+    background-color: var(--neutral-300);
+}
+
+.table-wrapper:hover .copy-btn
 {
     display: block;
 }
@@ -843,7 +853,6 @@ main
 {
     position: sticky;
     left: 0;
-    border-left: 1.25px solid #DDDDDD;
 }
 
 .stat-header th

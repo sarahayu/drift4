@@ -331,6 +331,8 @@ function render_doclist(root) {
                 render_detail(det_div, doc, start_time, end_time);
 
                 render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
+
+                section3.span({ text: '*vocal duration that corresponds to the transcript' });
             }
 
 
@@ -353,7 +355,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     datarow2 = table.tr({ id: uid + '-row2' });
 
     headers.th({})
-    datarow.th({ text: "full transcript duration" })
+    datarow.th({ text: "full recording duration*" })
     datarow2.th({ text: "selection" })
 
     let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
@@ -384,7 +386,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     }
     
     Object.entries({
-        'full transcript duration': Math.round(fullTSDuration * 10) / 10 + 's', 
+        'full recording duration*': Math.round(fullTSDuration * 10) / 10 + 's', 
         'selection start': (Math.round(start * 10) / 10 || '0') + 's', 
         'selection end': Math.round(end * 10) / 10 + 's', 
         'selection length': Math.round((end - start) * 10) / 10 + 's'
@@ -1150,47 +1152,52 @@ function render_overview(root, doc) {
         }
     })
 
-    align.segments
-	      .forEach((seg, seg_idx) => {
-	          seg.wdlist.forEach((wd,wd_idx) => {
-		            if(!wd.end || !wd.start) { return }
+    
+    let seq_stats = pitch_stats(get_cur_pitch(doc.id));
 
-		            if(wd.type == 'gap'){
-		                svg.rect({id: 'gap-' + seg_idx + '-' + wd_idx,
-			                        attrs: {
-				                          x: width * (wd.start/duration),
-				                          y: 0,
-				                          width: width * (wd.end-wd.start) / duration,
-				                          height: height,
-				                          fill: '#D9D9D9'
-			                        }})
-		            }
-		            else {
-		                // Word
+    if (seq_stats) {
+        let voiceStart;
+        let first;
+        seq_stats.smoothed
+            .forEach((p, p_idx) => {
+                if (p > 0) {
+                    if (!voiceStart) {
+                        voiceStart = p_idx;
+                    }
+                }
+                else {
+                    if (p_idx - voiceStart > 20 && voiceStart) {
 
-		                // Compute word-pitch
-		                let wd_pitch = get_cur_pitch(doc.id)
-			                  .slice(Math.floor(wd.start * 100), Math.floor(wd.end * 100));
+                        let voicedPeriod = get_cur_pitch(doc.id)
+                            .slice(Math.floor(voiceStart), Math.floor(p_idx));
+                        let pitch_mean = (pitch_stats(voicedPeriod) || {})['pitch_mean'];
+                        if (pitch_mean) {
 
-		                // console.log('wd_pitch', wd_pitch);
+                            let y = pitch2y(pitch_mean) / 5;
 
-		                let pitch_mean = (pitch_stats(wd_pitch) || {})['pitch_mean'];
-		                if(pitch_mean) {
+                            if (!first) {
+                                console.log(width * (voiceStart / duration));
+                                first = true;
+                            }
+                            svg.rect({
+                                id: doc.id + '-word-' + p_idx,
+                                attrs: {
+                                    x: width * (voiceStart / 100 / duration),
+                                    y: y,
+                                    width: width * (p_idx / 100 - voiceStart / 100) / duration,
+                                    height: 2,
+                                    fill: '#E4B186'
+                                }
+                            })
+                        }
+                        voiceStart = false;
+                    }
+                }
 
-			                  let y = pitch2y(pitch_mean)/5;//height - ((pitch_mean - 50) / 400) * height;
+            });
 
-			                  svg.rect({id: doc.id + '-word-' + seg_idx + '-' + wd_idx,
-				                          attrs: {
-				                              x: width * (wd.start/duration),
-				                              y: y,
-				                              width: width * (wd.end-wd.start) / duration,
-				                              height: 2,
-				                              fill: '#E4B186'
-				                          }})
-		                }
-		            }
-	          })
-	      });
+
+    }
 
     if(T.selections[doc.id]) {
 	      let sel = T.selections[doc.id];
