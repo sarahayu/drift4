@@ -96,8 +96,11 @@ function reload_docs() {
 
     FARM.get_json("/_rec/_infos.json?since=" + T.LAST_T, (ret) => {
 	      ret.forEach((doc) => {
-            T.docs[doc.id] = doc;
-	          T.LAST_T = Math.max(T.LAST_T, doc.modified_time);
+              if (T.docs[doc.id])
+                  Object.assign(T.docs[doc.id], doc);
+              else
+                  T.docs[doc.id] = doc;
+              T.LAST_T = Math.max(T.LAST_T, doc.modified_time);
 	      });
         render();
 
@@ -207,6 +210,7 @@ function got_files(files) {
                             // Immediately trigger a pitch trace
                             FARM.post_json("/_pitch", {id: ret.id}, (p_ret) => {
                                 console.log("pitch returned", p_ret);
+                                set_active_doc(T.docs[ret.id]);
                             });
 
 			                      // ...and RMS
@@ -231,12 +235,12 @@ function got_files(files) {
 
 function render_doclist(root) {
     // XXX: preload list of 
-    if (get_docs().length == 0) document.getElementById('nofiles').classList.remove('disabled');
+    if (get_docs().length == 0) document.getElementById('nofiles').classList.add('show');
     else 
     {
-        document.getElementById('nofiles').classList.add('disabled');
-        if (Object.keys(T.opened).length === 0) document.getElementById('noneselected').classList.remove('disabled');
-        else document.getElementById('noneselected').classList.add('disabled');
+        document.getElementById('nofiles').classList.remove('show');
+        if (Object.keys(T.opened).length === 0) document.getElementById('noneselected').classList.add('show');
+        else document.getElementById('noneselected').classList.remove('show');
     }
 
     get_docs()
@@ -1020,7 +1024,7 @@ function render_detail(root, doc, start_time, end_time) {
     }
 
     let dl_btn = root.button({
-        classes: ['dl-svg-btn'],
+        classes: ['dl-graph-btn'],
         events: {
             onclick: ev => {
                 let container = ev.currentTarget.parentElement;
@@ -1028,23 +1032,53 @@ function render_detail(root, doc, start_time, end_time) {
                 svg2.setAttribute("x", svg1.width.baseVal.value);
                 let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-                svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;`);
+                svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif; font-size: 14.4px;`);
                 svgWhole.setAttribute("width", svg1.width.baseVal.value + svg2.width.baseVal.value);
                 svgWhole.setAttribute("height", svg2.height.baseVal.value);
                 svgWhole.appendChild(svg1);
                 svgWhole.appendChild(svg2);
+                let pitchLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                pitchLabel.textContent = 'pitch';
+                pitchLabel.setAttribute('y', svg2.height.baseVal.value - 50);
+                pitchLabel.setAttribute('style', 'font-weight: 600;');
+                let pitchLabel2 = pitchLabel.cloneNode();
+                pitchLabel2.textContent = '(hz)';
+                pitchLabel2.setAttribute('dy', '1.1em');
+                let secondsLabel = pitchLabel.cloneNode();
+                secondsLabel.textContent = 'seconds';
+                secondsLabel.setAttribute('x', 50);
+                secondsLabel.setAttribute('y', svg2.height.baseVal.value - 20);
+                svgWhole.appendChild(pitchLabel);
+                svgWhole.appendChild(pitchLabel2);
+                svgWhole.appendChild(secondsLabel);
                 let razor = svgWhole.querySelector('#' + 'd-razor-' + doc.id);
                 if (razor) razor.remove();
                 
                 // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
+                // https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
                 let svgBlob = new Blob([svgWhole.outerHTML], {type:"image/svg+xml;charset=utf-8"});
                 let svgUrl = URL.createObjectURL(svgBlob);
-                let downloadLink = document.createElement("a");
-                downloadLink.href = svgUrl;
-                downloadLink.download = "newesttree.svg";
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
+                let img = new Image();
+                let canvas = document.createElement('canvas');
+                let [ width, height ] = [svg1.width.baseVal.value + svg2.width.baseVal.value, svg2.height.baseVal.value];
+                width *= 1.5; height *= 1.5;
+                canvas.width = width;
+                canvas.height = height;
+                let ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, width, height);
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, width, height);
+                          
+                    let filename = doc.title.split('.').reverse();
+                    filename.shift();
+                    start_time = Math.round(start_time * 100000) / 100000;
+                    end_time = Math.round(end_time * 100000) / 100000;
+                    filename = filename.reverse().join('') + '.' + start_time + '-' + end_time + '.png';
+                    canvas.toBlob(canvasBlob => saveAs(canvasBlob, filename));
+                }
+
+                img.src = svgUrl;
+
             }
         }
     });
@@ -1157,7 +1191,6 @@ function render_overview(root, doc) {
 
     if (seq_stats) {
         let voiceStart;
-        let first;
         seq_stats.smoothed
             .forEach((p, p_idx) => {
                 if (p > 0) {
@@ -1174,11 +1207,6 @@ function render_overview(root, doc) {
                         if (pitch_mean) {
 
                             let y = pitch2y(pitch_mean) / 5;
-
-                            if (!first) {
-                                console.log(width * (voiceStart / duration));
-                                first = true;
-                            }
                             svg.rect({
                                 id: doc.id + '-word-' + p_idx,
                                 attrs: {
@@ -1375,7 +1403,7 @@ function pitch2y(p, p_h) {
     return (-60 * Math.log2(p / 440));
 }
 function toggle_playpause() {
-	  if(T.audio) {
+	  if(T.audio && has_data(T.cur_doc)) {
           if (!T.razors[T.cur_doc])
             T.audio.currentTime = get_cur_align(T.cur_doc).segments[0].start;
 	      if(T.audio.paused) {
@@ -1437,6 +1465,51 @@ function tick() {
     document.getElementById("upload-button").onchange = function(ev) {
         got_files(ev.target.files);
     };
+
+    // zip these, but append csvs
+    ['mat', 'align', 'pitch'].forEach(name => {
+        document.getElementById('dl-all-' + name).onclick = () => {
+            Promise.all(get_docs().filter(doc => doc[name]).map(doc => {
+                return fetch('/media/' + doc[name]).then(response => response.blob()).then(blob => ({ docid: doc.id, blob: blob }));
+            })).then(blobdocs => {
+                console.log('zipping...');
+                let zip = new JSZip();
+                let folder = zip.folder(name + 'files');
+                blobdocs.forEach(({ docid, blob }) => {
+                    let doc = T.docs[docid];
+                    let filename = doc.title.split('.').reverse()
+                    filename.shift()                    
+                    let filename_basic = filename.reverse().join('') + '-' + name, suffix = '.' + doc[name].split('.')[1];
+                    let counter = 1;
+                    let out_filename = filename_basic;
+                    while (folder.file(out_filename + suffix)) out_filename = filename_basic + `(${counter++})`;
+                    out_filename += suffix;
+                    folder.file(out_filename, new File([blob], out_filename, { type: 'text/plain' }));
+                })
+                zip.generateAsync({ type: 'blob' }).then(content => saveAs(content, `${name}files.zip`));
+            })
+        }
+    })
+
+    document.getElementById('dl-all-csv').onclick = () => {
+        Promise.all(get_docs().filter(doc => doc.csv).map(doc => {
+            return fetch('/media/' + doc.csv).then(response => response.text()).then(textContent => ({ docid: doc.id, textContent: textContent }));
+        })).then(blobdocs => {
+            let cocatenated = '';
+            blobdocs.forEach(({ docid, textContent }) => {
+                let doc = T.docs[docid];
+                let numCommas = textContent.substring(0, textContent.indexOf('\n')).split(',').length - 1;
+                cocatenated += `${doc.title}`;
+                for (let i = 0; i < numCommas; i++) cocatenated += ',';
+                cocatenated += '\n';
+                cocatenated += textContent;
+            })
+
+            saveAs(new Blob([cocatenated]), 'main.csv');
+        })
+    }
+
+    document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
 })()
 
 if(!T.ticking) {

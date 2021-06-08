@@ -10,6 +10,8 @@
     <script src="attachments.js"></script>
     <script src="babysteps.js"></script>
     <script src="palilalia-plus.js"></script>
+    <script src="jszip.min.js"></script>
+    <script src="FileSaver.min.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
     <link
@@ -40,17 +42,18 @@
                 <span>UPLOAD AUDIO FILE</span>
                 <img src="upload-icon.svg" alt="upload icon">
             </button>
-            <input id="upload-button" type="file" multiple="true" />
+            <input id="upload-button" type="file" multiple="true" accept=".mp3,.wav,.flac,.m4a"/>
         </div>
         <div class="file-list-area">
             <div class="file-list-header">
                 <p>AUDIO FILE LIST:</p>
                 <button class="dl-btn"><img src="ellipsis.svg" alt="options icon">
                     <ul class="dl-dropdown leftedge">
-                        <li><a href="#">download all - csv</a></li>
-                        <li><a href="#">download all - align</a></li>
-                        <li><a href="#">download all - pitch</a></li>
-                        <li><a href="#">delete all audio</a></li>
+                        <li><a href="#" id="dl-all-csv">download all - csv</a></li>
+                        <li><a href="#" id="dl-all-mat">download all - mat</a></li>
+                        <li><a href="#" id="dl-all-align">download all - align</a></li>
+                        <li><a href="#" id="dl-all-pitch">download all - pitch</a></li>
+                        <li><a href="#" id="delete-all-audio">delete all audio</a></li>
                     </ul>
                 </button>
             </div>

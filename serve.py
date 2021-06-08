@@ -494,7 +494,7 @@ def gen_mat(cmd):
     guts.bschange(
         rec_set.dbs[id], {"type": "set", "id": "meta", "key": "mat", "val": mathash}
     )
-
+    
     return {"mat": mathash}
 
 
@@ -517,9 +517,10 @@ def _measure(id=None, start_time=None, end_time=None, raw=False):
     if not meta.get("csv"):
         gen_csv({ "id": id })
 
-    while not meta.get("csv"):
+    while not rec_set.get_meta(id).get("csv"):
         pass
 
+    meta = rec_set.get_meta(id)
     driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
     gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
 
