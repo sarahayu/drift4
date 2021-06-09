@@ -1104,7 +1104,7 @@ function render_overview(root, doc) {
 	      id: doc.id + '-svg-overview',
 	      attrs: {
 	          width: width,
-	          height: height + 8,
+	          height: height,
 	      },
 	      events: {
 	          onmousedown: (ev) => {
@@ -1173,20 +1173,28 @@ function render_overview(root, doc) {
         }
     })
 
-    svg.line({
-        id: doc.id + '-svg-overview-selection',
-        attrs: {
-            x1: 2,
-            y1: height + 6,
-            x2: width - 2,
-            y2: height + 6,
-            stroke: '#E3E3E3',
-            'stroke-width': 4,
-            'stroke-linecap': 'round'
-        }
-    })
+    // render word gaps on overview
+    align.segments
+        .forEach((seg, seg_idx) => {
+            seg.wdlist.forEach((wd, wd_idx) => {
+                if (!wd.end || !wd.start) { return }
 
+                if (wd.type == 'gap') {
+                    svg.rect({
+                        id: 'gap-' + seg_idx + '-' + wd_idx,
+                        attrs: {
+                            x: width * (wd.start / duration),
+                            y: 0,
+                            width: width * (wd.end - wd.start) / duration,
+                            height: height,
+                            fill: '#D9D9D9'
+                        }
+                    })
+                }
+            })
+        });
     
+    // render simplified pitch trace on overview
     let seq_stats = pitch_stats(get_cur_pitch(doc.id));
 
     if (seq_stats) {
@@ -1227,22 +1235,54 @@ function render_overview(root, doc) {
 
     }
 
+    // render selection overlay
     if(T.selections[doc.id]) {
 	      let sel = T.selections[doc.id];
+          
+        svg.rect({id: doc.id + '-o-selection-pre',
+          attrs: {
+              x: 0,
+              y: 0,
+              width: width * (sel.start_time / duration),
+              height: height,
+              fill: 'rgba(218,218,218,0.4)'
+          }
+         });
+         svg.rect({id: doc.id + '-o-selection-post',
+         attrs: {
+             x: width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration),
+             y: 0,
+             width: width - (width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration)),
+             height: height,
+             fill: 'rgba(218,218,218,0.4)'
+         }
+         });
 
+	      svg.rect({id: doc.id + '-o-selection',
+		              attrs: {
+		                  x: width * (sel.start_time / duration),
+		                  y: 1,
+		                  width: width * ((sel.end_time - sel.start_time) / duration),
+		                  height: height - 2,
+		                  stroke: 'rgba(128, 55, 43, 1)',
+		                  'stroke-width': 1,
+		                  fill: 'none',
+                          rx: 2
+		              }
+		             });
 
-          svg.line({
-            id: doc.id + '-o-selection',
-            attrs: {
-                x1: Math.max(width * (sel.start_time / duration), 2), /* veeery particular, but take max and min for x2 so we can see the nice rounded svg edges */
-                y1: height + 6,
-                x2: Math.min(width * (sel.end_time / duration), width - 2),
-                y2: height + 6,
-                stroke: 'rgba(128, 55, 43, 1)',
-                'stroke-width': 4,
-                'stroke-linecap': 'round'
-            }
-        })
+        //   svg.line({
+        //     id: doc.id + '-o-selection',
+        //     attrs: {
+        //         x1: Math.max(width * (sel.start_time / duration), 2), /* veeery particular, but take max and min for x2 so we can see the nice rounded svg edges */
+        //         y1: height + 6,
+        //         x2: Math.min(width * (sel.end_time / duration), width - 2),
+        //         y2: height + 6,
+        //         stroke: 'rgba(128, 55, 43, 1)',
+        //         'stroke-width': 4,
+        //         'stroke-linecap': 'round'
+        //     }
+        // })
     }
 
     if(T.cur_doc == doc.id && T.razors[doc.id]) {
