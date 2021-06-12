@@ -556,12 +556,37 @@ main
     justify-content: center;
 }
 
-.overview p
+.overview-top
+{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.2em;
+}
+
+.overview-top p
 {
     font-weight: 600;
     text-transform: uppercase;
     font-style: italic;
-    margin-bottom: 0.2em;
+}
+
+.play-opt > *
+{
+    margin-left: 0.5em;
+}
+
+.play-opt button
+{
+    text-decoration: underline;
+    opacity: 0;
+}
+
+.overview:hover button,
+.overview:focus-within button
+{
+    opacity: 1;
+    transition: opacity 0.1s;
 }
 
 .overview-wrapper
@@ -755,14 +780,16 @@ main
     background-color: var(--neutral-300);
 }
 
-.table-wrapper:hover .copy-btn
+.table-wrapper:hover .copy-btn,
+.table-wrapper:focus-within .copy-btn
 {
-    display: block;
+    opacity: 1;
 }
 
 .copy-btn
 {
-    display: none;
+    display: block;
+    opacity: 0;
     position: absolute;
     bottom: 100%;
     right: 0;

@@ -130,13 +130,16 @@ function set_active_doc(doc) {
     }
 }
 
-function render_uploader(root) {
+function render_doclist(root) {
 
     get_docs()
         .forEach(doc => {
             let listItem = root.li({ 
                 id: doc.id + '-listwrapper',
                 classes: ['list-item', T.opened[doc.id] ? 'active' : ''],
+                attrs: {
+                    draggable: true
+                },
                 events: {
                     onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
@@ -233,8 +236,7 @@ function got_files(files) {
     }
 }
 
-function render_doclist(root) {
-    // XXX: preload list of 
+function render_opened_docs(root) {
     if (get_docs().length == 0) document.getElementById('nofiles').classList.add('show');
     else 
     {
@@ -311,7 +313,48 @@ function render_doclist(root) {
                     classes: ['overview']
                 });
 
-                ov_div.p({ text: "Drag to select a region" })
+                let owTop = ov_div.div({ classes: ['overview-top'] });
+                owTop.p({ text: "Drag to select a region" });
+                let playOpt = owTop.div({ classes: ['play-opt'] });
+                playOpt.button({ 
+                    text: 'jump to beginning of transcript',
+                    events: {
+                        onmousedown: ev => {
+                            ev.preventDefault();
+                        },
+                        onclick: () => {
+                            let segments = (get_cur_align(doc.id) || {}).segments;
+                            if (segments)
+                            {
+                                delete T.razors[doc.id];
+                                let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
+                                T.selections[doc.id] = { start_time: start, end_time: end };
+                            }
+                        },
+                    }
+                });
+                playOpt.label({
+                    id: doc.id + '-lab1',
+                    text: 'auto-scroll',
+                    attrs: {
+                        for: doc.id + '-rad1'
+                    }
+                })
+                playOpt.input({
+                    id: doc.id + '-rad1',
+                    attrs: {
+                        type: 'checkbox',
+                        name: 'playopt'
+                    },
+                    events: {
+                        onchange: () => {
+                            T.docs[doc.id].autoscroll = !T.docs[doc.id].autoscroll;
+                        },
+                        onmousedown: ev => {
+                            ev.preventDefault();
+                        },
+                    }
+                })
                 render_overview(ov_div.div({ id: doc.id + '-ov-wrapper', classes: ['overview-wrapper'] }), doc);
 
                 let timeframeInfo = section1.div({ classes: ['timeframe-wrapper'] });
@@ -800,7 +843,7 @@ function render_detail(root, doc, start_time, end_time) {
         }
     })
 
-    let mainGraphWrapper = root.div({ classes: ['main-graph-wrapper'] });
+    let mainGraphWrapper = root.div({ id: doc.id + '-main-graph-wrapper', classes: ['main-graph-wrapper'] });
     let svg = mainGraphWrapper.svg({
 	      id: doc.id + '-svg-',
 	      attrs: {
@@ -1153,6 +1196,10 @@ function render_overview(root, doc) {
 			                  T.audio.currentTime = t2;
 
 		                }
+                        else {                            
+                            delete T.razors[doc.id];
+                            // T.audio.currentTime = T.razors[doc.id] = T.selections[doc.id].start_time + 0.01;
+                        }
 			              render();
 
 		                window.onmousemove = null;
@@ -1270,19 +1317,6 @@ function render_overview(root, doc) {
                           rx: 2
 		              }
 		             });
-
-        //   svg.line({
-        //     id: doc.id + '-o-selection',
-        //     attrs: {
-        //         x1: Math.max(width * (sel.start_time / duration), 2), /* veeery particular, but take max and min for x2 so we can see the nice rounded svg edges */
-        //         y1: height + 6,
-        //         x2: Math.min(width * (sel.end_time / duration), width - 2),
-        //         y2: height + 6,
-        //         stroke: 'rgba(128, 55, 43, 1)',
-        //         'stroke-width': 4,
-        //         'stroke-linecap': 'round'
-        //     }
-        // })
     }
 
     if(T.cur_doc == doc.id && T.razors[doc.id]) {
@@ -1377,7 +1411,7 @@ function render_hamburger(root, doc) {
         dlDropdown.li({
             id: `ham-${name}-${doc.id}`,
         }).a({
-            text: "download " + name,
+            text: "download " + (name == 'align' ? 'Gentle align' : name),
             attrs: {
                 href: '/media/' + doc[name],
                 _target: '_blank',
@@ -1406,12 +1440,12 @@ function render_hamburger(root, doc) {
 function render() {
 
     var fileList = new PAL.ExistingRoot("div", { id: "file-list"}),
-        doclistArea = new PAL.ExistingRoot("main", { id: "doclist-area" })
-    render_uploader(fileList);
-    render_doclist(doclistArea);
+        docArea = new PAL.ExistingRoot("main", { id: "doc-area" })
+    render_doclist(fileList);
+    render_opened_docs(docArea);
     
     fileList.show();
-    doclistArea.show();
+    docArea.show();
 }
 
 function fr2x(fr) {
@@ -1443,21 +1477,32 @@ function pitch2y(p, p_h) {
     return (-60 * Math.log2(p / 440));
 }
 function toggle_playpause() {
-	  if(T.audio && has_data(T.cur_doc)) {
-          if (!T.razors[T.cur_doc])
-            T.audio.currentTime = get_cur_align(T.cur_doc).segments[0].start;
-	      if(T.audio.paused) {
-		        T.audio.play();
-	      }
-	      else {
-		        T.audio.pause();
-	      }
+    if (T.audio && has_data(T.cur_doc)) {
+        if (!T.razors[T.cur_doc] && T.selections[T.cur_doc])
+            T.audio.currentTime = T.selections[T.cur_doc].start_time;
+        if (T.audio.paused) {
+            if (T.audio.currentTime > T.selections[T.cur_doc].end_time
+                || T.audio.currentTime < T.selections[T.cur_doc].start_time)
+            {
+                let segments = (get_cur_align(T.cur_doc) || {}).segments;
+                if (segments)
+                {
+                    let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
+                    T.selections[T.cur_doc] = { start_time: start, end_time: end };
+                }
+            }
+            T.audio.play();
+        }
+        else {
+            T.audio.pause();
+        }
         render();
-	  }
+    }
 }
 window.onkeydown = (ev) => {
     // XXX: Make sure we're not editing a transcript.
-    if(ev.target.tagName == 'TEXTAREA') {
+    if(ev.target.tagName == 'TEXTAREA'
+    || ev.target.tagName == 'INPUT') {
         return;
     }
     if(ev.key == ' ') {
@@ -1467,9 +1512,53 @@ window.onkeydown = (ev) => {
 }
 
 function tick() {
-    if(T.audio && !T.audio.paused) {
-	      T.razors[T.cur_doc] = T.audio.currentTime;
-	      render();
+    if (T.audio) {
+
+        // reached the end of audio
+        if (T.audio.paused && T.audio.currentTime == T.audio.duration)
+            delete T.razors[T.cur_doc];
+        else if (!T.audio.paused)
+        {
+            T.razors[T.cur_doc] = T.audio.currentTime;
+            if (T.audio.currentTime > T.selections[T.cur_doc].end_time
+                || T.audio.currentTime < T.selections[T.cur_doc].start_time)
+            {
+                if (T.docs[T.cur_doc].autoscroll)
+                {
+                    let { segments } = (get_cur_align(T.cur_doc) || {});
+                    let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
+                    T.selections[T.cur_doc] = { start_time: start, end_time: end };
+                }
+                else
+                {                
+                    T.audio.pause();
+                    delete T.razors[T.cur_doc];
+                }
+            }
+
+            // scrolling of overview and graph when playing audio
+            let razor = T.razors[T.cur_doc];
+            if (razor)
+            {
+                let graphWindow = document.getElementById(T.cur_doc + '-main-graph-wrapper');
+                let left = graphWindow.scrollLeft, right = left + graphWindow.clientWidth;
+                let rX = t2x(razor - T.selections[T.cur_doc].start_time);
+                if (rX < left || rX > right)
+                {
+                    graphWindow.scroll(rX, 0);
+                }
+                let ovWindow = document.getElementById(T.cur_doc + '-ov-wrapper');
+                left = ovWindow.scrollLeft, right = left + ovWindow.clientWidth;
+                rX = T.audio.duration * 10 * (razor / T.audio.duration);
+                if (rX < left || rX > right)
+                {
+                    ovWindow.scroll(rX, 0);
+                }
+                
+            }
+        }
+
+        render();
     }
 
     window.requestAnimationFrame(tick);
@@ -1550,6 +1639,8 @@ function tick() {
     }
 
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
+
+    document.getElementById('doc-area').ondragover = ev => ev.preventDefault();
 })()
 
 if(!T.ticking) {

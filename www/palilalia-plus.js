@@ -23,7 +23,7 @@
         cur_roots[this._attrs.id] = this;
     }
     
-    var newHTMLTags = ["table", "tr", "td", "th", "section"];
+    var newHTMLTags = ["table", "tr", "td", "th", "section","label"];
 
     newHTMLTags.forEach((tagname) => {
         PAL.Element.prototype[tagname] = function (attrs) {
