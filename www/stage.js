@@ -110,9 +110,21 @@ function reload_docs() {
 
 
 function get_docs() {
-    return Object.keys(T.docs)
+    // sort by "order" property. If it doesn't have an order property, it means the document was just added, 
+    // so those without the "order" property are prioritized first
+    let dateSorted = Object.keys(T.docs)
         .map((x) => Object.assign({}, T.docs[x], {id: x}))
-        .sort((x,y) => x.date > y.date ? -1 : 1);
+        .sort((x,y) => {
+            if (!x.order && !y.order) return x.date > y.date ? -1 : 1;
+            if ((x.order === undefined) !== (y.order === undefined))
+                return y.order ? -1 : 1;
+            return x.order - y.order;
+        });
+    dateSorted.forEach((x, i) => {
+        x.order = T.docs[x.id].order = i + 1;
+    });
+
+    return dateSorted;
 }
 function set_active_doc(doc) {
     if(doc.id !== T.cur_doc) {
@@ -136,10 +148,7 @@ function render_doclist(root) {
         .forEach(doc => {
             let listItem = root.li({ 
                 id: doc.id + '-listwrapper',
-                classes: ['list-item', T.opened[doc.id] ? 'active' : ''],
-                attrs: {
-                    draggable: true
-                },
+                classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
                 events: {
                     onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
@@ -162,11 +171,61 @@ function render_doclist(root) {
                             }
                         }
                         render();
-                    }
+                    },
+                    // ondragstart: ev => {
+                    //     ev.dataTransfer.setData('text/plain', ev.target.id);
+                    // }
                 }
             });
 
-            listItem.img({ attrs: { src: "hamburger.svg", alt: "drag indicator" } });
+            listItem.img({ 
+                attrs: { src: "hamburger.svg", alt: "drag indicator", draggable: false },
+                events: {
+                    onclick: ev => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    },
+                    onmousedown: ev => {
+                        T.grabbed = doc.id;
+                        let curDocListItem = ev.currentTarget.parentElement, curDoc = doc, 
+                            listArea = ev.currentTarget.parentElement.parentElement;
+                        listArea.onmouseleave = () => {
+                            T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+                            render();
+                        }
+                        render();
+                        // ev.currentTarget.parentElement.setAttribute('draggable', 'true');
+                        window.onmouseup = () => {
+                            T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+                            render();
+                        }
+
+                        window.onmouseover = ev2 => {
+                            // moved up
+                            // let curDocListItem = document.getElementById(curDocListItem);
+                            if (ev2.clientY < curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop) 
+                            {
+                                if (curDoc.order != 1)
+                                {
+                                    T.docs[get_docs().find(x => x.order == curDoc.order - 1).id].order++;
+                                    curDoc.order = --T.docs[curDoc.id].order;
+                                    render();
+                                }
+                            }
+                            // moved down
+                            else if (ev2.clientY > curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop + curDocListItem.clientHeight)
+                            {
+                                if (curDoc.order != get_docs().length)
+                                {
+                                    T.docs[get_docs().find(x => x.order == curDoc.order + 1).id].order--;
+                                    curDoc.order = ++T.docs[curDoc.id].order;
+                                    render();
+                                }
+                            }
+                        }
+                    },
+                }
+             });
             listItem.span({ text: doc.title });
             listItem.button({ 
                 classes: ["deleter"],
@@ -177,7 +236,7 @@ function render_doclist(root) {
                     }
                 }
              })
-            .img({ attrs: { src: "delete.svg", alt: "delete icon" } });
+            .img({ attrs: { src: "delete.svg", alt: "delete icon", draggable: false } });
         })
 
 }
@@ -256,7 +315,7 @@ function render_opened_docs(root) {
 
             let docitem = root.div({
                 id: doc.id,
-                classes: ['driftitem']
+                classes: ['driftitem', T.grabbed == doc.id ? 'grabbed' : '']
             });
 
 
@@ -329,6 +388,7 @@ function render_opened_docs(root) {
                                 delete T.razors[doc.id];
                                 let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
                                 T.selections[doc.id] = { start_time: start, end_time: end };
+                                render();
                             }
                         },
                     }
@@ -1387,8 +1447,6 @@ function render_hamburger(root, doc) {
         classes: ['dl-btn'],
         events: {
             onclick: ev => {
-                console.log(doc.title);
-
                 // might change this later, for now button does nothing
             },
         }
@@ -1438,8 +1496,7 @@ function render_hamburger(root, doc) {
 }
 
 function render() {
-
-    var fileList = new PAL.ExistingRoot("div", { id: "file-list"}),
+    var fileList = new PAL.ExistingRoot("div", { id: "file-list" }),
         docArea = new PAL.ExistingRoot("main", { id: "doc-area" })
     render_doclist(fileList);
     render_opened_docs(docArea);
@@ -1481,9 +1538,16 @@ function toggle_playpause() {
         if (!T.razors[T.cur_doc] && T.selections[T.cur_doc])
             T.audio.currentTime = T.selections[T.cur_doc].start_time;
         if (T.audio.paused) {
-            if (T.audio.currentTime > T.selections[T.cur_doc].end_time
-                || T.audio.currentTime < T.selections[T.cur_doc].start_time)
+            // do rounding for conditional because comparing floats is finnicky
+            let { start_time, end_time } = T.selections[T.cur_doc];
+            start_time = Math.round(start_time * 10000) / 10000;
+            end_time = Math.round(end_time * 10000) / 10000;
+            const ct = Math.round(T.audio.currentTime * 10000) / 10000;
+            
+            if (ct > end_time
+                || ct < start_time)
             {
+                console.log(T.selections[T.cur_doc].start_time, T.audio.currentTime, T.selections[T.cur_doc].end_time);
                 let segments = (get_cur_align(T.cur_doc) || {}).segments;
                 if (segments)
                 {
@@ -1512,50 +1576,46 @@ window.onkeydown = (ev) => {
 }
 
 function tick() {
-    if (T.audio) {
+    // reached the end of audio
+    if (T.audio && T.audio.paused && T.audio.currentTime == T.audio.duration)
+        delete T.razors[T.cur_doc];
+    if (T.audio && !T.audio.paused) {
 
-        // reached the end of audio
-        if (T.audio.paused && T.audio.currentTime == T.audio.duration)
-            delete T.razors[T.cur_doc];
-        else if (!T.audio.paused)
+        T.razors[T.cur_doc] = T.audio.currentTime;
+        if (T.audio.currentTime > T.selections[T.cur_doc].end_time
+            || T.audio.currentTime < T.selections[T.cur_doc].start_time)
         {
-            T.razors[T.cur_doc] = T.audio.currentTime;
-            if (T.audio.currentTime > T.selections[T.cur_doc].end_time
-                || T.audio.currentTime < T.selections[T.cur_doc].start_time)
+            if (T.docs[T.cur_doc].autoscroll)
             {
-                if (T.docs[T.cur_doc].autoscroll)
-                {
-                    let { segments } = (get_cur_align(T.cur_doc) || {});
-                    let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
-                    T.selections[T.cur_doc] = { start_time: start, end_time: end };
-                }
-                else
-                {                
-                    T.audio.pause();
-                    delete T.razors[T.cur_doc];
-                }
+                let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
+                T.selections[T.cur_doc] = { start_time: start, end_time: end };
             }
+            else
+            {                
+                T.audio.pause();
+                delete T.razors[T.cur_doc];
+            }
+        }
 
-            // scrolling of overview and graph when playing audio
-            let razor = T.razors[T.cur_doc];
-            if (razor)
+        // scrolling of overview and graph when playing audio
+        let razor = T.razors[T.cur_doc];
+        if (razor)
+        {
+            let graphWindow = document.getElementById(T.cur_doc + '-main-graph-wrapper');
+            let left = graphWindow.scrollLeft, right = left + graphWindow.clientWidth;
+            let rX = t2x(razor - T.selections[T.cur_doc].start_time);
+            if (rX < left || rX > right)
             {
-                let graphWindow = document.getElementById(T.cur_doc + '-main-graph-wrapper');
-                let left = graphWindow.scrollLeft, right = left + graphWindow.clientWidth;
-                let rX = t2x(razor - T.selections[T.cur_doc].start_time);
-                if (rX < left || rX > right)
-                {
-                    graphWindow.scroll(rX, 0);
-                }
-                let ovWindow = document.getElementById(T.cur_doc + '-ov-wrapper');
-                left = ovWindow.scrollLeft, right = left + ovWindow.clientWidth;
-                rX = T.audio.duration * 10 * (razor / T.audio.duration);
-                if (rX < left || rX > right)
-                {
-                    ovWindow.scroll(rX, 0);
-                }
-                
+                graphWindow.scroll(rX, 0);
             }
+            let ovWindow = document.getElementById(T.cur_doc + '-ov-wrapper');
+            left = ovWindow.scrollLeft, right = left + ovWindow.clientWidth;
+            rX = T.audio.duration * 10 * (razor / T.audio.duration);
+            if (rX < left || rX > right)
+            {
+                ovWindow.scroll(rX, 0);
+            }
+            
         }
 
         render();
@@ -1639,8 +1699,6 @@ function tick() {
     }
 
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
-
-    document.getElementById('doc-area').ondragover = ev => ev.preventDefault();
 })()
 
 if(!T.ticking) {
