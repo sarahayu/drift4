@@ -126,6 +126,20 @@ function get_docs() {
 
     return dateSorted;
 }
+
+function get_opened_docs() {
+    let dateSorted = Object.keys(T.opened)
+        .map((x) => Object.assign({}, T.docs[x], {id: x}))
+        .sort((x,y) => {
+            if (!x.order && !y.order) return x.date > y.date ? -1 : 1;
+            if ((x.order === undefined) !== (y.order === undefined))
+                return y.order ? -1 : 1;
+            return x.order - y.order;
+        });
+
+    return { opened_docs: dateSorted, ordered_ids: dateSorted.map(x => x.id) };
+}
+
 function set_active_doc(doc) {
     if(doc.id !== T.cur_doc) {
         T.cur_doc = doc.id;
@@ -143,6 +157,9 @@ function set_active_doc(doc) {
 }
 
 function render_doclist(root) {
+
+    if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
+    else document.getElementById(root._attrs.id).classList.remove('grabbed');
 
     get_docs()
         .forEach(doc => {
@@ -186,9 +203,11 @@ function render_doclist(root) {
                         ev.stopPropagation();
                     },
                     onmousedown: ev => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
                         T.grabbed = doc.id;
                         let curDocListItem = ev.currentTarget.parentElement, curDoc = doc, 
-                            listArea = ev.currentTarget.parentElement.parentElement;
+                            listArea = curDocListItem.parentElement;
                         listArea.onmouseleave = () => {
                             T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
                             render();
@@ -302,14 +321,13 @@ function render_opened_docs(root) {
         document.getElementById('nofiles').classList.remove('show');
         if (Object.keys(T.opened).length === 0) document.getElementById('noneselected').classList.add('show');
         else document.getElementById('noneselected').classList.remove('show');
-    }
+    }    
 
-    get_docs()
-        .forEach((doc) => {
+    if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
+    else document.getElementById(root._attrs.id).classList.remove('grabbed');
 
-            // doc ready!!
-
-            if (!T.opened[doc.id]) return;
+    let { opened_docs, ordered_ids } = get_opened_docs();
+    opened_docs.forEach((doc, i) => {
 
             let is_pending = !has_data(doc.id);
 
@@ -325,7 +343,66 @@ function render_opened_docs(root) {
                 classes: ['docbar']
             });
 
-            docbar.img({ attrs: { src: "tictactoe.svg" } });
+            docbar.img({ 
+                attrs: { src: "tictactoe.svg", alt: 'drag indicator', draggable: false },
+                events: {                    
+                    onclick: ev => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    },
+                    onmousedown: ev => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        T.grabbed = doc.id;
+                        let curDocItem = ev.currentTarget.parentElement.parentElement, curDoc = doc, 
+                            docArea = curDocItem.parentElement, j = { value: i }, orderedDocs = ordered_ids;
+                        console.log(orderedDocs);
+                        docArea.onmouseleave = () => {
+                            T.grabbed = docArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+                            render();
+                        }
+                        render();
+                        // ev.currentTarget.parentElement.setAttribute('draggable', 'true');
+                        window.onmouseup = () => {
+                            T.grabbed = docArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+                            render();
+                        }
+
+                        window.onmouseover = ev2 => {
+                            // moved up
+                            // let curDocListItem = document.getElementById(curDocListItem);
+                            let { ordered_ids } = get_opened_docs();
+                            if (j.value != 0 && ev2.clientY < curDocItem.offsetTop - window.scrollY - 36) 
+                            {
+                                console.log('upped!', j.value)
+                                if (j.value != 0)
+                                {
+                                    console.log('moving up!');
+                                    [T.docs[ordered_ids[j.value - 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j.value - 1]].order];
+                                    curDoc.order = T.docs[curDoc.id].order;
+                                    j.value -= 1;
+                                    render();
+                                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
+                                }
+                            }
+                            // moved down
+                            else if (ev2.clientY > curDocItem.offsetTop - window.scrollY + curDocItem.clientHeight + 36)
+                            {
+                                console.log('downed!', j.value)
+                                if (j.value != ordered_ids.length - 1)
+                                {
+                                    console.log('moving down!');
+                                    [T.docs[ordered_ids[j.value + 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j.value + 1]].order];
+                                    curDoc.order = T.docs[curDoc.id].order;
+                                    j.value += 1;
+                                    render();
+                                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
+                                }
+                            }
+                        }
+                    },
+                }
+             });
 
             // Title
             docbar.div({
@@ -911,24 +988,6 @@ function render_detail(root, doc, start_time, end_time) {
 	          height: T.PITCH_H + 35
 	      },
 	      events: {
-	          onclick: (ev) => {
-		            ev.preventDefault();
-
-		            // Seek!
-		            let t = start_time + x2t(ev.offsetX);
-		            T.razors[doc.id] = t;
-		            set_active_doc(doc);
-		            T.audio.currentTime = t;
-		            render();
-	          },
-              onmousemove: ev => {
-                    T.razors[doc.id + '-hover'] = start_time + x2t(ev.offsetX);
-		            render();
-              },
-              onmouseleave: ev => {
-                    delete T.razors[doc.id + '-hover'];
-                    render();
-              }
 	      }
     });
    
@@ -1126,6 +1185,36 @@ function render_detail(root, doc, start_time, end_time) {
         })
     }
 
+    svg.rect({
+        id: doc.id + '-graph-hover-area',
+        attrs: {
+            width: seg_w,
+            height: T.PITCH_H,
+            stroke: 'none',
+            fill: 'transparent',
+        },
+        events: {
+            onclick: (ev) => {
+                ev.preventDefault();
+
+                // Seek!
+                let t = start_time + x2t(ev.offsetX);
+                T.razors[doc.id] = t;
+                set_active_doc(doc);
+                T.audio.currentTime = t;
+                render();
+            },
+            onmousemove: ev => {
+                T.razors[doc.id + '-hover'] = start_time + x2t(ev.offsetX);
+                render();
+            },
+            onmouseleave: ev => {
+                delete T.razors[doc.id + '-hover'];
+                render();
+            }
+        }
+    });
+
     let dl_btn = root.button({
         classes: ['dl-graph-btn'],
         events: {
@@ -1141,18 +1230,21 @@ function render_detail(root, doc, start_time, end_time) {
                 svgWhole.appendChild(svg1);
                 svgWhole.appendChild(svg2);
                 let pitchLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                pitchLabel.textContent = 'pitch';
+                pitchLabel.textContent = 'log';
                 pitchLabel.setAttribute('y', svg2.height.baseVal.value - 50);
                 pitchLabel.setAttribute('style', 'font-weight: 600;');
-                let pitchLabel2 = pitchLabel.cloneNode();
-                pitchLabel2.textContent = '(hz)';
-                pitchLabel2.setAttribute('dy', '1.1em');
+                let pitchLabel2 = pitchLabel.cloneNode(), pitchLabel3 = pitchLabel.cloneNode();
+                pitchLabel2.textContent = 'pitch'
+                pitchLabel2.setAttribute('dy', '1.1em');;
+                pitchLabel3.textContent = '(hz)'
+                pitchLabel3.setAttribute('dy', '2.2em');;
                 let secondsLabel = pitchLabel.cloneNode();
                 secondsLabel.textContent = 'seconds';
                 secondsLabel.setAttribute('x', 50);
                 secondsLabel.setAttribute('y', svg2.height.baseVal.value - 20);
                 svgWhole.appendChild(pitchLabel);
                 svgWhole.appendChild(pitchLabel2);
+                svgWhole.appendChild(pitchLabel3);
                 svgWhole.appendChild(secondsLabel);
                 let razor = svgWhole.querySelector('#' + 'd-razor-' + doc.id);
                 if (razor) razor.remove();

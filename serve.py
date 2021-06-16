@@ -14,7 +14,6 @@ import scipy.io as sio
 import sys
 import time
 
-from drift import measure
 import prosodic_measures
 
 BUNDLE = False

@@ -1,0 +1,152 @@
+:root
+{
+    font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;
+    color: #565656;
+    font-weight: 500;
+    font-size: 90%;
+    --primary-50: #f3d2b5;
+    --primary-200: #E9AF7C;
+    --primary-300: #E39958;
+    --primary-350: #E4924A;
+    --primary-400: #D58139;
+    --accent-300: #bd6d5e;
+    --accent-400: #B95949;
+    --accent-700: #80372B;
+    --neutral-300: #FBFBFB;
+    --neutral-350: #F1F1F3;
+    --neutral-375: #F4F4F4;
+    --neutral-400: #E5E5E5;
+    --neutral-700: #E3E3E3;
+}
+
+body
+{
+    min-height: 100vh;
+    background-color: var(--neutral-400);
+    display: grid;
+    grid-template-columns: 18rem 1fr;
+    grid-template-rows: min-content 1fr;
+}
+
+button,
+a
+{
+    transition: background-color 0.1s;
+}
+
+nav
+{
+    grid-column: 2 / 2;
+    align-self: start;
+    background-color: white;
+    color: var(--primary-400);
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 1.75em;
+    display: flex;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+table
+{
+    font-size: 0.9rem;
+}
+
+.nav-links
+{
+    display: flex;
+}
+
+.nav-links li
+{
+    display: block;
+}
+
+.nav-links > li + li
+{
+    margin-left: 2em;
+}
+
+/* element which contains label, whether it be <a> or <span> */
+.nav-links li > :first-child
+{
+    display: block;
+}
+
+/* only put large padding on first level label links */
+.nav-links > li > :first-child
+{
+    padding: 1.5em 1em;
+}
+
+.nav-links li:hover,
+.nav-links li:focus-visible
+{
+    background-color: var(--accent-700);
+    color: white;
+}
+
+.nav-links li:hover > :not(:first-child),
+.nav-links li:focus-visible > :not(:first-child)
+{
+    color: var(--accent-700);
+}
+
+.has-dropdown
+{
+    position: relative;
+}
+
+.has-dropdown > :first-child
+{
+    position: relative;
+}
+
+.has-dropdown > :first-child::after
+{
+    content: '';
+    height: 7px;
+    width: 13px;
+    display: inline-block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-left: 0.5em;
+    background-image: url(dropdown.svg);
+}
+
+.has-dropdown > ul
+{
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: var(--neutral-375);
+    display: none;
+    position: absolute;
+    /* min-width: 150%; */
+    top: 100%;
+    left: 0;
+    box-shadow: 0px 3px 7px -3px #00000040;
+}
+
+.has-dropdown a
+{
+    width: 100%;
+    font-size: 0.8em;
+    padding: 1.8em 1em;
+    padding-right: 3em;
+}
+
+/* is there a better way to do this https://css-tricks.com/change-color-of-svg-on-hover/ */
+.has-dropdown:hover > :first-child::after,
+.has-dropdown:focus-visible > :first-child::after
+{
+    filter: brightness(0) saturate(100%) invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
+}
+
+.has-dropdown:hover > ul,
+.has-dropdown:focus-visible > ul
+{
+    display: block;
+    z-index: 1;
+}

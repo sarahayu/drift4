@@ -76,7 +76,7 @@ def open_browser():
 
 
 def open_about():
-    webbrowser.open("https://rmozone.com/drift")
+    webbrowser.open("http://localhost:%d/about.html" % (9899))
 
 
 def open_gentle():

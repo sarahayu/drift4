@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="plainpage.css" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>About</title>
+  </head>
+
+  <body>
+    <nav>
+        <a href="/">
+            <h1>Drift4</h1>
+        </a>
+      <ul class="nav-links">
+        <li class="has-dropdown" tabindex="0">
+          <span>ABOUT</span>
+          <ul>
+            <li><a href="about.html">ABOUT DRIFT</a></li>
+            <li>
+              <a href="https://lowerquality.com/gentle/" target="_blank"
+                >ABOUT GENTLE</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://github.com/MillerLab-UCDavis/Voxit/#voxit-vocal-analysis-tools"
+                target="_blank"
+                >ABOUT VOXIT</a
+              >
+            </li>
+          </ul>
+        </li>
+        <li><a href="instructions.html">INSTRUCTIONS</a></li>
+        <li>
+          <a href="https://github.com/strob/drift3/" target="_blank"
+            >SOURCE CODE</a
+          >
+        </li>
+      </ul>
+    </nav>
+    <main>
+      <h2>About Drift</h2>
+
+      <p>
+        Drift was prototyped in 2016 by Robert Ochshorn and Hawkins with support
+        from Marit MacArthur’s ACLS Digital Innovations Fellowship. It is a
+        highly accurate pitch-tracker that also incorporates the forced
+        alignment features of Gentle, visualizing a pitch trace over time and
+        aligning it with a transcript. Using an algorithm developed by Byung Suk
+        Lee and Daniel P. W. Ellis at Columbia University to work with precise
+        accuracy on the noisy, low-quality vocal recordings common in the audio
+        archive, Drift measures what human listeners perceive as vocal pitch
+        (the fundamental frequency, the vibration of the vocal cords, as
+        measured in hertz) every 10 milliseconds in a given recording.
+      </p>
+      <p>What do the Prosodic measures mean?</p>
+      <ol>
+        <li>Words Per Minute: (Self Explanatory)</li>
+        <li>Pause Count: Number of pauses greater than 100 milliseconds</li>
+        <li>Pause Count: Number of pauses greater than 3000 milliseconds</li>
+        <li>Mean Pause Duration: Average length of pauses</li>
+        <li>Average Pause Rate: Average number of pauses per second</li>
+        <li>
+          Complexity all pauses: A higher value indicates less predictable &
+          less repetitive pauses
+        </li>
+        <li>f0 Mean: Mean Pitch</li>
+        <li>f0 Range: Range of pitches (in Octaves)</li>
+        <li>f0 Mean Absolute Velocity:</li>
+        <li>F0 Mean Absolute Acceleration:</li>
+        <li>f0 Entropy:</li>
+      </ol>
+
+      <p><i>Note: The graph is scaled in log-based hertz.</i></p>
+    </main>
+  </body>
+</html>
