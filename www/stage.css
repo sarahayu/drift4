@@ -140,7 +140,7 @@ table
 .file-list.grabbed,
 .file-list.grabbed *
 {
-    cursor: grabbing !important;
+    cursor: move !important;
 }
 
 .file-list.grabbed > *
@@ -202,7 +202,7 @@ table
 
 .list-item > img
 {
-    cursor: grab;
+    cursor: move;
 }
 
 .liste-item button > *
@@ -231,7 +231,7 @@ main
 main.grabbed,
 main.grabbed *
 {
-    cursor: grabbing !important;
+    cursor: move !important;
 }
 
 main.grabbed > *
@@ -349,7 +349,7 @@ main.grabbed > *
 
 .docbar > img:hover
 {
-    cursor: grab;
+    cursor: move;
 }
 
 .doc-name
@@ -753,6 +753,16 @@ main.grabbed > *
     font-weight: 600;
 }
 
+.drift-table th, .drift-table td
+{
+    min-width: 10ch;
+}
+
+.drift-table a:hover
+{
+    text-decoration: underline;
+}
+
 .drift-table tr > *
 {
     padding: 0.75em 1em;
@@ -1024,9 +1034,4 @@ main.grabbed > *
 .driftitem ::-webkit-scrollbar-button:start
 {
     display: none;
-}
-
-.table-wrapper ::-webkit-scrollbar-thumb 
-{
-    background: #D6D6D6;
 }

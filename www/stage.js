@@ -166,6 +166,7 @@ function render_doclist(root) {
             let listItem = root.li({ 
                 id: doc.id + '-listwrapper',
                 classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
+                attrs: { title: doc.title },
                 events: {
                     onclick: ev => {
                         ev.currentTarget.classList.toggle('active');
@@ -196,7 +197,7 @@ function render_doclist(root) {
             });
 
             listItem.img({ 
-                attrs: { src: "hamburger.svg", alt: "drag indicator", draggable: false },
+                attrs: { src: "hamburger.svg", alt: "drag indicator", draggable: false, title: 'Drag to change order of document' },
                 events: {
                     onclick: ev => {
                         ev.preventDefault();
@@ -344,7 +345,7 @@ function render_opened_docs(root) {
             });
 
             docbar.img({ 
-                attrs: { src: "tictactoe.svg", alt: 'drag indicator', draggable: false },
+                attrs: { src: "tictactoe.svg", alt: 'drag indicator', draggable: false, title: 'Drag to change order of document' },
                 events: {                    
                     onclick: ev => {
                         ev.preventDefault();
@@ -453,7 +454,7 @@ function render_opened_docs(root) {
                 owTop.p({ text: "Drag to select a region" });
                 let playOpt = owTop.div({ classes: ['play-opt'] });
                 playOpt.button({ 
-                    text: 'jump to beginning of transcript',
+                    text: 'jump to start of transcript',
                     events: {
                         onmousedown: ev => {
                             ev.preventDefault();
@@ -472,7 +473,7 @@ function render_opened_docs(root) {
                 });
                 playOpt.label({
                     id: doc.id + '-lab1',
-                    text: 'auto-scroll',
+                    text: 'continuous scrolling',
                     attrs: {
                         for: doc.id + '-rad1'
                     }
@@ -636,6 +637,26 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     const { stats, timedStats } = T.docs[doc.id];
     if(stats) {
 
+        // TODO better way to do this?
+        const descriptions = {
+            'WPM': '(Self Explanatory)',
+            'Gentle_Pause_Count_>100ms': 'Number of pauses greater than 100 milliseconds',
+            'Gentle_Pause_Count_>500ms': 'Number of pauses greater than 500 milliseconds',
+            'Gentle_Pause_Count_>1000ms': 'Number of pauses greater than 1000 milliseconds',
+            'Gentle_Pause_Count_>1500ms': 'Number of pauses greater than 1500 milliseconds',
+            'Gentle_Pause_Count_>2000ms': 'Number of pauses greater than 2000 milliseconds',
+            'Gentle_Pause_Count_>2500ms': 'Number of pauses greater than 2500 milliseconds',
+            'Gentle_Long_Pause_Count_>3000ms': 'Number of pauses greater than 3000 milliseconds',
+            'Gentle_Mean_Pause_Duration_(sec)': 'Average length of pauses',
+            'Gentle_Pause_Rate_(pause/sec)': 'Average number of pauses per second',
+            'Gentle_Complexity_All_Pauses': 'A higher value indicates less predictable & less repetitive pauses',
+            'Drift_f0_Mean_(hz)': 'Mean Pitch',
+            'Drift_f0_Range_(octaves)': 'Range of pitches (in Octaves)',
+            // 'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'desc',
+            // 'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'desc',
+            // 'Drift_f0_Entropy': 'desc',
+        };
+
         let keys = Object.keys(stats).slice(2);
 
         // Header
@@ -644,7 +665,13 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                 new PAL.Element('th', {
                     parent: headers,
                     id: key + '-h',
-                    text: key.replace(/_/g, ' ')
+                    attrs: descriptions[key] ? { title: descriptions[key].substring(0, 60) + '... (Click label for more!)' } : {}
+                }).a({
+                    text: key.replace(/_/g, ' '),
+                    attrs: descriptions[key] ? {
+                        href: 'about.html#:~:text=' + escape(descriptions[key]),
+                        target: '_blank'
+                    } : {}
                 })
                 new PAL.Element('td', {
                     parent: datarow,

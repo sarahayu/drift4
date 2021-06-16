@@ -57,6 +57,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # We do not consider pauses less than 100 ms because fully continuous speech also naturally has such brief gaps in energy,
     # nor do we consider pauses that exceed 3,000 ms (that is, 3 seconds), because they are quite rare.
     sum = 0
+    start_pause = 0.5
     min_pause = 0.1
     max_pause = 3 
     pause_count = 0
@@ -73,14 +74,14 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     # Pause counts
     results["Gentle_Pause_Count_>100ms"] = pause_count
 
-    # while start_pause < max_pause:
-    #     tmp_pause_count = 0
-    #     for x in range(0, len(gentle_end) - 1):
-    #         tmp = gentle_start[x + 1] - gentle_end[x]
-    #         if tmp >= start_pause and tmp <= max_pause:
-    #             tmp_pause_count += 1
-    #     temp_output.append(tmp_pause_count)
-    #     start_pause += 0.5
+    while start_pause < max_pause:
+        tmp_pause_count = 0
+        for x in range(0, len(gentle_end) - 1):
+            tmp = gentle_start[x + 1] - gentle_end[x]
+            if tmp >= start_pause and tmp <= max_pause:
+                tmp_pause_count += 1
+        results[f"Gentle_Pause_Count_>{(int)(start_pause * 1000)}ms"] = tmp_pause_count
+        start_pause += 0.5
 
     results["Gentle_Long_Pause_Count_>3000ms"] = long_pause_count
 

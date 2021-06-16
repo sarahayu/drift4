@@ -63,20 +63,22 @@
       </p>
       <p>What do the Prosodic measures mean?</p>
       <ol>
-        <li>Words Per Minute: (Self Explanatory)</li>
-        <li>Pause Count: Number of pauses greater than 100 milliseconds</li>
-        <li>Pause Count: Number of pauses greater than 3000 milliseconds</li>
-        <li>Mean Pause Duration: Average length of pauses</li>
-        <li>Average Pause Rate: Average number of pauses per second</li>
-        <li>
-          Complexity all pauses: A higher value indicates less predictable &
-          less repetitive pauses
-        </li>
-        <li>f0 Mean: Mean Pitch</li>
-        <li>f0 Range: Range of pitches (in Octaves)</li>
-        <li>f0 Mean Absolute Velocity:</li>
-        <li>F0 Mean Absolute Acceleration:</li>
-        <li>f0 Entropy:</li>
+        <li id="WPM">Words Per Minute: (Self Explanatory)</li>
+        <li id="Gentle_Pause_Count_>100ms">Pause Count: Number of pauses greater than 100 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>500ms">Pause Count: Number of pauses greater than 500 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>1000ms">Pause Count: Number of pauses greater than 1000 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>1500ms">Pause Count: Number of pauses greater than 1500 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>2000ms">Pause Count: Number of pauses greater than 2000 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>2500ms">Pause Count: Number of pauses greater than 2500 milliseconds</li>
+        <li id="Gentle_Long_Pause_Count_>3000ms">Pause Count: Number of pauses greater than 3000 milliseconds</li>
+        <li id="Gentle_Mean_Pause_Duration_(sec)">Mean Pause Duration: Average length of pauses</li>
+        <li id="Gentle_Pause_Rate_(pause/sec)">Average Pause Rate: Average number of pauses per second</li>
+        <li id="Gentle_Complexity_All_Pauses">Complexity all pauses: A higher value indicates less predictable & less repetitive pauses</li>
+        <li id="Drift_f0_Mean_(hz)">f0 Mean: Mean Pitch</li>
+        <li id="Drift_f0_Range_(octaves)">f0 Range: Range of pitches (in Octaves)</li>
+        <li id="Drift_f0_Mean_Abs_Velocity_(octaves/sec)">f0 Mean Absolute Velocity:</li>
+        <li id="Drift_f0_Mean_Abs_Accel_(octaves/sec^2)">F0 Mean Absolute Acceleration:</li>
+        <li id="Drift_f0_Entropy">f0 Entropy:</li>
       </ol>
 
       <p><i>Note: The graph is scaled in log-based hertz.</i></p>
