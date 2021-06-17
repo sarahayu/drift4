@@ -638,6 +638,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     if(stats) {
 
         // TODO better way to do this?
+        // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
         const descriptions = {
             'WPM': '(Self Explanatory)',
             'Gentle_Pause_Count_>100ms': 'Number of pauses greater than 100 milliseconds',
@@ -657,7 +658,26 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
             // 'Drift_f0_Entropy': 'desc',
         };
 
+        // take out start_time and end_time
         let keys = Object.keys(stats).slice(2);
+
+        // for formatting long description tooltips
+        function splitString(str, len) {
+            let strs = [], i = 0, j = len;
+
+            while (j < str.length) {
+                if (str.charAt(j) !== ' ') {
+                    j++;
+                    continue;
+                }
+                strs.push(str.substring(i, j));
+                i = j + 1;
+                j = i + len;
+            }
+            strs.push(str.substring(i, j));
+
+            return strs.join('\n');
+        }
 
         // Header
         keys
@@ -665,11 +685,11 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                 new PAL.Element('th', {
                     parent: headers,
                     id: key + '-h',
-                    attrs: descriptions[key] ? { title: descriptions[key].substring(0, 60) + '... (Click label for more!)' } : {}
+                    attrs: descriptions[key] ? { title: splitString(descriptions[key], 40) + '\n(Click label for more!)' } : {}
                 }).a({
                     text: key.replace(/_/g, ' '),
                     attrs: descriptions[key] ? {
-                        href: 'about.html#:~:text=' + escape(descriptions[key]),
+                        href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape(descriptions[key]) : 'about.html#' + key,
                         target: '_blank'
                     } : {}
                 })
