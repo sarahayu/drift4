@@ -19,6 +19,12 @@
     --neutral-700: #E3E3E3;
 }
 
+::selection
+{
+    color: white;
+    background-color: #444;
+}
+
 body
 {
     min-height: 100vh;
@@ -134,7 +140,6 @@ table
     width: 100%;
     font-size: 0.8em;
     padding: 1.8em 1em;
-    padding-right: 3em;
 }
 
 /* is there a better way to do this https://css-tricks.com/change-color-of-svg-on-hover/ */

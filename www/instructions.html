@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="base.css" />
     <link rel="stylesheet" href="plainpage.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
@@ -16,9 +16,9 @@
 
   <body>
     <nav>
-        <a href="/">
-            <h1>Drift4</h1>
-        </a>
+      <a href="/">
+        <h1>Drift4</h1>
+      </a>
       <ul class="nav-links">
         <li class="has-dropdown" tabindex="0">
           <span>ABOUT</span>
@@ -29,7 +29,8 @@
                 >ABOUT GENTLE</a
               >
             </li>
-          </ul>
+            <li><a href="prosodic-measures.html">PROSODIC MEASURES</a></li>
+        </ul>
         </li>
         <li><a href="instructions.html">INSTRUCTIONS</a></li>
         <li>
@@ -40,97 +41,108 @@
       </ul>
     </nav>
     <main>
-      <h2>Instructions</h2>
-
-      <p>Opening Drift</p>
-      <ul>
-          <li>
-            <i>
-                Note: Before running Drift, it is helpful to have a (manually) corrected
-                transcript from Gentle. This will help generate more accurate
-                calculations
-            </i>
-          </li>
-          <li>Open Gentle. It must be open in order for Drift to work.</li>
-          <li>Open the Drift application.</li>
-          <li>
-            Click “Open in Browser.” The software should open on your default
-            browser.
-          </li>
-      </ul>
-
-      <p>Adding a file</p>
-      <ul>
-          <li>
-            Drag an audio file into the software. Onto the left software (Or, you
-            can click the choose files button and find it on your computer).
-          </li>
-          <li>
-            Paste in the corrected transcript generated from Gentle into the box.
-          </li>
-          <li>
-            Press “set transcript”. The software should align the transcript with
-            the audio file, and also perform calculations of different prosodic
-            measures.
-          </li>
-      </ul>
-
-      <p>Arranging Files</p>
-      <ul>
-          <li>
-            You can add a file to the dashboard by clicking on it from the sidebar.
-            You can hide a file from the dashboard by clicking on it again
-          </li>
-          <li>
-            You can rearrange the order of the files by dragging them along the
-            sidebar to see a desired order
-          </li>
-      </ul>
-
-      <p>Looking at prosodic Measures</p>
-      <ul>
-          <li>
-            you press play, the audio recording will play, and you can see the bar
-            move
-          </li>
-          <li>you hover over the graph, you can see the pitch at a certain time</li>
-          <li>
-            The prosodic measures for the whole region are on the bottom graph
-          </li>
-          <li>
-            You can also select a smaller region within the large audio file, and
-            drift will perform the calculations on the selected region. You can do
-            this by dragging along the smaller graph at the top
-          </li>
-      </ul>
-
-      <p>Downloading the audio files</p>
-      <ul>
-          <li>
-            Click the two dots on the side of each recording, and you can download
-            the calculations as a .csv, .mat, or .txt file.
-          </li>
-          <li>
-            Copy the prosodic measure table to you clipboard by hovering over the
-            table and downloading
-          </li>
-          <li>
-            Download the graph as a PNG by hovering over the graph and pressing the
-            red “download” icon.
-          </li>
-      </ul>
-
-      <p>Deleting Files</p>
-      <ul>
-        <li>
-          You can delete a file by clicking on the three dots on the top bar,
-          and clicking on the “delete audio file” button
-        </li>
-        <li>
-          You can delete all of the audio files by clicking on the 3 dots button
-          on the sidebar, then clicking on the “Delete all audio files button”.
-        </li>
-      </ul>
+      <section>
+        <div class="section-container">
+          <h2>Instructions</h2>
+          <h4>Opening Drift</h4>
+          <ol>
+            <li>
+              Install and open
+              <a href="https://lowerquality.com/gentle/" target="_blank">Gentle</a>. Gentle must
+              be installed and open in order for Drift to work.
+            </li>
+            <li>Open the Drift application.</li>
+            <li>
+              Click “Open in Browser.” The software should open on your default
+              browser.
+            </li>
+            <li>
+              <i>
+                Note: Before running an audio file through Drift, it is helpful
+                to have a correct transcript of the recording, or a (manually)
+                corrected transcript from Gentle. This will help generate more
+                accurate calculations.
+              </i>
+            </li>
+          </ol>
+          <h4>Adding a file</h4>
+          <ol>
+            <li>
+              Drag an audio file into the Drift interface. Or, you can click the
+              “choose files” button and find the file by browsing on your
+              computer.
+            </li>
+            <li>
+              Paste in the corrected transcript generated from Gentle into the
+              transcript box.
+            </li>
+            <li>
+              Select “set transcript”. Drift should align the transcript with
+              the audio file, and also perform calculations of the Voxit
+              prosodic measures.
+            </li>
+          </ol>
+          <h4>Arranging Files</h4>
+          <ul>
+            <li>
+              You can add a file to the dashboard by clicking on it from the
+              sidebar. You can hide a file from the dashboard by clicking on it
+              again
+            </li>
+            <li>
+              You can rearrange the order of the files by dragging them along
+              the sidebar to see a desired order
+            </li>
+          </ul>
+          <h4>Voxit Prosodic Measures</h4>
+          <ul>
+            <li>
+              If you press play, the audio recording will play, and you can see
+              the bar move within the pitch contour.
+            </li>
+            <li>
+              If you hover over the graph, the pitch at a certain time point
+              will appear.
+            </li>
+            <li>
+              The Voxit prosodic measures for the whole region appear below the
+              pitch contour.
+            </li>
+            <li>
+              You can also select a smaller region within the large audio file,
+              and Drift will perform the calculations on the selected region.
+              You can do this by dragging along the smaller graph at the top.
+            </li>
+          </ul>
+          <h4>Downloading the audio files</h4>
+          <ul>
+            <li>
+              Click the three dots above each recording, and you can download
+              the calculations as a .csv, .mat, or .txt file.
+            </li>
+            <li>
+              Copy the Voxit prosodic measure table to your clipboard by
+              hovering over the table and downloading
+            </li>
+            <li>
+              Download the graph as a PNG by hovering over the graph and
+              pressing the red “download” icon.
+            </li>
+          </ul>
+          <h4>Deleting Files</h4>
+          <ul>
+            <li>
+              You can delete a file by clicking on the trashcan on the top bar,
+              and clicking on the “delete audio file” button
+            </li>
+            <li>
+              You can delete all of the audio files by clicking on the 3 dots
+              button on the sidebar, then clicking on the “Delete all audio
+              files button”.
+            </li>
+          </ul>
+        </div>
+      </section>
     </main>
   </body>
 </html>

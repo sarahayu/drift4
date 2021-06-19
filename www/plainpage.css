@@ -1,7 +1,7 @@
 body
 {
     min-height: 100vh;
-    background-color: var(--neutral-400);
+    background-color: white;
     display: initial;
 }
 
@@ -31,16 +31,34 @@ nav ul
 main
 {
     font-size: 1.2rem;
-    padding: 3em;
-    line-height: 1.25em;
+}
+
+main *
+{
+    line-height: 1.3em;
+}
+
+section
+{
+    padding: 2em 0;
+}
+
+section:nth-child(odd), 
+section:only-of-type
+{
+    background-color: #FBFBFB;
+}
+
+section:last-child
+{
+    padding-bottom: 3em;
+}
+
+.section-container
+{
     max-width: 70em;
     width: 90%;
     margin: 0 auto;
-    margin-top: 3em;
-    margin-bottom: 2em;
-    background-color: #FBFBFB;
-    box-sizing: border-box;
-    box-shadow: 0px 4px 25px -11px #00000030;
 }
 
 h1
@@ -49,12 +67,30 @@ h1
     font-style: italic;
 }
 
-h2
+h2, h3, h4
 {
     font-weight: 700;
-    font-size: 2em;
     margin: 1em 0;
-    margin-top: 1.5em;
+    margin-top: 1.2em;
+}
+
+h2
+{
+    font-size: 3em;
+    color: var(--primary-400);
+    margin: 0.75em 0;
+}
+
+h3
+{
+    font-size: 1.5em;
+    color: var(--accent-400);
+}
+
+h4
+{
+    font-size: 1.1em;
+    color: var(--accent-400);
 }
 
 p
@@ -62,10 +98,36 @@ p
     margin: 1em 0;
 }
 
+p > img
+{
+    height: 1.1em;
+    transform: translateY(0.1em);
+}
+
+main a
+{
+    color: var(--accent-400);
+    font-weight: 600;
+}
+
+main a:hover
+{
+    text-decoration: underline;
+}
+
 main li
 {
-    margin: 0.2em 0;
     padding-left: 0.5em;
+}
+
+main ol li
+{
+    margin: 0.5em 0;
+}
+
+main ul li
+{
+    margin: 0.2em 0;
 }
 
 main ol,

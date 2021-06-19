@@ -247,7 +247,7 @@ def align(cmd):
     # Poll for status
     status_url = url + '/' + uid + '/status.json'
 
-    cur_status = 0
+    cur_status = -1
 
     while True:
         status = requests.get(status_url).json()

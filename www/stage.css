@@ -449,26 +449,26 @@ main.grabbed .driftitem
     background-color: white;
 }
 
-.driftitem-top
+.driftitem-content section + section
+{
+    margin-top: 1em;
+}
+
+.top-section
 {
     display: flex;
     align-items: stretch;
     gap: 0 1em;
 }
 
-.driftitem-top > *
+.top-section > *
 {
     background-color: white;
 }
 
-.driftitem-top > :last-child
+.top-section > :last-child
 {
     flex: 0 0 20em;
-}
-
-.driftitem-content section + section
-{
-    margin-top: 1em;
 }
 
 .overview
@@ -528,7 +528,7 @@ main.grabbed .driftitem
     overflow: hidden;
 }
 
-.detail-wrapper
+.graph-section
 {
     padding: 1em;
 }
@@ -694,42 +694,59 @@ main.grabbed .driftitem
 .table-section
 {
     position: relative;
+    z-index: 0;
+}
+
+.table-section-container
+{
+    position: relative;
     border-left: 1.25px solid #DDDDDD;
-}
-
-.table-section > span
-{
-    display: inline-block;
-    padding: 0.5em 1em;
-    width: 100%;
     background-color: var(--neutral-300);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
 
-.table-wrapper:hover .copy-btn,
-.table-wrapper:focus-within .copy-btn
+.table-section-container > span
 {
-    opacity: 1;
+    padding: 0.5em 1em;
 }
 
-.copy-btn
+.table-section-container > span:last-child
 {
-    display: block;
-    opacity: 0;
+    font-style: italic;
+}
+
+.table-title
+{
     position: absolute;
     bottom: 100%;
-    right: 0;
-    z-index: 1;
-    padding: 1em 1.5em;
-    border-radius: 100vh;
-    background-color: var(--accent-400);
-    color: white;
+    left: -1.25px;
+    font-size: 1.25em;
+    padding: 0.5em 1em;
+    transform: translateY(105%);
+    border-radius: 0.7em 0.7em 0 0;
+    font-weight: 300;
     font-style: italic;
-    box-shadow: 0px 0px 6px 0px #00000040;
+    z-index: -100;
+    background-color: var(--primary-400);
+    color: white;
+    border-bottom: none;
+    transition: transform 0.2s, box-shadow 0s 0s;
 }
 
-.copy-btn:hover
+.table-section:hover .table-title,
+.table-section:focus-within .table-title
 {
-    background-color: var(--accent-300);
+    transform: translateY(0);
+    box-shadow: 0px 0px 6px 0px #00000040;
+    transition: transform 0.2s, box-shadow 0s 0.2s;
+}
+
+.table-section a:hover,
+.table-section a:focus-visible
+{
+    text-decoration: underline;
 }
 
 .table-wrapper
@@ -739,6 +756,37 @@ main.grabbed .driftitem
     display: flex;
     min-width: 100%;
     align-items: center;
+    background-color: white;
+}
+
+.copy-btn
+{
+    display: block;
+    position: absolute;
+    bottom: 100%;
+    right: 0.5em;
+    padding: 0.6em 1.45em;
+    border-radius: 100vh;
+    background-color: var(--accent-400);
+    color: white;
+    font-style: italic;
+    transform: translateY(101%);
+    opacity: 0;
+    box-shadow: 0px 0px 6px 0px #00000040;
+    transition: transform 0.2s, background-color 0.1s, opacity 0.2s;
+}
+
+.table-wrapper:hover .copy-btn,
+.table-wrapper:focus-within .copy-btn
+{
+    opacity: 1;
+    transition: transform 0.2s, background-color 0.1s, opacity 0.2s;
+    transform: translateY(0.5em);
+}
+
+.copy-btn:hover
+{
+    background-color: var(--accent-300);
 }
 
 .drift-table
@@ -756,11 +804,6 @@ main.grabbed .driftitem
 .drift-table th, .drift-table td
 {
     min-width: 10ch;
-}
-
-.drift-table a:hover
-{
-    text-decoration: underline;
 }
 
 .drift-table tr > *
@@ -874,7 +917,7 @@ main.grabbed .driftitem
     background-color: var(--accent-700);
 }
 
-.setts-btn
+.bottom-wrapper button
 {
     text-transform: uppercase;
     color: white;
@@ -886,13 +929,13 @@ main.grabbed .driftitem
     box-shadow: 0px 0px 12px 0px rgba(128, 55, 43, 0.2);
 }
 
-.setts-btn:hover,
-.setts-btn:focus-visible
+.bottom-wrapper button:hover,
+.bottom-wrapper button:focus-visible
 {
     background-color: var(--primary-200);
 }
 
-.setts-btn:disabled
+.bottom-wrapper button:disabled
 {
     pointer-events: none;
     background-color: #C2C0C0;

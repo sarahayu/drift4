@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="base.css" />
     <link rel="stylesheet" href="plainpage.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
@@ -16,9 +16,9 @@
 
   <body>
     <nav>
-        <a href="/">
-            <h1>Drift4</h1>
-        </a>
+      <a href="/">
+        <h1>Drift4</h1>
+      </a>
       <ul class="nav-links">
         <li class="has-dropdown" tabindex="0">
           <span>ABOUT</span>
@@ -29,7 +29,8 @@
                 >ABOUT GENTLE</a
               >
             </li>
-          </ul>
+            <li><a href="prosodic-measures.html">PROSODIC MEASURES</a></li>
+        </ul>
         </li>
         <li><a href="instructions.html">INSTRUCTIONS</a></li>
         <li>
@@ -40,41 +41,69 @@
       </ul>
     </nav>
     <main>
-      <h2>About Drift</h2>
-
-      <p>
-        Drift was prototyped in 2016 by Robert Ochshorn and Hawkins with support
-        from Marit MacArthur’s ACLS Digital Innovations Fellowship. It is a
-        highly accurate pitch-tracker that also incorporates the forced
-        alignment features of Gentle, visualizing a pitch trace over time and
-        aligning it with a transcript. Using an algorithm developed by Byung Suk
-        Lee and Daniel P. W. Ellis at Columbia University to work with precise
-        accuracy on the noisy, low-quality vocal recordings common in the audio
-        archive, Drift measures what human listeners perceive as vocal pitch
-        (the fundamental frequency, the vibration of the vocal cords, as
-        measured in hertz) every 10 milliseconds in a given recording.
-      </p>
-      <p>What do the Prosodic measures mean?</p>
-      <ol>
-        <li id="WPM">Words Per Minute: (Self Explanatory)</li>
-        <li id="Gentle_Pause_Count_>100ms">Pause Count: Number of pauses greater than 100 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>500ms">Pause Count: Number of pauses greater than 500 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>1000ms">Pause Count: Number of pauses greater than 1000 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>1500ms">Pause Count: Number of pauses greater than 1500 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>2000ms">Pause Count: Number of pauses greater than 2000 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>2500ms">Pause Count: Number of pauses greater than 2500 milliseconds</li>
-        <li id="Gentle_Long_Pause_Count_>3000ms">Pause Count: Number of pauses greater than 3000 milliseconds</li>
-        <li id="Gentle_Mean_Pause_Duration_(sec)">Mean Pause Duration: Average length of pauses</li>
-        <li id="Gentle_Pause_Rate_(pause/sec)">Average Pause Rate: Average number of pauses per second</li>
-        <li id="Gentle_Complexity_All_Pauses">Complexity all pauses: A higher value indicates less predictable & less repetitive pauses</li>
-        <li id="Drift_f0_Mean_(hz)">f0 Mean: Mean Pitch</li>
-        <li id="Drift_f0_Range_(octaves)">f0 Range: Range of pitches (in Octaves)</li>
-        <li id="Drift_f0_Mean_Abs_Velocity_(octaves/sec)">f0 Mean Absolute Velocity:</li>
-        <li id="Drift_f0_Mean_Abs_Accel_(octaves/sec^2)">F0 Mean Absolute Acceleration:</li>
-        <li id="Drift_f0_Entropy">f0 Entropy:</li>
-      </ol>
-
-      <p><i>Note: The graph is scaled in log-based hertz.</i></p>
+      <section>
+        <div class="section-container">
+          <h2>About Drift</h2>
+          <p>
+            Drift was prototyped in 2016 by Robert Ochshorn and Max Hawkins with
+            support from Marit MacArthur’s ACLS Digital Innovations Fellowship.
+            It is a highly accurate pitch-tracker that also incorporates the
+            forced alignment features of
+            <a href="https://lowerquality.com/gentle/" target="_blank">Gentle</a
+            >, visualizing a pitch trace over time and aligning it with a
+            transcript. (Note: Gentle can also create rough transcripts of
+            speech recordings.) Using an algorithm developed by
+            <a href="https://core.ac.uk/display/161443729" target="_blank">
+              Byung Suk Lee and Daniel P. W. Ellis
+            </a>
+            at Columbia University to work with precise accuracy on the noisy,
+            low-quality vocal recordings common in the audio archive, Drift
+            measures what human listeners perceive as vocal pitch (the
+            fundamental frequency, the vibration of the vocal cords, as measured
+            in hertz) every 10 milliseconds in a given recording.
+          </p>
+          <p>
+            <u
+              >Running Drift on your own computer requires installing and
+              opening Gentle first.</u
+            >
+            Both work best on recordings of a single speaker; overlapping
+            speakers will generate confusing pitch contours and erroneous Voxit
+            prosodic measures.
+          </p>
+          <h3 id="about-voxit">About Voxit: Vocal Analysis Tools</h3>
+          <p>
+            Voxit is an open-source toolkit that performs automated analysis of
+            vocal parameters in audio recordings of speech and song. It was
+            developed by
+            <a href="https://millerlab.faculty.ucdavis.edu/" target="_blank"
+              >Lee M. Miller</a
+            >
+            in collaboration with
+            <a
+              href="https://writing.ucdavis.edu/people/mjmacart/"
+              target="_blank"
+              >Marit J. MacArthur</a
+            >
+            at the University of California, Davis, with additional input from
+            Robert Ochshorn. It works best on recordings of a single speaker;
+            overlapping speakers will generate erroneous Voxit prosodic
+            measures. The standalone executable version of Voxit does not
+            require a Matlab license. (Using the full editable codebase does.)
+            Some of the Voxit prosodic measures in Drift4 differ slightly from
+            the same prosodic measures in Voxit itself, because Voxit analyzes
+            voiced speech and ignores unvoiced speech (e.g., fricatives and
+            plosives, which do not involve the vocal cords), and thus is
+            language-agnostic, while Drift analyzes words in English, based on
+            Gentle transcripts. Click
+            <a href="https://github.com/MillerLab-UCDavis/Voxit" target="_blank"
+              >here</a
+            >
+            for more information on Voxit, which is very useful for analyzing
+            large archives of recordings and non-English language recordings.
+          </p>
+        </div>
+      </section>
     </main>
   </body>
 </html>

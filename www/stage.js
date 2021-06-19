@@ -2,546 +2,577 @@ var T = T || {};
 var D = D || {};		// Data
 var C = C || {
     STATUS: {
-	      UNINITIALIZED: 'uninitialized',
-	      LOADING: 'loading',
-	      READY: 'ready',
-	      ERROR: 'error'
+        UNINITIALIZED: 'uninitialized',
+        LOADING: 'loading',
+        READY: 'ready',
+        ERROR: 'error'
     }
 };
 
-function cached_get_url(url, proc_fn) {
-    D.urls = D.urls || {};
-    if(D.urls[url + '_status'] != C.STATUS.READY) {
-	      if(D.urls[url + '_status'] != C.STATUS.LOADING) {
-	          D.urls[url + '_status'] = C.STATUS.LOADING;
+// "main" method
+// this function (along with the rest of this file) is run each time stage.js is saved
+(function start() {
 
-	          FARM.get(url, (ret) => {
-		            if(proc_fn) {
-		                ret = proc_fn(ret);
-		            }
-		            D.urls[url] = ret;
-		            D.urls[url + '_status'] = C.STATUS.READY;
-		            render();	// XXX
-	          });
-	      }
-	      return {loading: true};
+    T.XSCALE = 300;
+    T.PITCH_H = 250;
+    T.LPAD = 0;
+    T.MAX_A = 15;
+
+    // initialize global variables, making sure to only initialize them
+    // when the page first loads and not everytime this file is saved
+    if (!T.docs) {
+        T.docs = {};
+        reload_docs();
     }
-    return D.urls[url];
-}
+    if (!T.active) {
+        T.active = {};
+    }
+    if (!T.opened) {
+        T.opened = {};
+    }
+    if (!T.razors) {
+        T.razors = {};
+    }
+    if (!T.selections) {
+        T.selections = {};
+    }
+    if (!T.descriptions) {
+        T.descriptions = get_descriptions();
+    }
+    if (!T.ticking) {
+        T.ticking = true;
+        tick();
+    }
 
-// legacy
-function get_cur_pitch(id) {
-    return (get_data(id || T.cur_doc)||{}).pitch
-}
-function get_cur_align(id) {
-    return (get_data(id || T.cur_doc)||{}).align
-}
-function get_cur_rms(id) {
-    return (get_data(id || T.cur_doc)||{}).rms
-}
+    register_listeners();
+    render();
+})()
 
-function has_data(docid) {
-    let meta = T.docs[docid];
-    if(!meta) { return }
-
-    return meta.pitch && meta.align && meta.rms;
-}
-
-function get_data(docid) {
-    // or null if they're not loaded...
-
-    let meta = T.docs[docid];
-    if(!meta) { return }
-
-    if(!meta.pitch) { return }
-    let pitch = cached_get_url('/media/' + meta.pitch, parse_pitch);
-    if(pitch.loading) { return }
-
-    if(!meta.align) { return }
-    let align = cached_get_url('/media/' + meta.align, JSON.parse);
-    if(align.loading) { return }
-
-    if(!meta.rms) { return }
-    let rms = cached_get_url('/media/' + meta.rms, JSON.parse);
-    if(rms.loading) { return }
-
-    return {pitch, align, rms}
-}
-
-
-T.XSCALE = 300;
-T.PITCH_H= 250;
-T.LPAD = 0;
-T.MAX_A= 15;
-
-if(!T.docs) {
-    T.docs = {};
-    reload_docs();
-}
-if(!T.active) {
-    T.active = {};
-}
-if(!T.opened) {
-    T.opened = {};
-}
-if(!T.razors) {
-    T.razors = {};
-}
-if(!T.selections) {
-    T.selections = {};
-}
 function reload_docs() {
     T.LAST_T = T.LAST_T || 0;
     let firsttime = !T.LAST_T;
 
     FARM.get_json("/_rec/_infos.json?since=" + T.LAST_T, (ret) => {
-	      ret.forEach((doc) => {
-              if (T.docs[doc.id])
-                  Object.assign(T.docs[doc.id], doc);
-              else
-                  T.docs[doc.id] = doc;
-              T.LAST_T = Math.max(T.LAST_T, doc.modified_time);
-	      });
+        ret.forEach((doc) => {
+            if (T.docs[doc.id])
+                Object.assign(T.docs[doc.id], doc);
+            else
+                T.docs[doc.id] = doc;
+            T.LAST_T = Math.max(T.LAST_T, doc.modified_time);
+        });
         render();
 
-	      window.setTimeout(reload_docs, 3000);
+        window.setTimeout(reload_docs, 3000);
     });
 }
 
+function tick() {
+    // reached the end of audio
+    if (T.audio && T.audio.paused && T.audio.currentTime == T.audio.duration)
+        delete T.razors[T.cur_doc];
 
-function get_docs() {
-    // sort by "order" property. If it doesn't have an order property, it means the document was just added, 
-    // so those without the "order" property are prioritized first
-    let dateSorted = Object.keys(T.docs)
-        .map((x) => Object.assign({}, T.docs[x], {id: x}))
-        .sort((x,y) => {
-            if (!x.order && !y.order) return x.date > y.date ? -1 : 1;
-            if ((x.order === undefined) !== (y.order === undefined))
-                return y.order ? -1 : 1;
-            return x.order - y.order;
-        });
-    dateSorted.forEach((x, i) => {
-        x.order = T.docs[x.id].order = i + 1;
-    });
+    // audio is playing; advance razor
+    if (T.audio && !T.audio.paused) {
 
-    return dateSorted;
-}
+        // update time frame to new section if razor has reached the end
+        // of a selection, depending on if 'continuous scrolling' is enabled
+        T.razors[T.cur_doc] = T.audio.currentTime;
+        if (T.audio.currentTime > T.selections[T.cur_doc].end_time
+            || T.audio.currentTime < T.selections[T.cur_doc].start_time) {
+            if (T.docs[T.cur_doc].autoscroll) {
+                let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
+                T.selections[T.cur_doc] = { start_time: start, end_time: end };
+            }
+            else {
+                T.audio.pause();
+                delete T.razors[T.cur_doc];
+            }
+        }
 
-function get_opened_docs() {
-    let dateSorted = Object.keys(T.opened)
-        .map((x) => Object.assign({}, T.docs[x], {id: x}))
-        .sort((x,y) => {
-            if (!x.order && !y.order) return x.date > y.date ? -1 : 1;
-            if ((x.order === undefined) !== (y.order === undefined))
-                return y.order ? -1 : 1;
-            return x.order - y.order;
-        });
+        // scrolling of overview and graph when playing audio
+        let razor = T.razors[T.cur_doc];
+        if (razor) {
+            let ovWindow = document.getElementById(T.cur_doc + '-ov-wrapper');
+            let left = ovWindow.scrollLeft, right = left + ovWindow.clientWidth;
+            let rX = T.audio.duration * 10 * (razor / T.audio.duration);
+            if (rX < left || rX > right) {
+                ovWindow.scroll(rX, 0);
+            }
 
-    return { opened_docs: dateSorted, ordered_ids: dateSorted.map(x => x.id) };
-}
+            let graphWindow = document.getElementById(T.cur_doc + '-main-graph-wrapper');
+            left = graphWindow.scrollLeft, right = left + graphWindow.clientWidth;
+            rX = t2x(razor - T.selections[T.cur_doc].start_time);
+            if (rX < left || rX > right) {
+                graphWindow.scroll(rX, 0);
+            }
+        }
 
-function set_active_doc(doc) {
-    if(doc.id !== T.cur_doc) {
-        T.cur_doc = doc.id;
-        if (T.audio) T.audio.pause();
-        
-        T.audio = new Audio('/media/' + doc.path);
-        T.audio.addEventListener("canplaythrough", () => {
-            T.docs[doc.id].duration = T.audio.duration;
-            render();
-        });
-        
-        if (T.razors[doc.id])
-            T.audio.currentTime = T.razors[doc.id];
+        render();
     }
+
+    window.requestAnimationFrame(tick);
 }
 
-function render_doclist(root) {
+function register_listeners() {
+    const $uplArea = document.getElementById("upload-area");
 
-    if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
-    else document.getElementById(root._attrs.id).classList.remove('grabbed');
+    $uplArea.ondragover = function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "copy";
+        ev.currentTarget.children[0].textContent = "RELEASE FILE TO UPLOAD";
+    },
+        $uplArea.ondragleave = function (ev) {
+            ev.stopPropagation();
+            ev.preventDefault();
+            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+        },
+        $uplArea.ondrop = function (ev) {
+            ev.stopPropagation();
+            ev.preventDefault();
 
-    get_docs()
-        .forEach(doc => {
-            let listItem = root.li({ 
-                id: doc.id + '-listwrapper',
-                classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
-                attrs: { title: doc.title },
-                events: {
-                    onclick: ev => {
-                        ev.currentTarget.classList.toggle('active');
-                        if (T.opened[doc.id])
-                        {
-                            delete T.opened[doc.id];
-                            if (T.cur_doc === doc.id)
-                            {
-                                delete T.cur_doc;
-                                if (T.audio) T.audio.pause();
-                                delete T.audio;
-                            }
-                        }
-                        else
-                        {
-                            T.opened[doc.id] = true;
-                            if (has_data(doc.id)) {
-                                T.active[doc.id] = T.opened[doc.id];
-                                set_active_doc(doc);
-                            }
-                        }
-                        render();
-                    },
-                    // ondragstart: ev => {
-                    //     ev.dataTransfer.setData('text/plain', ev.target.id);
-                    // }
-                }
-            });
+            console.log("drop");
+            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
 
-            listItem.img({ 
-                attrs: { src: "hamburger.svg", alt: "drag indicator", draggable: false, title: 'Drag to change order of document' },
-                events: {
-                    onclick: ev => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    },
-                    onmousedown: ev => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        T.grabbed = doc.id;
-                        let curDocListItem = ev.currentTarget.parentElement, curDoc = doc, 
-                            listArea = curDocListItem.parentElement;
-                        listArea.onmouseleave = () => {
-                            T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
-                            render();
-                        }
-                        render();
-                        // ev.currentTarget.parentElement.setAttribute('draggable', 'true');
-                        window.onmouseup = () => {
-                            T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
-                            render();
-                        }
+            got_files(ev.dataTransfer.files);
+        },
+        $uplArea.onclick = function () {
+            document.getElementById("upload-button").click()
+        }
 
-                        window.onmouseover = ev2 => {
-                            // moved up
-                            // let curDocListItem = document.getElementById(curDocListItem);
-                            if (ev2.clientY < curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop) 
-                            {
-                                if (curDoc.order != 1)
-                                {
-                                    T.docs[get_docs().find(x => x.order == curDoc.order - 1).id].order++;
-                                    curDoc.order = --T.docs[curDoc.id].order;
-                                    render();
-                                }
-                            }
-                            // moved down
-                            else if (ev2.clientY > curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop + curDocListItem.clientHeight)
-                            {
-                                if (curDoc.order != get_docs().length)
-                                {
-                                    T.docs[get_docs().find(x => x.order == curDoc.order + 1).id].order--;
-                                    curDoc.order = ++T.docs[curDoc.id].order;
-                                    render();
-                                }
-                            }
-                        }
-                    },
-                }
-             });
-            listItem.span({ text: doc.title });
-            listItem.button({ 
-                classes: ["deleter"],
-                events: {
-                    onclick: evnt => {
-                        evnt.stopPropagation();
-                        delete_action(doc);
-                    }
-                }
-             })
-            .img({ attrs: { src: "delete.svg", alt: "delete icon", draggable: false } });
+    document.getElementById("upload-button").onchange = function (ev) {
+        got_files(ev.target.files);
+    };
+
+    ////////// file-list bulk actions (download alls) ///////////
+
+    // zip these, but cocatenate for csv
+    ['mat', 'align', 'pitch'].forEach(name => {
+        document.getElementById('dl-all-' + name).onclick = () => {
+            Promise.all(get_docs().filter(doc => doc[name]).map(doc =>
+                fetch('/media/' + doc[name]).then(response => response.blob()).then(blob => ({ docid: doc.id, blob: blob }))
+            )).then(blobdocs => {
+                console.log('zipping...');
+                let zip = new JSZip();
+                let folder = zip.folder(name + 'files');
+                blobdocs.forEach(({ docid, blob }) => {
+                    let doc = T.docs[docid];
+                    let filename = doc.title.split('.').reverse()
+                    filename.shift()
+                    let filename_basic = filename.reverse().join('') + '-' + name, suffix = '.' + doc[name].split('.')[1];
+                    let counter = 1;
+                    let out_filename = filename_basic;
+                    while (folder.file(out_filename + suffix)) out_filename = filename_basic + `(${counter++})`;
+                    out_filename += suffix;
+                    folder.file(out_filename, new File([blob], out_filename, { type: 'text/plain' }));
+                })
+                zip.generateAsync({ type: 'blob' }).then(content => saveAs(content, `${name}files.zip`));
+            })
+        }
+    })
+
+    document.getElementById('dl-all-csv').onclick = () => {
+        Promise.all(get_docs().filter(doc => doc.csv).map(doc =>
+            fetch('/media/' + doc.csv).then(response => response.text()).then(textContent => ({ docid: doc.id, textContent: textContent }))
+        )).then(blobdocs => {
+            let cocatenated = '';
+            blobdocs.forEach(({ docid, textContent }) => {
+                let doc = T.docs[docid];
+                let numCommas = textContent.substring(0, textContent.indexOf('\n')).split(',').length - 1;
+                cocatenated += `${doc.title}`;
+                for (let i = 0; i < numCommas; i++) cocatenated += ',';
+                cocatenated += '\n';
+                cocatenated += textContent;
+            })
+
+            saveAs(new Blob([cocatenated]), 'main.csv');
         })
+    }
 
-}
+    document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
 
-function got_files(files) {
-    if(files.length > 0) {
-        for(var i=0; i<files.length; i++) {
-
-            (function(file) {
-
-                var drift_doc = {
-                    title: file.name,
-                    size: file.size,
-                    date: new Date().getTime()/1000
-                };
-
-                FARM.post_json("/_rec/_create", drift_doc, (ret) => {
-
-                    T.docs[ret.id] = ret;
-                    T.opened[ret.id] = true;
-                    render();
-
-                    attach.put_file(file, function(x) {
-                        console.log('done', x);
-
-                        FARM.post_json("/_rec/_update", {
-                            id: ret.id,
-                            path: x.path
-                        }, (u_ret) => {
-                            Object.assign(T.docs[ret.id], u_ret.update);
-                            render();
-
-                            // Immediately trigger a pitch trace
-                            FARM.post_json("/_pitch", {id: ret.id}, (p_ret) => {
-                                console.log("pitch returned", p_ret);
-                                set_active_doc(T.docs[ret.id]);
-                            });
-
-			                      // ...and RMS
-			                      FARM.post_json("/_rms", {id: ret.id}, (c_ret) => {
-				                        console.log("rms returned", c_ret);
-			                      });
-
-                        });
-
-                    }, function(p, cur_uploading) {
-                        T.docs[ret.id].upload_status = p / ret.size;
-                        console.log("upload_status", T.docs[ret.id].upload_status);
-                        render();
-                    });
-
-                });
-
-            })(files[i]);
+    // spacebar play/pause
+    window.onkeydown = (ev) => {
+        // XXX: Make sure we're not editing a transcript or toggling checkbox
+        if (ev.target.tagName == 'TEXTAREA'
+            || ev.target.tagName == 'INPUT') {
+            return;
+        }
+        if (ev.key == ' ') {
+            ev.preventDefault();
+            toggle_playpause();
         }
     }
 }
 
-function render_opened_docs(root) {
-    if (get_docs().length == 0) document.getElementById('nofiles').classList.add('show');
-    else 
-    {
-        document.getElementById('nofiles').classList.remove('show');
-        if (Object.keys(T.opened).length === 0) document.getElementById('noneselected').classList.add('show');
-        else document.getElementById('noneselected').classList.remove('show');
-    }    
+function render() {
+    var fileList = new PAL.ExistingRoot("div", { id: "file-list" }),
+        docArea = new PAL.ExistingRoot("main", { id: "dashboard" })
+    render_filelist(fileList);
+    render_dashboard(docArea);
+
+    fileList.show();
+    docArea.show();
+}
+
+function render_filelist(root) {
 
     if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
     else document.getElementById(root._attrs.id).classList.remove('grabbed');
 
-    let { opened_docs, ordered_ids } = get_opened_docs();
-    opened_docs.forEach((doc, i) => {
-
-            let is_pending = !has_data(doc.id);
-
-            let docitem = root.div({
-                id: doc.id,
-                classes: ['driftitem', T.grabbed == doc.id ? 'grabbed' : '']
-            });
-
-
-            // Top bar
-            let docbar = docitem.div({
-                id: doc.id + "-bar",
-                classes: ['docbar']
-            });
-
-            docbar.img({ 
-                attrs: { src: "tictactoe.svg", alt: 'drag indicator', draggable: false, title: 'Drag to change order of document' },
-                events: {                    
-                    onclick: ev => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    },
-                    onmousedown: ev => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        T.grabbed = doc.id;
-                        let curDocItem = ev.currentTarget.parentElement.parentElement, curDoc = doc, 
-                            docArea = curDocItem.parentElement, j = { value: i }, orderedDocs = ordered_ids;
-                        console.log(orderedDocs);
-                        docArea.onmouseleave = () => {
-                            T.grabbed = docArea.onmouseleave = window.onmouseup = window.onmouseover = null;
-                            render();
-                        }
-                        render();
-                        // ev.currentTarget.parentElement.setAttribute('draggable', 'true');
-                        window.onmouseup = () => {
-                            T.grabbed = docArea.onmouseleave = window.onmouseup = window.onmouseover = null;
-                            render();
-                        }
-
-                        window.onmouseover = ev2 => {
-                            // moved up
-                            // let curDocListItem = document.getElementById(curDocListItem);
-                            let { ordered_ids } = get_opened_docs();
-                            if (j.value != 0 && ev2.clientY < curDocItem.offsetTop - window.scrollY - 36) 
-                            {
-                                console.log('upped!', j.value)
-                                if (j.value != 0)
-                                {
-                                    console.log('moving up!');
-                                    [T.docs[ordered_ids[j.value - 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j.value - 1]].order];
-                                    curDoc.order = T.docs[curDoc.id].order;
-                                    j.value -= 1;
-                                    render();
-                                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
-                                }
-                            }
-                            // moved down
-                            else if (ev2.clientY > curDocItem.offsetTop - window.scrollY + curDocItem.clientHeight + 36)
-                            {
-                                console.log('downed!', j.value)
-                                if (j.value != ordered_ids.length - 1)
-                                {
-                                    console.log('moving down!');
-                                    [T.docs[ordered_ids[j.value + 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j.value + 1]].order];
-                                    curDoc.order = T.docs[curDoc.id].order;
-                                    j.value += 1;
-                                    render();
-                                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
-                                }
-                            }
-                        }
-                    },
-                }
-             });
-
-            // Title
-            docbar.div({
-                id: doc.id + '-name',
-                classes: ['doc-name'],
-                text: doc.title
-            });
-
-            render_hamburger(docbar, doc);
-
-            if (is_pending) {
-                render_paste_transcript(docitem.div({ classes: ['driftitem-content'] }), doc);
-            }
-            else {
-                // Expand.
-                let content = docitem.div({ classes: ['driftitem-content'] })
-
-                let section1 = content.section({
-                    id: 'sec1',
-                    classes: ['driftitem-top']
-                }), section2 = content.section({
-                    id: 'sec2',
-                    classes: ['detail-wrapper']
-                }), section3 = content.section({
-                    id: 'sec3',
-                    classes: ['table-section']
-                })
-
-                let playBtn = section1.button({
-                    classes: ['play-btn'],
-                    events: {
-                        onclick: ev => {
-                            set_active_doc(doc);
-                            toggle_playpause();
-                        }
-                    },
-                })
-
-                playBtn.img({ attrs: { src: "play-icon.svg"} });
-                playBtn.span({ text: (T.cur_doc != doc.id || !T.audio || T.audio.paused) ? 'play' : 'pause' });
-
-                let ov_div = section1.div({
-                    id: doc.id + '-ovdiv',
-                    classes: ['overview']
-                });
-
-                let owTop = ov_div.div({ classes: ['overview-top'] });
-                owTop.p({ text: "Drag to select a region" });
-                let playOpt = owTop.div({ classes: ['play-opt'] });
-                playOpt.button({ 
-                    text: 'jump to start of transcript',
-                    events: {
-                        onmousedown: ev => {
-                            ev.preventDefault();
-                        },
-                        onclick: () => {
-                            let segments = (get_cur_align(doc.id) || {}).segments;
-                            if (segments)
-                            {
-                                delete T.razors[doc.id];
-                                let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
-                                T.selections[doc.id] = { start_time: start, end_time: end };
-                                render();
-                            }
-                        },
-                    }
-                });
-                playOpt.label({
-                    id: doc.id + '-lab1',
-                    text: 'continuous scrolling',
-                    attrs: {
-                        for: doc.id + '-rad1'
-                    }
-                })
-                playOpt.input({
-                    id: doc.id + '-rad1',
-                    attrs: {
-                        type: 'checkbox',
-                        name: 'playopt'
-                    },
-                    events: {
-                        onchange: () => {
-                            T.docs[doc.id].autoscroll = !T.docs[doc.id].autoscroll;
-                        },
-                        onmousedown: ev => {
-                            ev.preventDefault();
-                        },
-                    }
-                })
-                render_overview(ov_div.div({ id: doc.id + '-ov-wrapper', classes: ['overview-wrapper'] }), doc);
-
-                let timeframeInfo = section1.div({ classes: ['timeframe-wrapper'] });
-
-                let det_div = section2.div({
-                    id: doc.id + '-detdiv',
-                    classes: ['detail']
-                });
-
-                if (!(doc.id in T.selections)) {
-                    let segments = (get_cur_align(doc.id) || {}).segments;
-                    if (segments)
-                    {
-                        let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
-                        T.selections[doc.id] = { start_time: start, end_time: end };
-                    }
-                }
-
-                let { start_time, end_time } = T.selections[doc.id] || {};
-
-                render_detail(det_div, doc, start_time, end_time);
-
-                render_stats(section3.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
-
-                section3.span({ text: '*vocal duration that corresponds to the transcript' });
-            }
-
-
-	      })
+    get_docs().forEach(doc => render_listitem(root, doc));
 }
+
+function render_listitem(root, doc) {
+
+    let listItem = root.li({
+        id: doc.id + '-listwrapper',
+        classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
+        attrs: { title: doc.title },
+        events: { onclick: open_this_doc }
+    });
+
+    // dragger
+    listItem.img({
+        attrs: { src: "hamburger.svg", alt: "drag indicator", draggable: false, title: 'Drag to change order of document' },
+        events: {
+            onclick: ev => {
+                ev.preventDefault();
+                ev.stopPropagation();
+            },
+            onmousedown: start_dragging_listitem,
+        }
+    });
+
+    // doc name
+    listItem.span({ text: doc.title });
+
+    // delete button
+    listItem.button({
+        classes: ["deleter"],
+        events: {
+            onclick: evnt => {
+                evnt.stopPropagation();
+                delete_action(doc);
+            }
+        }
+    }).img({ attrs: { src: "delete.svg", alt: "delete icon", draggable: false } });
+
+    /////////////// begin list item click events //////////////////
+
+    function open_this_doc(ev) {
+        ev.currentTarget.classList.toggle('active');
+        if (T.opened[doc.id]) {
+            delete T.opened[doc.id];
+            if (T.cur_doc === doc.id) {
+                delete T.cur_doc;
+                if (T.audio) T.audio.pause();
+                delete T.audio;
+            }
+        }
+        else {
+            T.opened[doc.id] = true;
+            if (has_data(doc.id)) {
+                T.active[doc.id] = T.opened[doc.id];
+                set_active_doc(doc);
+            }
+        }
+        render();
+    }
+
+    function start_dragging_listitem(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        T.grabbed = doc.id;
+        let curDocListItem = ev.currentTarget.parentElement, curDoc = doc,
+            listArea = curDocListItem.parentElement;
+
+        window.onmouseup = listArea.onmouseleave = () => {
+            T.grabbed = listArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+            render();
+        }
+
+        render();
+
+        window.onmouseover = ev2 => {
+            // moved up
+            if (ev2.clientY < curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop) {
+                if (curDoc.order != 1) {
+                    T.docs[get_docs().find(x => x.order == curDoc.order - 1).id].order++;
+                    curDoc.order = --T.docs[curDoc.id].order;
+                    render();
+                }
+            }
+            // moved down
+            else if (ev2.clientY > curDocListItem.offsetTop - curDocListItem.parentElement.scrollTop + curDocListItem.clientHeight) {
+                if (curDoc.order != get_docs().length) {
+                    T.docs[get_docs().find(x => x.order == curDoc.order + 1).id].order--;
+                    curDoc.order = ++T.docs[curDoc.id].order;
+                    render();
+                }
+            }
+        }
+    }
+
+    /////////////// end list item click events //////////////////
+}
+
+function render_dashboard(root) {
+
+    if (get_docs().length == 0)
+    {
+        document.getElementById('nofiles').classList.add('show');
+        document.getElementById('noneselected').classList.remove('show');
+    }
+    else {
+        document.getElementById('nofiles').classList.remove('show');
+        if (get_opened_docs().length === 0) document.getElementById('noneselected').classList.add('show');
+        else document.getElementById('noneselected').classList.remove('show');
+    }
+
+    if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
+    else document.getElementById(root._attrs.id).classList.remove('grabbed');
+
+    get_opened_docs().forEach((doc, i) => render_opened_docitem(root, doc, i));
+}
+
+function render_opened_docitem(root, doc, offset) {
+
+    let docitem = root.div({
+        id: doc.id,
+        classes: ['driftitem', T.grabbed == doc.id ? 'grabbed' : '']
+    });
+
+    render_docitem_topbar(docitem, doc, offset);
+
+    let contentarea = docitem.div({ classes: ['driftitem-content'] });
+
+    if (!has_data(doc.id))
+        render_transcript_input(contentarea, doc);
+    else
+        render_docitem_data(contentarea, doc);
+}
+
+function render_docitem_topbar(root, doc, offset) {
+
+    let docbar = root.div({
+        id: doc.id + "-bar",
+        classes: ['docbar']
+    });
+
+    // dragger
+    docbar.img({
+        attrs: { src: "tictactoe.svg", alt: 'drag indicator', draggable: false, title: 'Drag to change order of document' },
+        events: {
+            onclick: ev => {
+                ev.preventDefault();
+                ev.stopPropagation();
+            },
+            onmousedown: start_dragging_docitem,
+        }
+    });
+
+    // doc name
+    docbar.div({
+        id: doc.id + '-name',
+        classes: ['doc-name'],
+        text: doc.title
+    });
+
+    render_hamburger(docbar, doc);
+
+    /////////////// begin doc item click events //////////////////
+
+    function start_dragging_docitem(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        T.grabbed = doc.id;
+        let curDocItem = ev.currentTarget.parentElement.parentElement, curDoc = doc,
+            docArea = curDocItem.parentElement, j = offset;
+
+        window.onmouseup = docArea.onmouseleave = () => {
+            T.grabbed = docArea.onmouseleave = window.onmouseup = window.onmouseover = null;
+            render();
+        }
+        render();
+
+        window.onmouseover = ev2 => {
+            // moved up
+            let ordered_ids = get_opened_docs().map(doc => doc.id);
+            if (j != 0 && ev2.clientY < curDocItem.offsetTop - window.scrollY - 36) {
+                if (j != 0) {
+                    [T.docs[ordered_ids[j - 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j - 1]].order];
+                    curDoc.order = T.docs[curDoc.id].order;
+                    j -= 1;
+                    render();
+                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
+                }
+            }
+            // moved down
+            else if (ev2.clientY > curDocItem.offsetTop - window.scrollY + curDocItem.clientHeight + 36) {
+                if (j != ordered_ids.length - 1) {
+                    [T.docs[ordered_ids[j + 1]].order, T.docs[curDoc.id].order] = [T.docs[curDoc.id].order, T.docs[ordered_ids[j + 1]].order];
+                    curDoc.order = T.docs[curDoc.id].order;
+                    j += 1;
+                    render();
+                    window.scrollTo(0, curDocItem.offsetTop - ev2.clientY);
+                }
+            }
+        }
+    }
+
+    /////////////// end doc item click events //////////////////
+}
+
+function render_docitem_data(root, doc) {
+
+    let topSection = root.section({
+        classes: ['top-section']
+    }), graphSection = root.section({
+        classes: ['graph-section']
+    }), tableSection = root.section({
+        classes: ['table-section']
+    })
+
+    ////////// begin top section (play button, overview, and timeframe table) /////////////
+
+    let playBtn = topSection.button({
+        classes: ['play-btn'],
+        events: {
+            onclick: ev => {
+                set_active_doc(doc);
+                toggle_playpause();
+            }
+        },
+    })
+
+    playBtn.img({ attrs: { src: "play-icon.svg" } });
+    playBtn.span({ text: (T.cur_doc != doc.id || !T.audio || T.audio.paused) ? 'play' : 'pause' });
+
+    let ov_div = topSection.div({
+        id: doc.id + '-ovdiv',
+        classes: ['overview']
+    });
+
+    let owTop = ov_div.div({ classes: ['overview-top'] });
+    owTop.p({ text: "Drag to select a region" });
+    let playOpt = owTop.div({ classes: ['play-opt'] });
+    playOpt.button({
+        text: 'jump to start of transcript',
+        events: {
+            onmousedown: ev => {
+                ev.preventDefault();
+            },
+            onclick: () => {
+                let segments = (get_cur_align(doc.id) || {}).segments;
+                if (segments) {
+                    delete T.razors[doc.id];
+                    let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
+                    T.selections[doc.id] = { start_time: start, end_time: end };
+                    render();
+                }
+            },
+        }
+    });
+    playOpt.label({
+        id: doc.id + '-lab1',
+        text: 'continuous scrolling',
+        attrs: {
+            for: doc.id + '-rad1'
+        }
+    })
+    playOpt.input({
+        id: doc.id + '-rad1',
+        attrs: {
+            type: 'checkbox',
+            name: 'playopt'
+        },
+        events: {
+            onchange: () => {
+                T.docs[doc.id].autoscroll = !T.docs[doc.id].autoscroll;
+            },
+            onmousedown: ev => {
+                ev.preventDefault();
+            },
+        }
+    })
+    render_overview(ov_div.div({ id: doc.id + '-ov-wrapper', classes: ['overview-wrapper'] }), doc);
+
+    // initialize div for timeframe table, but populate it later down when we call render_stats
+    let timeframeInfo = topSection.div({ classes: ['timeframe-wrapper'] });
+
+    /////////////// end top section //////////////
+
+    /////////////// begin graph section (graph) //////////////
+
+    let det_div = graphSection.div({
+        id: doc.id + '-detdiv',
+        classes: ['detail']
+    });
+
+    if (!(doc.id in T.selections)) {
+        let segments = (get_cur_align(doc.id) || {}).segments;
+        if (segments) {
+            let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
+            T.selections[doc.id] = { start_time: start, end_time: end };
+        }
+    }
+
+    let { start_time, end_time } = T.selections[doc.id] || {};
+
+    render_graph(det_div, doc, start_time, end_time);
+
+    /////////////// end graph section ///////////////////
+
+    /////////////// begin table section (stat table) ///////////////////
+
+    let tableSectionContainer = tableSection.div({ classes: ['table-section-container'] });
+
+    // tableSectionContainer.div({ classes: ['table-title'] }).a({
+    //     text: 'Voxit Prosodic Measures',
+    //     attrs: {
+    //         title: 'Click for more information about Voxit prosodic measurements',
+    //         href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape('What do the Voxit prosodic measures quantify?') : 'about.html#voxit-prosodic-measures',
+    //         target: '_blank'
+    //     }
+    // });
+
+    render_stats(tableSectionContainer.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
+
+    tableSectionContainer.span({}).a({
+        text: '*vocal duration that corresponds to the transcript',
+        attrs: {
+            title: 'Click for more information',
+            href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape('Full Recording Duration vs. Selection') : 'prosodic-measures.html#full-vs-selection',
+            target: '_blank'
+        },
+    });
+    
+    tableSectionContainer.span({ id: doc.id + '-voxit' }).a({
+        text: 'Prosodic measures are calculated using Voxit',
+        attrs: {
+            title: 'Click for more information about Voxit',
+            href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape('About Voxit: Vocal Analysis Tools') : 'about.html#about-voxit',
+            target: '_blank'
+        },
+    });
+
+    /////////////// end table section ///////////////////
+}
+
 function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
 
     let uid = doc.id + '-' + start + '-' + end;
-    let tableDiv = mainTableRoot.div({ 
-        classes: ['table-wrapper'],
-    })
-    let table = tableDiv.table({
-        classes: ['stat-table drift-table'],
-    })
 
-    let headers = table.tr({
-        classes: ['stat-header']
-    }), 
-    datarow = table.tr({ id: uid + '-row1' }), 
-    datarow2 = table.tr({ id: uid + '-row2' });
+    let table = mainTableRoot.table({ classes: ['stat-table drift-table'] });
+
+    let headers = table.tr({ classes: ['stat-header'] }),
+        fullRecordingDatarow = table.tr({ id: uid + '-row1' }),
+        selectionDatarow = table.tr({ id: uid + '-row2' });
 
     headers.th({})
-    datarow.th({ text: "full recording duration*" })
-    datarow2.th({ text: "selection" })
+    fullRecordingDatarow.th({ text: "full recording duration*" })
+    selectionDatarow.th({ text: "selection" })
 
     let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
     let tfh = timeframe.tr({ id: uid + '-tfh' }),
@@ -550,81 +581,48 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     let segments = (get_cur_align(doc.id) || {}).segments;
     let fullTSDuration;
     let url, timedURL;
-    if (segments)
-    {
+    if (segments) {
         fullTSDuration = segments[segments.length - 1].end - segments[0].start;
         url = '/_measure?id=' + doc.id, timedURL = url;
-        url += `&start_time=${ segments[0].start }&end_time=${ segments[segments.length - 1].end }`;
-        
-        if(start) {
+        url += `&start_time=${segments[0].start}&end_time=${segments[segments.length - 1].end}`;
+
+        if (start) {
             timedURL += '&start_time=' + start;
         }
-        if(end) {
+        if (end) {
             timedURL += '&end_time=' + end;
         }
-        
-        if (!T.DRAGGING)
-        {
+
+        // only send request for prosodic measures if user has finished dragging
+        if (!T.DRAGGING) {
             T.docs[doc.id].stats = cached_get_url(url, JSON.parse).measure;
             T.docs[doc.id].timedStats = cached_get_url(timedURL, JSON.parse).measure;
         }
     }
-    
+
     Object.entries({
-        'full recording duration*': Math.round(fullTSDuration * 10) / 10 + 's', 
-        'selection start': (Math.round(start * 10) / 10 || '0') + 's', 
-        'selection end': Math.round(end * 10) / 10 + 's', 
+        'full recording duration*': Math.round(fullTSDuration * 10) / 10 + 's',
+        'selection start': (Math.round(start * 10) / 10 || '0') + 's',
+        'selection end': Math.round(end * 10) / 10 + 's',
         'selection length': Math.round((end - start) * 10) / 10 + 's'
     }).forEach(([label, data], i) => {
         tfh.th({ text: label });
-        if (i == 1 || i == 2)
-        {
-            tfb.td({ id: uid + '-tfb' + i, classes: ['editable'] }).input({ 
+        if (i == 1 || i == 2) {
+            tfb.td({ id: uid + '-tfb' + i, classes: ['editable'] }).input({
                 attrs: { value: data, step: 0.1 },
                 events: {
                     onkeydown: ev => {
-                        if (ev.keyCode == 13)
-                        {
+                        if (ev.keyCode == 13) {
                             ev.preventDefault();
                             ev.currentTarget.blur();
                         }
                     },
-                    onblur: ev => {
-                        let { value } = ev.currentTarget;
-                        value = parseFloat(value);
-                        const [thisTime, otherTime] = i == 1 ? ['start_time','end_time'] : ['end_time','start_time'];
-                        let error;
-
-                        if ((!value && value != 0) || value < 0) error = 'Time must be positive and non-null!';
-                        else
-                        {
-                            if (T.selections[doc.id][thisTime] != value)
-                            {
-                                let otherValue = T.selections[doc.id][otherTime];
-                                if ((i == 1 && value >= otherValue) || (i == 2 && value <= otherValue)) error = 'Invalid range!';
-                                else if (Math.abs(value - otherValue) > 30 || Math.abs(value - otherValue) < 0.2) error = 'Range must be between 0.2s and 30s';
-                                else
-                                {
-                                    ev.currentTarget.value = T.selections[doc.id][thisTime] = Math.min(value, T.docs[doc.id].duration); 
-                                    render();
-                                }
-                            }
-                        }
-                         
-                        if (error)
-                        {
-                            ev.currentTarget.value = T.selections[doc.id][thisTime];
-                            alert(error);
-                        }
-                        ev.currentTarget.value = Math.round(ev.currentTarget.value * 10) / 10;
-                        ev.currentTarget.setAttribute("type", "text");
-                        ev.currentTarget.value += 's';
-                    },
+                    onblur: update_timeframe,
                     onfocus: ev => {
                         let { value } = ev.currentTarget
                         if (value.slice(-1) === 's')
                             ev.currentTarget.value = value.slice(0, -1);
-                            
+
                         ev.currentTarget.setAttribute("type", "number");
                     },
                 }
@@ -632,102 +630,103 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         }
         else
             tfb.td({ id: uid + '-tfb' + i, text: data });
-    });
-    
-    const { stats, timedStats } = T.docs[doc.id];
-    if(stats) {
+        
+        /////////////// begin timeframe item click event //////////////////
 
-        // TODO better way to do this?
-        // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
-        const descriptions = {
-            'WPM': '(Self Explanatory)',
-            'Gentle_Pause_Count_>100ms': 'Number of pauses greater than 100 milliseconds',
-            'Gentle_Pause_Count_>500ms': 'Number of pauses greater than 500 milliseconds',
-            'Gentle_Pause_Count_>1000ms': 'Number of pauses greater than 1000 milliseconds',
-            'Gentle_Pause_Count_>1500ms': 'Number of pauses greater than 1500 milliseconds',
-            'Gentle_Pause_Count_>2000ms': 'Number of pauses greater than 2000 milliseconds',
-            'Gentle_Pause_Count_>2500ms': 'Number of pauses greater than 2500 milliseconds',
-            'Gentle_Long_Pause_Count_>3000ms': 'Number of pauses greater than 3000 milliseconds',
-            'Gentle_Mean_Pause_Duration_(sec)': 'Average length of pauses',
-            'Gentle_Pause_Rate_(pause/sec)': 'Average number of pauses per second',
-            'Gentle_Complexity_All_Pauses': 'A higher value indicates less predictable & less repetitive pauses',
-            'Drift_f0_Mean_(hz)': 'Mean Pitch',
-            'Drift_f0_Range_(octaves)': 'Range of pitches (in Octaves)',
-            // 'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'desc',
-            // 'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'desc',
-            // 'Drift_f0_Entropy': 'desc',
-        };
+        function update_timeframe(ev) {
+            let { value } = ev.currentTarget;
+            value = parseFloat(value);
+            const [thisTime, otherTime] = i == 1 ? ['start_time', 'end_time'] : ['end_time', 'start_time'];
+            let error;
 
-        // take out start_time and end_time
-        let keys = Object.keys(stats).slice(2);
-
-        // for formatting long description tooltips
-        function splitString(str, len) {
-            let strs = [], i = 0, j = len;
-
-            while (j < str.length) {
-                if (str.charAt(j) !== ' ') {
-                    j++;
-                    continue;
+            if ((!value && value != 0) || value < 0) error = 'Time must be positive and non-null!';
+            else {
+                if (T.selections[doc.id][thisTime] != value) {
+                    let otherValue = T.selections[doc.id][otherTime];
+                    if ((i == 1 && value >= otherValue) || (i == 2 && value <= otherValue)) error = 'Invalid range!';
+                    else if (Math.abs(value - otherValue) > 30 || Math.abs(value - otherValue) < 0.2) error = 'Range must be between 0.2s and 30s';
+                    else {
+                        ev.currentTarget.value = T.selections[doc.id][thisTime] = Math.min(value, T.docs[doc.id].duration);
+                        render();
+                    }
                 }
-                strs.push(str.substring(i, j));
-                i = j + 1;
-                j = i + len;
             }
-            strs.push(str.substring(i, j));
 
-            return strs.join('\n');
+            if (error) {
+                ev.currentTarget.value = T.selections[doc.id][thisTime];
+                alert(error);
+            }
+            ev.currentTarget.value = Math.round(ev.currentTarget.value * 10) / 10;
+            ev.currentTarget.setAttribute("type", "text");
+            ev.currentTarget.value += 's';
         }
 
-        // Header
-        keys
-            .forEach((key,idx) => {
-                new PAL.Element('th', {
-                    parent: headers,
-                    id: key + '-h',
-                    attrs: descriptions[key] ? { title: splitString(descriptions[key], 40) + '\n(Click label for more!)' } : {}
-                }).a({
-                    text: key.replace(/_/g, ' '),
-                    attrs: descriptions[key] ? {
-                        href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape(descriptions[key]) : 'about.html#' + key,
-                        target: '_blank'
-                    } : {}
-                })
-                new PAL.Element('td', {
-                    parent: datarow,
-                    id: key + '-d',
-                    text: '' + Math.round(stats[key] * 100) / 100
-                })
-                new PAL.Element('td', {
-                    parent: datarow2,
-                    id: key + '-d',
-                    text: '' + (timedStats ? Math.round(timedStats[key] * 100) / 100 : 'n/a')
-                })
-            })
+        /////////////// end timeframe item click event //////////////////
+    });
+
+    const { stats, timedStats } = T.docs[doc.id];
+    if (stats) {
+
+        // take out start_time and end_time and pause counts that are not 100, 500, 1000, or 2000
+        let keys = Object.keys(stats).slice(2).filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
         
-            
-        mainTableRoot.button({ 
-            text: 'Copy to Clipboard', 
+        // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures
+        keys.sort((d1, d2) => {
+            if (d1 === 'WPM' || d2 === 'WPM') return d1 === 'WPM' ? -1 : 1;
+            if (d1.startsWith('Drift') !== d2.startsWith('Drift'))
+                return d1.startsWith('Drift') ? -1 : 1;
+            if (d1.startsWith('Gentle') && d2.startsWith('Gentle'))
+                return d1.includes('Pause_Count') ? 1 : -1;
+            return 1;
+        });
+
+        // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
+        keys.forEach(dataLabel => {
+            headers.th({
+                id: dataLabel + '-h'
+            }).a({
+                text: dataLabel.replace(/_/g, ' '),
+                attrs: T.descriptions[dataLabel] ? {
+                    href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.descriptions[dataLabel]) : 'prosodic-measures.html#' + dataLabel,
+                    target: '_blank',
+                    title: splitString(T.descriptions[dataLabel], 40, 4) + '\n(Click label for more information)'
+                } : {},
+                events: { onmousedown: ev => ev.preventDefault() }
+            })
+            fullRecordingDatarow.td({
+                id: dataLabel + '-d',
+                text: '' + Math.round(stats[dataLabel] * 100) / 100
+            })
+            selectionDatarow.td({
+                parent: selectionDatarow,
+                id: dataLabel + '-d',
+                text: '' + (timedStats ? Math.round(timedStats[dataLabel] * 100) / 100 : 'n/a')
+            })
+        })
+
+
+        mainTableRoot.button({
+            text: 'Copy to Clipboard',
             classes: ['copy-btn'],
             events: {
                 onclick: () => {
                     let cliptxt = '\t';
-                    keys.forEach((key) =>{
+                    keys.forEach((key) => {
                         cliptxt += key + '\t';
                     });
                     cliptxt += "start_time\tend_time\t"
                     cliptxt += '\nfull clip\t';
-                    keys.forEach((key) =>{
+                    keys.forEach((key) => {
                         cliptxt += stats[key] + '\t';
                     });
 
                     cliptxt += segments[0].start + '\t' + segments[segments.length - 1].end + '\t';
                     cliptxt += '\nselection\t';
-                    keys.forEach((key) =>{
+                    keys.forEach((key) => {
                         cliptxt += timedStats[key] + '\t';
                     });
                     cliptxt += start + '\t' + end + '\t';
-                    cliptxt += '\n';    
+                    cliptxt += '\n';
 
                     // Create, select, copy, and remove a textarea.
                     let $el = document.createElement('textarea');
@@ -737,27 +736,25 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                     document.execCommand("copy");
                     document.body.removeChild($el);
                     document.getElementById('copied-alert').classList.add('visible');
-                    setTimeout(() => 
-                    document.getElementById('copied-alert').classList.remove('visible'), 2000);
+                    setTimeout(() =>
+                        document.getElementById('copied-alert').classList.remove('visible'), 2000);
                 }
             }
         });
     }
     else {
-        tableDiv.div({ text: "Loading...", classes: ["table-loading"] })
+        mainTableRoot.div({ text: "Loading...", classes: ["table-loading"] })
     }
 
 }
 
-function render_paste_transcript(root, doc) {
-
-    let docid = doc.id;
+function render_transcript_input(root, doc) {
 
     const readyForTranscript = !(doc.upload_status && !doc.path);
 
     if (readyForTranscript)
         root.textarea({
-            id: 'tscript-' + docid,
+            id: 'tscript-' + doc.id,
             classes: ['ptext'],
             attrs: {
                 placeholder: "Enter Gentle Transcript here...",
@@ -773,69 +770,21 @@ function render_paste_transcript(root, doc) {
     let bottomWrapper = root.div({ classes: ["bottom-wrapper"] });
     bottomWrapper.button({
         text: readyForTranscript ? "set transcript" : "uploading...",
-        classes: ["setts-btn"],
-        attrs: { disabled: readyForTranscript ? null : true },
-        events: {
-            onclick: function(ev) {
-
-                ev.preventDefault();
-                ev.stopPropagation();
-
-                // prevent dual-submission...
-                this.disabled = true;
-                this.textContent = "aligning transcript...";
-
-                document.getElementById('tscript-' + docid).disabled = true;
-
-                var txt = document.getElementById('tscript-' + docid).value;
-                if(txt) {
-                    var blob = new Blob([txt]);
-                    blob.name = "_paste.txt";
-                    attach.put_file(blob, function(ret) {
-                        // Uploaded transcript!
-                        FARM.post_json("/_rec/_update", {
-                            id: docid,
-                            transcript: ret.path
-                        }, (ret) => {
-                            Object.assign(T.docs[docid], ret.update);
-                            render();
-
-                            // Immediately trigger an alignment
-                            FARM.post_json("/_align", {id: docid}, (p_ret) => {
-                                console.log("align returned");
-
-				                        // Trigger CSV & MAT computation (assuming pitch also there)
-				                        FARM.post_json("/_csv", {id: docid}, (c_ret) => {
-				                            console.log("csv returned");
-				                        });
-				                        FARM.post_json("/_mat", {id: docid}, (c_ret) => {
-				                            console.log("mat returned");
-				                        });
-                            });
-
-
-                        });
-                    });
-                }
-            }
-        }
+        attrs: readyForTranscript ? {} : { disabled: false },
+        events: { onclick: set_transcript }
     });
-    
-    if (doc.upload_status && !doc.path) {
-        // Show progress
-        new PAL.Element("progress", {
-            id: doc.id + '-progress',
-            parent: bottomWrapper,
+
+    if ((doc.upload_status || doc.upload_status === 0) && !doc.path) {
+        bottomWrapper.progress({
+            id: doc.id + '-upload-progress',
             attrs: {
                 max: "100",
                 value: "" + Math.floor((100 * doc.upload_status))
             },
         })
     }
-
-    if (doc.align_px && !doc.align) {
-        // Show progress
-        new PAL.Element("progress", {
+    else if ((doc.align_px || doc.align_px === 0) && !doc.align) {
+        bottomWrapper.progress({
             id: doc.id + '-align-progress',
             parent: bottomWrapper,
             attrs: {
@@ -844,162 +793,309 @@ function render_paste_transcript(root, doc) {
             },
         })
     }
-}
 
-function parse_pitch(pitch) {
-    return pitch.split('\n')
-        .filter((x) => x.length > 5)
-        .map((x) => Number(x.split(' ')[1]));
-}
+    /////////////// begin transcript setter click events //////////////////
 
-function smooth(seq, N) {
-    N = N || 5;
+    function set_transcript(ev) {
 
-    let out = [];
+        ev.preventDefault();
+        ev.stopPropagation();
 
-    for(let i=0; i<seq.length; i++) {
+        // prevent dual-submission...
+        this.disabled = true;
+        this.textContent = "aligning transcript...";
 
-	      let npitched = 0;
-	      let v = 0;
+        document.getElementById('tscript-' + doc.id).disabled = true;
 
-	      for(let j=0; j<N; j++) {
-	          let j1 = Math.max(0, Math.min(j+i, seq.length-1));
-	          var v1 = seq[j1];
-	          if(v1 > 20) {
-		            v += v1;
-		            npitched += 1;
-	          }
-	          else if(j1 >= i) {
-		            // Hit gap after idx
-		            break
-	          }
-	          else if(j1 <= i) {
-		            // Hit gap before/on: reset
-		            npitched=0;
-		            v=0;
-	          }
-	      }
-	      if(npitched > 1) {
-	          v /= npitched;
-	      }
+        var txt = document.getElementById('tscript-' + doc.id).value;
+        if (txt) {
+            var blob = new Blob([txt]);
+            blob.name = "_paste.txt";
+            attach.put_file(blob, function (ret) {
+                // Uploaded transcript!
+                FARM.post_json("/_rec/_update", {
+                    id: doc.id,
+                    transcript: ret.path
+                }, (ret) => {
+                    Object.assign(T.docs[doc.id], ret.update);
+                    render();
 
-	      out.push(v);
+                    // Immediately trigger an alignment
+                    FARM.post_json("/_align", { id: doc.id }, (p_ret) => {
+                        console.log("align returned");
+
+                        // Trigger CSV & MAT computation (assuming pitch also there)
+                        FARM.post_json("/_csv", { id: doc.id }, (c_ret) => {
+                            console.log("csv returned");
+                        });
+                        FARM.post_json("/_mat", { id: doc.id }, (c_ret) => {
+                            console.log("mat returned");
+                        });
+                    });
+
+
+                });
+            });
+        }
     }
 
-    return out;
-}
-
-function derivative(seq) {
-    let out = [];
-    for(let i=0; i<seq.length; i++) {
-	      let s1 = seq[i];
-	      let s2 = seq[i+1];
-    	  if(s1 && s2) {// && s1 > 20 && s2 > 20) {
-	          out.push(s2 - s1);
-	      }
-	      else {
-	          out.push(0)
-	      }
-    }
-    return out;
-}
-
-function get_distribution(seq, name) {
-    name = name || '';
-
-    seq = Object.assign([], seq).sort((x,y) => x > y ? 1 : -1);
-
-    if(seq.length==0) {
-	      return {}
-    }
-
-    // Ignore outliers
-    seq = seq.slice(Math.floor(seq.length*0.09),
-		                Math.floor(seq.length*0.91));
-
-    let out = {};
-    out[name + 'mean'] = seq.reduce((acc,x)=>acc+x,0) / seq.length;
-    out[name + 'percentile_9'] = seq[0];
-    out[name + 'percentile_91'] = seq[seq.length-1];
-    out[name + 'range'] = seq[seq.length-1] - seq[0];
-
-    return out;
-}
-
-function time_stats(wdlist) {
-    // Analyze gaps
-    let gaps = wdlist.filter((x) => x.type=='gap');
-
-    let gap_distr = get_distribution(gaps.map((x) => x.end-x.start), 'gap_')
-
-    let pgap = gaps.length / wdlist.length;
-
-    // ...and durations
-    let phones = wdlist.filter((x) => x.phones)
-	      .reduce((acc,x) => acc.concat(x.phones.map((p) => p.duration)), []);
-    let phone_distr = get_distribution(phones, 'phone_');
-
-    return Object.assign({pgap}, gap_distr, phone_distr);
-}
-
-function pitch_stats(seq) {
-
-    let smoothed = smooth(seq);
-
-    let velocity = derivative(smoothed);
-    let acceleration = derivative(velocity);
-
-    let pitched=seq.filter((p) => p>20);
-    if(pitched.length==0) {
-	      return
-    }
-
-    let pitch_distr = get_distribution(pitched, 'pitch_');
-
-    let acceled=acceleration.filter((p) => Math.abs(p)>0.1);
-    let accel_distr = get_distribution(acceled, 'accel_');
-    accel_distr['accel_norm'] = acceled.reduce((acc,x)=>acc+Math.abs(x),0) / acceled.length; // XXX: percentiles...
-
-    return Object.assign({smoothed,
-			                    velocity,
-			                    acceleration},
-			                   pitch_distr, accel_distr);
+    /////////////// end transcript setter click events //////////////////
 }
 
 function render_pitch(root, id, seq, attrs) {
     // Draw the entire pitch trace
     let ps = '';
-    let started=false;
+    let started = false;
     seq
-	      .forEach((p,p_idx) => {
-	          if(p > 0) {
-		            if(!started) {
-		                ps += 'M ';
-		            }
-		            ps += '' + fr2x(p_idx) + ',' + (pitch2y(p)) + ' ';
-		            started=true;
-	          }
-	          else {
-		            started=false;
-	          }
-	      });
+        .forEach((p, p_idx) => {
+            if (p > 0) {
+                if (!started) {
+                    ps += 'M ';
+                }
+                ps += '' + fr2x(p_idx) + ',' + (pitch2y(p)) + ' ';
+                started = true;
+            }
+            else {
+                started = false;
+            }
+        });
 
     root.path({
-	      id: id,
-	      attrs: Object.assign({
-	          d: ps,
-	          'stroke-width': 1,
-	          fill: 'none',
-              'stroke-linecap': 'round'
-	      }, attrs||{})
+        id: id,
+        attrs: Object.assign({
+            d: ps,
+            'stroke-width': 1,
+            fill: 'none',
+            'stroke-linecap': 'round'
+        }, attrs || {})
     });
 
 }
 
-function render_detail(root, doc, start_time, end_time) {
-    if(!render_is_ready(root, doc.id)) {
-	      return
+function render_overview(root, doc) {
+
+    if (!render_is_ready(root, doc.id)) return;
+
+    let align = get_cur_align(doc.id);
+    let { duration } = T.docs[doc.id];
+
+    let width = duration * 10;
+    let height = 50;
+
+    let svg = root.svg({
+        id: doc.id + '-svg-overview',
+        attrs: {
+            width: width,
+            height: height,
+        },
+        events: {
+            onmousedown: start_selection
+        }
+    });
+
+    svg.rect({
+        id: doc.id + '-svg-overview-bg',
+        attrs: {
+            x: 0,
+            y: 0,
+            width: '100%',
+            height: height,
+            fill: '#F7F7F7'
+        }
+    })
+
+    // render word gaps
+    align.segments
+        .forEach((seg, seg_idx) => {
+            seg.wdlist.forEach((wd, wd_idx) => {
+                if (!wd.end || !wd.start) { return }
+
+                if (wd.type == 'gap') {
+                    svg.rect({
+                        id: 'gap-' + seg_idx + '-' + wd_idx,
+                        attrs: {
+                            x: width * (wd.start / duration),
+                            y: 0,
+                            width: width * (wd.end - wd.start) / duration,
+                            height: height,
+                            fill: '#D9D9D9'
+                        }
+                    })
+                }
+            })
+        });
+
+    // render simplified pitch trace
+    let { smoothed } = (pitch_stats(get_cur_pitch(doc.id)) || {});
+
+    let voiceStart;
+    (smoothed || []).forEach((p, p_idx) => {
+        if (p > 0) {
+            if (!voiceStart) {
+                voiceStart = p_idx;
+            }
+        }
+        else {
+            // if voiced period is greater than 20 ms, render a rectangle
+            // that represents the average pitch of that voice period
+            if (p_idx - voiceStart > 20 && voiceStart) {
+
+                let voicedPeriod = get_cur_pitch(doc.id)
+                    .slice(Math.floor(voiceStart), Math.floor(p_idx));
+                let pitch_mean = (pitch_stats(voicedPeriod) || {})['pitch_mean'];
+                if (pitch_mean) {
+
+                    let y = pitch2y(pitch_mean) / 5;
+                    svg.rect({
+                        id: doc.id + '-word-' + p_idx,
+                        attrs: {
+                            x: width * (voiceStart / 100 / duration),
+                            y: y,
+                            width: width * (p_idx / 100 - voiceStart / 100) / duration,
+                            height: 2,
+                            fill: '#E4B186'
+                        }
+                    })
+                }
+                voiceStart = false;
+            }
+        }
+
+    });
+
+    // render selection overlay
+    if (T.selections[doc.id]) {
+        let sel = T.selections[doc.id];
+
+        svg.rect({
+            id: doc.id + '-o-selection-pre',
+            attrs: {
+                x: 0,
+                y: 0,
+                width: width * (sel.start_time / duration),
+                height: height,
+                fill: 'rgba(218,218,218,0.4)'
+            }
+        });
+        svg.rect({
+            id: doc.id + '-o-selection-post',
+            attrs: {
+                x: width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration),
+                y: 0,
+                width: width - (width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration)),
+                height: height,
+                fill: 'rgba(218,218,218,0.4)'
+            }
+        });
+
+        svg.rect({
+            id: doc.id + '-o-selection',
+            attrs: {
+                x: width * (sel.start_time / duration),
+                y: 1,
+                width: width * ((sel.end_time - sel.start_time) / duration),
+                height: height - 2,
+                stroke: 'rgba(128, 55, 43, 1)',
+                'stroke-width': 1,
+                fill: 'none',
+                rx: 2
+            }
+        });
     }
+
+    // render razor
+    if (T.cur_doc == doc.id && T.razors[doc.id]) {
+        svg.rect({
+            id: doc.id + '-o-razor',
+            attrs: {
+                x: width * (T.razors[doc.id] / duration),
+                y: 0,
+                width: 2,
+                height: height,
+                fill: 'rgba(128, 55, 43, 0.4)'
+            }
+        });
+    }
+
+    // render seconds (every 15 seconds)
+    for (let x = 15; x < duration; x += 15) {
+        svg.text({
+            id: doc.id + '-ov-' + '-xaxistxt-' + x,
+            text: '' + x + 's',
+            attrs: {
+                x: width * (x / duration) + 2,
+                y: height - 3,
+                class: 'axis',
+                fill: '#3B5161',
+                opacity: 0.5
+            }
+        })
+    }
+
+    /////////////// begin overview click events //////////////////
+
+    function start_selection(ev) {
+        ev.preventDefault();
+
+        // Compute time for razor (XXX: make selection?)
+        let t1 = (ev.offsetX / width) * duration;
+        let t2 = t1;
+
+        T.DRAGGING = true;
+
+        window.onmousemove = (ev) => {
+            t2 = (ev.offsetX / width) * duration;
+
+            if (Math.abs(t2 - t1) > 0.2) {
+
+                let start = Math.min(t1, t2);
+                let end = Math.max(t1, t2);
+
+                // Limit to 30secs
+                end = Math.min(start + 30, end);
+
+                T.selections[doc.id] = {
+                    start_time: start,
+                    end_time: end
+                };
+
+                render();
+            }
+            else {
+                // if(doc.id in T.selections) {
+                //     delete T.selections[doc.id];
+                //     render();
+                // }
+            }
+
+        }
+        window.onmouseup = (ev) => {
+            T.DRAGGING = false;
+
+            set_active_doc(doc);
+
+            if (Math.abs(t2 - t1) < 0.2) {
+                // TODO: Seek audio
+                T.razors[doc.id] = t2;
+                T.audio.currentTime = t2;
+
+            }
+            else {
+                delete T.razors[doc.id];
+                // T.audio.currentTime = T.razors[doc.id] = T.selections[doc.id].start_time + 0.01;
+            }
+            render();
+
+            window.onmousemove = null;
+            window.onmouseup = null;
+        };
+    }
+
+    /////////////// end overview click events //////////////////
+}
+
+function render_graph(root, doc, start_time, end_time) {
+    if (!render_is_ready(root, doc.id)) return;
 
     root._attrs.classes.push('loaded');
     let segs = get_cur_align(doc.id).segments;
@@ -1007,56 +1103,61 @@ function render_detail(root, doc, start_time, end_time) {
 
     const seg_w = t2x(duration);
 
-    let xAxisSvg = root.svg({
+    // render svg for sticky y-axis area
+    let yAxisSvg = root.svg({
         id: doc.id + '-axis-svg-',
         attrs: {
             width: 50,
-            height: T.PITCH_H + 1,  /* 1 additional pixel so right border perfectly ends on the bottom of the y-axis */
+            height: T.PITCH_H + 1,  /* 1 additional pixel so border perfectly ends on the bottom of the y-axis */
             class: 'x-axis',
         },
     })
 
-    xAxisSvg.line({
+    // render right border to act as sticky y-axis
+    yAxisSvg.line({
         attrs: {
             'stroke-width': 2,
             stroke: '#DCDCDC',
-            x1: 49,            
+            x1: 49,
             y1: 0,
             x2: 49,
             y2: T.PITCH_H + 1,
         }
     })
 
+    // render svg for rest of graph
     let mainGraphWrapper = root.div({ id: doc.id + '-main-graph-wrapper', classes: ['main-graph-wrapper'] });
     let svg = mainGraphWrapper.svg({
-	      id: doc.id + '-svg-',
-	      attrs: {
-	          width: seg_w,
-	          height: T.PITCH_H + 35
-	      },
-	      events: {
-	      }
+        id: doc.id + '-svg-',
+        attrs: {
+            width: seg_w,
+            height: T.PITCH_H + 35
+        },
+        events: {
+        }
     });
-   
-   svg.line({id: doc.id + '-seg-' + '-axis-0',
-   attrs: {
-       x1: 0,
-       y1: T.PITCH_H,
-       x2: seg_w,
-       y2: T.PITCH_H,
-       'stroke-width': 2,
-       stroke: '#DCDCDC'
-   }})
 
-    // Draw axes
-    var colors =  { 50: "#DADADA", 100: "#E0E0E0", 200: "#E5E5E5", 400: "#F0F0F0" };
+    svg.line({
+        id: doc.id + '-seg-' + '-axis-0',
+        attrs: {
+            x1: 0,
+            y1: T.PITCH_H,
+            x2: seg_w,
+            y2: T.PITCH_H,
+            'stroke-width': 2,
+            stroke: '#DCDCDC'
+        }
+    })
+
+    // render x-axes
+    var colors = { 50: "#DADADA", 100: "#E0E0E0", 200: "#E5E5E5", 400: "#F0F0F0" };
     let lastYPx = T.PITCH_H;
     for (let yval = 50; yval <= 400; yval += 50) {
         var y_px = pitch2y(yval);
         let color = colors[yval];
 
         // add color change for desired intervals
-        if(color) {
+        if (color) {
 
             svg.rect({
                 id: doc.id + '-d-bg-' + yval,
@@ -1070,7 +1171,7 @@ function render_detail(root, doc, start_time, end_time) {
                 }
             })
 
-            xAxisSvg.text({
+            yAxisSvg.text({
                 id: doc.id + '-seg-' + '-axistxt-' + yval,
                 text: '' + yval,
                 attrs: {
@@ -1083,139 +1184,153 @@ function render_detail(root, doc, start_time, end_time) {
 
             lastYPx = y_px;
         }
-    
-        svg.line({id: doc.id + '-seg-' + '-axis-' + yval,
-        attrs: {
-            x1: 0,
-            y1: y_px,
-            x2: seg_w,
-            y2: y_px,
-            "stroke-width": color ? 1 : 0.5,
-            stroke: '#DCDCDC',
-        }});
+
+        svg.line({
+            id: doc.id + '-seg-' + '-axis-' + yval,
+            attrs: {
+                x1: 0,
+                y1: y_px,
+                x2: seg_w,
+                y2: y_px,
+                "stroke-width": color ? 1 : 0.5,
+                stroke: '#DCDCDC',
+            }
+        });
     }
 
-    // ...and x-axis
-    for(let x=Math.ceil(start_time); x<end_time; x++) {
+    // render y-axes
+    for (let x = Math.ceil(start_time); x < end_time; x++) {
         if (x == 0) continue;
         var x_px = t2x(x - start_time);
 
-	      svg.line({id: doc.id + '-seg-' + '-xaxis-' + x,
-		              attrs: {
-		                  x1: x_px,
-		                  y1: 0,
-		                  x2: x_px,
-		                  y2: T.PITCH_H,
-		                  stroke: '#DCDCDC'
-		              }})
-	      svg.text({id: doc.id + '-seg-' + '-xaxistxt-' + x,
-		              text: '' + x,
-		              attrs: {
-		                  x: x_px - 2,
-		                  y: T.PITCH_H + 16,
-		                  class: 'axis',
-		                  fill: '#3B5161'
-		              }})
+        svg.line({
+            id: doc.id + '-seg-' + '-xaxis-' + x,
+            attrs: {
+                x1: x_px,
+                y1: 0,
+                x2: x_px,
+                y2: T.PITCH_H,
+                stroke: '#DCDCDC'
+            }
+        })
+        svg.text({
+            id: doc.id + '-seg-' + '-xaxistxt-' + x,
+            text: '' + x,
+            attrs: {
+                x: x_px - 2,
+                y: T.PITCH_H + 16,
+                class: 'axis',
+                fill: '#3B5161'
+            }
+        })
     }
 
+    // render pitch trace
     let seq_stats = pitch_stats(
-	      get_cur_pitch(doc.id).slice(Math.round(start_time*100),
-				                            Math.round(end_time*100)));
+        get_cur_pitch(doc.id).slice(Math.round(start_time * 100),
+            Math.round(end_time * 100)));
 
-    if(seq_stats) {
-	      render_pitch(
-	          svg, doc.id + '-sspath-',
-	          seq_stats.smoothed,
-	          {
-		            stroke: '#D58139',
-                    opacity: "60%",
-		            'stroke-width': 3,
-	          }
-	      );
+    if (seq_stats) {
+        render_pitch(
+            svg, doc.id + '-sspath-',
+            seq_stats.smoothed,
+            {
+                stroke: '#D58139',
+                opacity: "60%",
+                'stroke-width': 3,
+            }
+        );
     }
 
-    // Draw amplitude
+    // render amplitude
     get_cur_rms(doc.id)
-	      .slice(Math.round(start_time*100),
-	             Math.round(end_time*100))
-	      .forEach((r, r_idx) => {
+        .slice(Math.round(start_time * 100),
+            Math.round(end_time * 100))
+        .forEach((r, r_idx) => {
 
-	          let h = r * T.PITCH_H/5;
-	          let cy = 9.25/10 * T.PITCH_H;
+            let h = r * T.PITCH_H / 5;
+            let cy = 9.25 / 10 * T.PITCH_H;
 
-	          svg.line({id: doc.id + '-rms-'  + '-' + r_idx,
-		                  attrs: {
-			                    x1: fr2x(r_idx),
-			                    y1: cy - (h/2),
-			                    x2: fr2x(r_idx),
-			                    y2: cy + (h/2),
-			                    stroke: 'rgba(0,0,0,0.1)',
-			                    'stroke-width': 2,
-		                  }})
-	      });
+            svg.line({
+                id: doc.id + '-rms-' + '-' + r_idx,
+                attrs: {
+                    x1: fr2x(r_idx),
+                    y1: cy - (h / 2),
+                    x2: fr2x(r_idx),
+                    y2: cy + (h / 2),
+                    stroke: 'rgba(0,0,0,0.1)',
+                    'stroke-width': 2,
+                }
+            })
+        });
 
-    // Draw each word
+    // render words
     segs.forEach((seg, seg_idx) => {
-	      seg.wdlist.forEach((wd,wd_idx) => {
+        seg.wdlist.forEach((wd, wd_idx) => {
 
-	          if(!wd.end) { return }
+            if (!wd.end) { return }
 
-	          if(wd.start >= end_time || wd.end <= start_time) { return; }
+            if (wd.start >= end_time || wd.end <= start_time) { return; }
 
-	          if(wd.type == 'gap'){
-		            svg.rect({id: doc.id + '-gap-' + seg_idx + '-' + wd_idx,
-			                    attrs: {
-			                        x: t2x(wd.start - start_time),
-			                        y: 0,
-			                        width: t2w(wd.end - wd.start),
-			                        height: T.PITCH_H,
-			                        fill: 'rgba(0,0,0,0.05)'
-			                    }})
+            if (wd.type == 'gap') {
+                svg.rect({
+                    id: doc.id + '-gap-' + seg_idx + '-' + wd_idx,
+                    attrs: {
+                        x: t2x(wd.start - start_time),
+                        y: 0,
+                        width: t2w(wd.end - wd.start),
+                        height: T.PITCH_H,
+                        fill: 'rgba(0,0,0,0.05)'
+                    }
+                })
 
-		            return
-	          }
+                return
+            }
 
-	          let wd_stats = pitch_stats(get_cur_pitch(doc.id).slice(Math.round(wd.start*100),
-								                                                   Math.round(wd.end*100)));
+            let wd_stats = pitch_stats(get_cur_pitch(doc.id).slice(Math.round(wd.start * 100),
+                Math.round(wd.end * 100)));
 
-	          svg.text({id: doc.id + '-txt-' + seg_idx + '-' + wd_idx,
-		                  text: wd.word,
-		                  attrs: {
-			                    class: wd.type=='unaligned' ? 'unaligned' : 'word',
-			                    x: t2x(wd.start - start_time),
-			                    //y: pitch2y((wd_stats&&wd_stats.pitch_mean) || seq_stats.pitch_mean) - 2,
-			                    y: Math.max(30, pitch2y((wd_stats&&wd_stats.pitch_percentile_91) || seq_stats.pitch_mean) - 2),
-			                    fill: '#3B5161',
-		                  }
-		                 })
-	      });
+            svg.text({
+                id: doc.id + '-txt-' + seg_idx + '-' + wd_idx,
+                text: wd.word,
+                attrs: {
+                    class: wd.type == 'unaligned' ? 'unaligned' : 'word',
+                    x: t2x(wd.start - start_time),
+                    //y: pitch2y((wd_stats&&wd_stats.pitch_mean) || seq_stats.pitch_mean) - 2,
+                    y: Math.max(30, pitch2y((wd_stats && wd_stats.pitch_percentile_91) || seq_stats.pitch_mean) - 2),
+                    fill: '#3B5161',
+                }
+            })
+        });
     });
 
-
-    if(T.cur_doc == doc.id && T.razors[doc.id]) {
-	      svg.rect({id: 'd-razor-' + doc.id,
-		              attrs: {
-		                  x: t2x(T.razors[doc.id] - start_time),
-		                  y: 0,
-		                  width: 2,
-		                  height: T.PITCH_H,
-		                  fill: T.razors[doc.id + '-hover'] ? 'rgba(128, 55, 43, 0.4)' : '#80372B'
-		              }
-		             });
+    // render razor
+    if (T.cur_doc == doc.id && T.razors[doc.id]) {
+        svg.rect({
+            id: 'd-razor-' + doc.id,
+            attrs: {
+                x: t2x(T.razors[doc.id] - start_time),
+                y: 0,
+                width: 2,
+                height: T.PITCH_H,
+                fill: T.razors[doc.id + '-hover'] ? 'rgba(128, 55, 43, 0.4)' : '#80372B'
+            }
+        });
     }
 
-    if(T.razors[doc.id + '-hover'])
-    {
+    // render razor that appears on hover
+    if (T.razors[doc.id + '-hover']) {
         const hovX = t2x(T.razors[doc.id + '-hover'] - start_time);
-        svg.rect({id: doc.id + '-d-razor-hover',
-                    attrs: {
-                        x: hovX,
-                        y: 0,
-                        width: 2,
-                        height: T.PITCH_H,
-                        fill: '#80372B'
-                    }
-                });
+        svg.rect({
+            id: doc.id + '-d-razor-hover',
+            attrs: {
+                x: hovX,
+                y: 0,
+                width: 2,
+                height: T.PITCH_H,
+                fill: '#80372B'
+            }
+        });
         let tag = mainGraphWrapper.div({
             classes: ['infotag'],
             attrs: {
@@ -1232,6 +1347,7 @@ function render_detail(root, doc, start_time, end_time) {
         })
     }
 
+    // render a rectangle to detect hoverarea (don't want hover-razor to appear when hovering below x-axis)
     svg.rect({
         id: doc.id + '-graph-hover-area',
         attrs: {
@@ -1265,323 +1381,89 @@ function render_detail(root, doc, start_time, end_time) {
     let dl_btn = root.button({
         classes: ['dl-graph-btn'],
         events: {
-            onclick: ev => {
-                let container = ev.currentTarget.parentElement;
-                let svg1 = container.children[0].cloneNode(true), svg2 = container.children[1].children[0].cloneNode(true);
-                svg2.setAttribute("x", svg1.width.baseVal.value);
-                let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-                svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif; font-size: 14.4px;`);
-                svgWhole.setAttribute("width", svg1.width.baseVal.value + svg2.width.baseVal.value);
-                svgWhole.setAttribute("height", svg2.height.baseVal.value);
-                svgWhole.appendChild(svg1);
-                svgWhole.appendChild(svg2);
-                let pitchLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                pitchLabel.textContent = 'log';
-                pitchLabel.setAttribute('y', svg2.height.baseVal.value - 50);
-                pitchLabel.setAttribute('style', 'font-weight: 600;');
-                let pitchLabel2 = pitchLabel.cloneNode(), pitchLabel3 = pitchLabel.cloneNode();
-                pitchLabel2.textContent = 'pitch'
-                pitchLabel2.setAttribute('dy', '1.1em');;
-                pitchLabel3.textContent = '(hz)'
-                pitchLabel3.setAttribute('dy', '2.2em');;
-                let secondsLabel = pitchLabel.cloneNode();
-                secondsLabel.textContent = 'seconds';
-                secondsLabel.setAttribute('x', 50);
-                secondsLabel.setAttribute('y', svg2.height.baseVal.value - 20);
-                svgWhole.appendChild(pitchLabel);
-                svgWhole.appendChild(pitchLabel2);
-                svgWhole.appendChild(pitchLabel3);
-                svgWhole.appendChild(secondsLabel);
-                let razor = svgWhole.querySelector('#' + 'd-razor-' + doc.id);
-                if (razor) razor.remove();
-                
-                // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
-                // https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
-                let svgBlob = new Blob([svgWhole.outerHTML], {type:"image/svg+xml;charset=utf-8"});
-                let svgUrl = URL.createObjectURL(svgBlob);
-                let img = new Image();
-                let canvas = document.createElement('canvas');
-                let [ width, height ] = [svg1.width.baseVal.value + svg2.width.baseVal.value, svg2.height.baseVal.value];
-                width *= 1.5; height *= 1.5;
-                canvas.width = width;
-                canvas.height = height;
-                let ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, width, height);
-                img.onload = function() {
-                    ctx.drawImage(img, 0, 0, width, height);
-                          
-                    let filename = doc.title.split('.').reverse();
-                    filename.shift();
-                    start_time = Math.round(start_time * 100000) / 100000;
-                    end_time = Math.round(end_time * 100000) / 100000;
-                    filename = filename.reverse().join('') + '.' + start_time + '-' + end_time + '.png';
-                    canvas.toBlob(canvasBlob => saveAs(canvasBlob, filename));
-                }
-
-                img.src = svgUrl;
-
-            }
+            onclick: () => download_graph_png(doc.id)
         }
     });
 
     dl_btn.span({ text: "Download Graph" });
     dl_btn.img({ attrs: { src: 'download-icon.svg' } });
-
 }
 
-function render_overview(root, doc) {
-    if(!render_is_ready(root, doc.id)) {
-	      return
+function download_graph_png(docid) {
+
+    let graphElement = document.getElementById(docid + '-detdiv');
+    let svg1 = graphElement.children[0].cloneNode(true), svg2 = graphElement.children[1].children[0].cloneNode(true);
+    svg2.setAttribute("x", svg1.width.baseVal.value);
+    let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif; font-size: 14.4px;`);
+    svgWhole.setAttribute("width", svg1.width.baseVal.value + svg2.width.baseVal.value);
+    svgWhole.setAttribute("height", svg2.height.baseVal.value);
+    svgWhole.appendChild(svg1);
+    svgWhole.appendChild(svg2);
+    let pitchLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    pitchLabel.textContent = 'log';
+    pitchLabel.setAttribute('y', svg2.height.baseVal.value - 50);
+    pitchLabel.setAttribute('style', 'font-weight: 600;');
+    let pitchLabel2 = pitchLabel.cloneNode(), pitchLabel3 = pitchLabel.cloneNode();
+    pitchLabel2.textContent = 'pitch'
+    pitchLabel2.setAttribute('dy', '1.1em');;
+    pitchLabel3.textContent = '(hz)'
+    pitchLabel3.setAttribute('dy', '2.2em');;
+    let secondsLabel = pitchLabel.cloneNode();
+    secondsLabel.textContent = 'seconds';
+    secondsLabel.setAttribute('x', 50);
+    secondsLabel.setAttribute('y', svg2.height.baseVal.value - 20);
+    svgWhole.appendChild(pitchLabel);
+    svgWhole.appendChild(pitchLabel2);
+    svgWhole.appendChild(pitchLabel3);
+    svgWhole.appendChild(secondsLabel);
+    let razor = svgWhole.getElementById('d-razor-' + docid);
+    if (razor) razor.remove();
+
+    // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
+    // https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
+    let svgBlob = new Blob([svgWhole.outerHTML], { type: "image/svg+xml;charset=utf-8" });
+    let svgUrl = URL.createObjectURL(svgBlob);
+    let img = new Image();
+    let canvas = document.createElement('canvas');
+    let [width, height] = [svg1.width.baseVal.value + svg2.width.baseVal.value, svg2.height.baseVal.value];
+    width *= 1.5; height *= 1.5;
+    canvas.width = width;
+    canvas.height = height;
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    img.onload = function () {
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let filename = T.docs[docid].title.split('.').reverse();
+        filename.shift();
+        let { start_time, end_time } = T.selections[docid];
+        start_time = Math.round(start_time * 100000) / 100000;
+        end_time = Math.round(end_time * 100000) / 100000;
+        filename = filename.reverse().join('') + '.' + start_time + '-' + end_time + '.png';
+        canvas.toBlob(canvasBlob => saveAs(canvasBlob, filename));
     }
 
-    let align = get_cur_align(doc.id);
-    let duration = T.docs[doc.id].duration;
-
-    let width = duration * 10;
-    // let width = (document.getElementById(root._id) || {}).clientWidth || document.body.clientWidth;
-    let height = 50;
-
-    let svg = root.svg({
-	      id: doc.id + '-svg-overview',
-	      attrs: {
-	          width: width,
-	          height: height,
-	      },
-	      events: {
-	          onmousedown: (ev) => {
-		            ev.preventDefault();
-
-		            // Compute time for razor (XXX: make selection?)
-		            let t1 = (ev.offsetX / width) * duration;
-		            let t2 = t1;
-
-                T.DRAGGING = true;
-
-		            window.onmousemove = (ev) => {
-		                t2 = (ev.offsetX / width) * duration;
-
-		                if(Math.abs(t2 - t1) > 0.2) {
-
-			                  let start = Math.min(t1, t2);
-			                  let end = Math.max(t1, t2);
-
-			                  // Limit to 30secs
-			                  end = Math.min(start+30, end);
-
-			                  T.selections[doc.id] = {
-			                      start_time: start,
-			                      end_time: end
-			                  };
-
-			                  render();
-		                }
-		                else {
-			                  // if(doc.id in T.selections) {
-			                  //     delete T.selections[doc.id];
-			                  //     render();
-			                  // }
-		                }
-
-		            }
-		            window.onmouseup = (ev) => {
-                    T.DRAGGING = false;
-
-		                set_active_doc(doc);
-
-		                if(Math.abs(t2 - t1) < 0.2) {
-			                  // TODO: Seek audio
-			                  T.razors[doc.id] = t2;
-			                  T.audio.currentTime = t2;
-
-		                }
-                        else {                            
-                            delete T.razors[doc.id];
-                            // T.audio.currentTime = T.razors[doc.id] = T.selections[doc.id].start_time + 0.01;
-                        }
-			              render();
-
-		                window.onmousemove = null;
-		                window.onmouseup = null;
-		            };
-	          }
-	      }
-    });
-
-    svg.rect({
-        id: doc.id + '-svg-overview-bg',
-        attrs: {
-            x: 0,
-            y: 0,
-            width: '100%',
-            height: height,
-            fill: '#F7F7F7'
-        }
-    })
-
-    // render word gaps on overview
-    align.segments
-        .forEach((seg, seg_idx) => {
-            seg.wdlist.forEach((wd, wd_idx) => {
-                if (!wd.end || !wd.start) { return }
-
-                if (wd.type == 'gap') {
-                    svg.rect({
-                        id: 'gap-' + seg_idx + '-' + wd_idx,
-                        attrs: {
-                            x: width * (wd.start / duration),
-                            y: 0,
-                            width: width * (wd.end - wd.start) / duration,
-                            height: height,
-                            fill: '#D9D9D9'
-                        }
-                    })
-                }
-            })
-        });
-    
-    // render simplified pitch trace on overview
-    let seq_stats = pitch_stats(get_cur_pitch(doc.id));
-
-    if (seq_stats) {
-        let voiceStart;
-        seq_stats.smoothed
-            .forEach((p, p_idx) => {
-                if (p > 0) {
-                    if (!voiceStart) {
-                        voiceStart = p_idx;
-                    }
-                }
-                else {
-                    if (p_idx - voiceStart > 20 && voiceStart) {
-
-                        let voicedPeriod = get_cur_pitch(doc.id)
-                            .slice(Math.floor(voiceStart), Math.floor(p_idx));
-                        let pitch_mean = (pitch_stats(voicedPeriod) || {})['pitch_mean'];
-                        if (pitch_mean) {
-
-                            let y = pitch2y(pitch_mean) / 5;
-                            svg.rect({
-                                id: doc.id + '-word-' + p_idx,
-                                attrs: {
-                                    x: width * (voiceStart / 100 / duration),
-                                    y: y,
-                                    width: width * (p_idx / 100 - voiceStart / 100) / duration,
-                                    height: 2,
-                                    fill: '#E4B186'
-                                }
-                            })
-                        }
-                        voiceStart = false;
-                    }
-                }
-
-            });
-
-
-    }
-
-    // render selection overlay
-    if(T.selections[doc.id]) {
-	      let sel = T.selections[doc.id];
-          
-        svg.rect({id: doc.id + '-o-selection-pre',
-          attrs: {
-              x: 0,
-              y: 0,
-              width: width * (sel.start_time / duration),
-              height: height,
-              fill: 'rgba(218,218,218,0.4)'
-          }
-         });
-         svg.rect({id: doc.id + '-o-selection-post',
-         attrs: {
-             x: width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration),
-             y: 0,
-             width: width - (width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration)),
-             height: height,
-             fill: 'rgba(218,218,218,0.4)'
-         }
-         });
-
-	      svg.rect({id: doc.id + '-o-selection',
-		              attrs: {
-		                  x: width * (sel.start_time / duration),
-		                  y: 1,
-		                  width: width * ((sel.end_time - sel.start_time) / duration),
-		                  height: height - 2,
-		                  stroke: 'rgba(128, 55, 43, 1)',
-		                  'stroke-width': 1,
-		                  fill: 'none',
-                          rx: 2
-		              }
-		             });
-    }
-
-    if(T.cur_doc == doc.id && T.razors[doc.id]) {
-	      svg.rect({id: doc.id + '-o-razor',
-		              attrs: {
-		                  x: width * (T.razors[doc.id] / duration),
-		                  y: 0,
-		                  width: 2,
-		                  height: height,
-		                  fill: 'rgba(128, 55, 43, 0.4)'
-		              }
-		             });
-    }
-
-    // ...and x-axis
-    let last_x = 0;
-
-    for(let x=0; x<duration; x+=1) {
-        let show_secs = false;
-
-        var x_px = width * (x/duration);
-        if(x % 5 == 0 && x - last_x > 10) {
-            last_x = x;
-            show_secs = true;
-        }
-        
-        if(show_secs) {
-	          svg.text({id: doc.id + '-ov-' + '-xaxistxt-' + x,
-		                  text: '' + x + 's',
-		                  attrs: {
-		                      x: x_px + 2,
-		                      y: height - 2,
-		                      class: 'axis',
-		                      fill: '#3B5161',
-                              opacity: 0.5
-		                  }})
-        }
-    }
+    img.src = svgUrl;
 
 }
 
 function render_is_ready(root, docid) {
-    if(!T.docs[docid] || !get_data(docid) || !T.docs[docid].duration) {
-        new PAL.Element("div", {
-            parent: root,
+    if (!T.docs[docid] || !get_data(docid) || !T.docs[docid].duration) {
+        root.div({
             classes: ["loading-placement"],
             text: "Loading... If this is taking too long, try reuploading this data file"
         });
 
         return false;
     }
-    
+
     return true;
 }
 
-function delete_action(doc) {
-    FARM.post_json("/_rec/_remove", {id: doc.id}, (ret) => {
-	      delete T.docs[ret.remove];
-          delete T.opened[ret.remove];
-	      render();
-    });
-}
-
-
 function render_hamburger(root, doc) {
-    
+
     let dlBtn = root.button({
         classes: ['dl-btn'],
         events: {
@@ -1616,7 +1498,7 @@ function render_hamburger(root, doc) {
             }
         });
     })
-    
+
     dlDropdown.li({
         id: `ham-del-${doc.id}`,
     }).a({
@@ -1631,47 +1513,106 @@ function render_hamburger(root, doc) {
             }
         }
     });
-    
+
 }
 
-function render() {
-    var fileList = new PAL.ExistingRoot("div", { id: "file-list" }),
-        docArea = new PAL.ExistingRoot("main", { id: "doc-area" })
-    render_doclist(fileList);
-    render_opened_docs(docArea);
-    
-    fileList.show();
-    docArea.show();
-}
+function set_active_doc(doc) {
+    if (doc.id !== T.cur_doc) {
+        T.cur_doc = doc.id;
+        if (T.audio) T.audio.pause();
 
-function fr2x(fr) {
-    return t2x(fr/100.0);
-}
-function t2x(t) {
-    return T.LPAD + t2w(t);
-}
-function x2t(x) {
-    return (x - T.LPAD)/T.XSCALE;
-}
-function t2w(t) {
-    return t*T.XSCALE;
-}
+        T.audio = new Audio('/media/' + doc.path);
+        T.audio.addEventListener("canplaythrough", () => {
+            T.docs[doc.id].duration = T.audio.duration;
+            render();
+        });
 
-
-function pitch2y(p, p_h) {
-    if(p == 0) {
-        return p;
+        if (T.razors[doc.id])
+            T.audio.currentTime = T.razors[doc.id];
     }
-
-    // -- Linear
-    //return T.PITCH_H - p;
-
-    // -- Logscale
-    // This is the piano number formula
-    // (https://en.wikipedia.org/wiki/Piano_key_frequencies)
-    // n = 12 log2(f/440hz) + 49
-    return (-60 * Math.log2(p / 440));
 }
+
+function got_files(files) {
+    if (files.length > 0) {
+        for (var i = 0; i < files.length; i++) {
+
+            (function (file) {
+
+                var drift_doc = {
+                    title: file.name,
+                    size: file.size,
+                    date: new Date().getTime() / 1000
+                };
+
+                FARM.post_json("/_rec/_create", drift_doc, (ret) => {
+
+                    T.docs[ret.id] = ret;
+                    T.opened[ret.id] = true;
+                    render();
+
+                    attach.put_file(file,
+                        x => {
+                            console.log('done', x);
+
+                            FARM.post_json("/_rec/_update", {
+                                id: ret.id,
+                                path: x.path
+                            }, (u_ret) => {
+                                Object.assign(T.docs[ret.id], u_ret.update);
+                                render();
+
+                                // Immediately trigger a pitch trace
+                                FARM.post_json("/_pitch", { id: ret.id }, (p_ret) => {
+                                    console.log("pitch returned", p_ret);
+                                    set_active_doc(T.docs[ret.id]);
+                                });
+
+                                // ...and RMS
+                                FARM.post_json("/_rms", { id: ret.id }, (c_ret) => {
+                                    console.log("rms returned", c_ret);
+                                });
+
+                            });
+
+                        },
+                        p => {
+                            T.docs[ret.id].upload_status = p / ret.size;
+                            console.log("upload_status", T.docs[ret.id].upload_status);
+                            render();
+                        });
+
+                });
+
+            })(files[i]);
+        }
+    }
+}
+
+function get_docs() {
+    let dateSorted = sort_docs(Object.keys(T.docs));
+    dateSorted.forEach((x, i) => {
+        x.order = T.docs[x.id].order = i + 1;
+    });
+    return dateSorted;
+}
+
+function get_opened_docs() {
+    return sort_docs(Object.keys(T.opened));
+}
+
+// sort by "order" property. If it doesn't have an order property, it means the document was just added, 
+// so those without the "order" property are prioritized first
+function sort_docs(docIds) {
+    return docIds
+        .map((x) => Object.assign({}, T.docs[x], { id: x }))
+        .sort((x, y) => {
+            if (!x.order && !y.order) return x.date > y.date ? -1 : 1;
+            if ((x.order === undefined) !== (y.order === undefined))
+                return y.order ? -1 : 1;
+            return x.order - y.order;
+        });
+}
+
 function toggle_playpause() {
     if (T.audio && has_data(T.cur_doc)) {
         if (!T.razors[T.cur_doc] && T.selections[T.cur_doc])
@@ -1682,14 +1623,12 @@ function toggle_playpause() {
             start_time = Math.round(start_time * 10000) / 10000;
             end_time = Math.round(end_time * 10000) / 10000;
             const ct = Math.round(T.audio.currentTime * 10000) / 10000;
-            
+
             if (ct > end_time
-                || ct < start_time)
-            {
+                || ct < start_time) {
                 console.log(T.selections[T.cur_doc].start_time, T.audio.currentTime, T.selections[T.cur_doc].end_time);
                 let segments = (get_cur_align(T.cur_doc) || {}).segments;
-                if (segments)
-                {
+                if (segments) {
                     let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
                     T.selections[T.cur_doc] = { start_time: start, end_time: end };
                 }
@@ -1702,147 +1641,267 @@ function toggle_playpause() {
         render();
     }
 }
-window.onkeydown = (ev) => {
-    // XXX: Make sure we're not editing a transcript.
-    if(ev.target.tagName == 'TEXTAREA'
-    || ev.target.tagName == 'INPUT') {
-        return;
-    }
-    if(ev.key == ' ') {
-	      ev.preventDefault();
-        toggle_playpause();
-    }
+
+function has_data(docid) {
+    let meta = T.docs[docid];
+    if (!meta) { return }
+
+    return meta.pitch && meta.align && meta.rms;
 }
 
-function tick() {
-    // reached the end of audio
-    if (T.audio && T.audio.paused && T.audio.currentTime == T.audio.duration)
-        delete T.razors[T.cur_doc];
-    if (T.audio && !T.audio.paused) {
+function cached_get_url(url, proc_fn) {
+    D.urls = D.urls || {};
+    if (D.urls[url + '_status'] != C.STATUS.READY) {
+        if (D.urls[url + '_status'] != C.STATUS.LOADING) {
+            D.urls[url + '_status'] = C.STATUS.LOADING;
 
-        T.razors[T.cur_doc] = T.audio.currentTime;
-        if (T.audio.currentTime > T.selections[T.cur_doc].end_time
-            || T.audio.currentTime < T.selections[T.cur_doc].start_time)
-        {
-            if (T.docs[T.cur_doc].autoscroll)
-            {
-                let start = T.audio.currentTime, end = Math.min(start + 20, T.audio.duration);
-                T.selections[T.cur_doc] = { start_time: start, end_time: end };
+            FARM.get(url, (ret) => {
+                if (proc_fn) {
+                    ret = proc_fn(ret);
+                }
+                D.urls[url] = ret;
+                D.urls[url + '_status'] = C.STATUS.READY;
+                render();	// XXX
+            });
+        }
+        return { loading: true };
+    }
+    return D.urls[url];
+}
+
+// legacy
+function get_cur_pitch(id) {
+    return (get_data(id || T.cur_doc) || {}).pitch
+}
+function get_cur_align(id) {
+    return (get_data(id || T.cur_doc) || {}).align
+}
+function get_cur_rms(id) {
+    return (get_data(id || T.cur_doc) || {}).rms
+}
+
+function get_data(docid) {
+    // or null if they're not loaded...
+
+    let meta = T.docs[docid];
+    if (!meta) { return }
+
+    if (!meta.pitch) { return }
+    let pitch = cached_get_url('/media/' + meta.pitch, parse_pitch);
+    if (pitch.loading) { return }
+
+    if (!meta.align) { return }
+    let align = cached_get_url('/media/' + meta.align, JSON.parse);
+    if (align.loading) { return }
+
+    if (!meta.rms) { return }
+    let rms = cached_get_url('/media/' + meta.rms, JSON.parse);
+    if (rms.loading) { return }
+
+    return { pitch, align, rms }
+}
+
+function get_descriptions() {
+    
+        // TODO better way to do this?
+        return {
+            'WPM': 'The average number of words per minute. The transcript of the recording created by Gentle, corrected when necessary, produced the number of words read, which was divided by the length of the recording and normalized, if the recording was longer or shorter than one minute, to reflect the speaking rate for 60 seconds.',
+            'Gentle_Pause_Count_>100ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Pause_Count_>500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Pause_Count_>1000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Pause_Count_>1500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Pause_Count_>2000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Pause_Count_>2500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Long_Pause_Count_>3000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+            'Gentle_Mean_Pause_Duration_(sec)': 'Average length of pauses',
+            'Gentle_Pause_Rate_(pause/sec)': 'Average number of pauses greater than 100, 250 and 500 ms, normalized for recording length.',
+            'Gentle_Complexity_All_Pauses': 'This measure is unitless, calculated using the Lempel-Ziv algorithm to estimate Kolomogorov complexity, also used for compression, as with gif or zip files. A higher value indicates less predictable & less repetitive pauses, normalized for audio length.',
+            'Drift_f0_Mean_(hz)': 'Average Pitch. Mean f0, or the fundamental frequency, of a voice is sampled every 10 milliseconds, measured in Hertz (cycles per second), excluding outliers. This actually measures the number of times the vocal cords vibrate per second.',
+            'Drift_f0_Range_(octaves)': 'Range of pitches measured in octaves, excluding outliers.',
+            'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
+            'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
+            'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
+        };
+}
+
+function splitString(str, len, maxlines) {
+    let strs = [], i = 0, j = len;
+
+    while (j < str.length && strs.length < maxlines - 1) {
+        if (str.charAt(j) !== ' ') {
+            j++;
+            continue;
+        }
+        strs.push(str.substring(i, j));
+        i = j + 1;
+        j = i + len;
+    }
+    if (j >= str.length && strs.length < maxlines)
+        strs.push(str.substring(i, j));
+    else if (j != str.length)
+        strs[strs.length - 1] += '...';
+
+    return strs.join('\n');
+}
+
+////////////// Math utility functions //////////////
+
+function parse_pitch(pitch) {
+    return pitch.split('\n')
+        .filter((x) => x.length > 5)
+        .map((x) => Number(x.split(' ')[1]));
+}
+
+function smooth(seq, N) {
+    N = N || 5;
+
+    let out = [];
+
+    for (let i = 0; i < seq.length; i++) {
+
+        let npitched = 0;
+        let v = 0;
+
+        for (let j = 0; j < N; j++) {
+            let j1 = Math.max(0, Math.min(j + i, seq.length - 1));
+            var v1 = seq[j1];
+            if (v1 > 20) {
+                v += v1;
+                npitched += 1;
             }
-            else
-            {                
-                T.audio.pause();
-                delete T.razors[T.cur_doc];
+            else if (j1 >= i) {
+                // Hit gap after idx
+                break
+            }
+            else if (j1 <= i) {
+                // Hit gap before/on: reset
+                npitched = 0;
+                v = 0;
             }
         }
-
-        // scrolling of overview and graph when playing audio
-        let razor = T.razors[T.cur_doc];
-        if (razor)
-        {
-            let graphWindow = document.getElementById(T.cur_doc + '-main-graph-wrapper');
-            let left = graphWindow.scrollLeft, right = left + graphWindow.clientWidth;
-            let rX = t2x(razor - T.selections[T.cur_doc].start_time);
-            if (rX < left || rX > right)
-            {
-                graphWindow.scroll(rX, 0);
-            }
-            let ovWindow = document.getElementById(T.cur_doc + '-ov-wrapper');
-            left = ovWindow.scrollLeft, right = left + ovWindow.clientWidth;
-            rX = T.audio.duration * 10 * (razor / T.audio.duration);
-            if (rX < left || rX > right)
-            {
-                ovWindow.scroll(rX, 0);
-            }
-            
+        if (npitched > 1) {
+            v /= npitched;
         }
 
+        out.push(v);
+    }
+
+    return out;
+}
+
+function derivative(seq) {
+    let out = [];
+    for (let i = 0; i < seq.length; i++) {
+        let s1 = seq[i];
+        let s2 = seq[i + 1];
+        if (s1 && s2) {// && s1 > 20 && s2 > 20) {
+            out.push(s2 - s1);
+        }
+        else {
+            out.push(0)
+        }
+    }
+    return out;
+}
+
+function get_distribution(seq, name) {
+    name = name || '';
+
+    seq = Object.assign([], seq).sort((x, y) => x > y ? 1 : -1);
+
+    if (seq.length == 0) {
+        return {}
+    }
+
+    // Ignore outliers
+    seq = seq.slice(Math.floor(seq.length * 0.09),
+        Math.floor(seq.length * 0.91));
+
+    let out = {};
+    out[name + 'mean'] = seq.reduce((acc, x) => acc + x, 0) / seq.length;
+    out[name + 'percentile_9'] = seq[0];
+    out[name + 'percentile_91'] = seq[seq.length - 1];
+    out[name + 'range'] = seq[seq.length - 1] - seq[0];
+
+    return out;
+}
+
+function time_stats(wdlist) {
+    // Analyze gaps
+    let gaps = wdlist.filter((x) => x.type == 'gap');
+
+    let gap_distr = get_distribution(gaps.map((x) => x.end - x.start), 'gap_')
+
+    let pgap = gaps.length / wdlist.length;
+
+    // ...and durations
+    let phones = wdlist.filter((x) => x.phones)
+        .reduce((acc, x) => acc.concat(x.phones.map((p) => p.duration)), []);
+    let phone_distr = get_distribution(phones, 'phone_');
+
+    return Object.assign({ pgap }, gap_distr, phone_distr);
+}
+
+function pitch_stats(seq) {
+
+    let smoothed = smooth(seq);
+
+    let velocity = derivative(smoothed);
+    let acceleration = derivative(velocity);
+
+    let pitched = seq.filter((p) => p > 20);
+    if (pitched.length == 0) {
+        return
+    }
+
+    let pitch_distr = get_distribution(pitched, 'pitch_');
+
+    let acceled = acceleration.filter((p) => Math.abs(p) > 0.1);
+    let accel_distr = get_distribution(acceled, 'accel_');
+    accel_distr['accel_norm'] = acceled.reduce((acc, x) => acc + Math.abs(x), 0) / acceled.length; // XXX: percentiles...
+
+    return Object.assign({
+        smoothed,
+        velocity,
+        acceleration
+    },
+        pitch_distr, accel_distr);
+}
+
+function delete_action(doc) {
+    FARM.post_json("/_rec/_remove", { id: doc.id }, (ret) => {
+        delete T.docs[ret.remove];
+        delete T.opened[ret.remove];
         render();
-    }
-
-    window.requestAnimationFrame(tick);
+    });
 }
 
-(function() {
-    const $uplArea = document.getElementById("upload-area");
-
-    $uplArea.ondragover = function(ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        ev.dataTransfer.dropEffect = "copy";
-        ev.currentTarget.children[0].textContent = "RELEASE FILE TO UPLOAD";
-    },
-    $uplArea.ondragleave = function(ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
-    },
-    $uplArea.ondrop = function(ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-
-        console.log("drop");
-        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
-
-        got_files(ev.dataTransfer.files);
-    },
-    $uplArea.onclick = function() {
-        document.getElementById("upload-button").click()
-    }
-
-    document.getElementById("upload-button").onchange = function(ev) {
-        got_files(ev.target.files);
-    };
-
-    // zip these, but append csvs
-    ['mat', 'align', 'pitch'].forEach(name => {
-        document.getElementById('dl-all-' + name).onclick = () => {
-            Promise.all(get_docs().filter(doc => doc[name]).map(doc => {
-                return fetch('/media/' + doc[name]).then(response => response.blob()).then(blob => ({ docid: doc.id, blob: blob }));
-            })).then(blobdocs => {
-                console.log('zipping...');
-                let zip = new JSZip();
-                let folder = zip.folder(name + 'files');
-                blobdocs.forEach(({ docid, blob }) => {
-                    let doc = T.docs[docid];
-                    let filename = doc.title.split('.').reverse()
-                    filename.shift()                    
-                    let filename_basic = filename.reverse().join('') + '-' + name, suffix = '.' + doc[name].split('.')[1];
-                    let counter = 1;
-                    let out_filename = filename_basic;
-                    while (folder.file(out_filename + suffix)) out_filename = filename_basic + `(${counter++})`;
-                    out_filename += suffix;
-                    folder.file(out_filename, new File([blob], out_filename, { type: 'text/plain' }));
-                })
-                zip.generateAsync({ type: 'blob' }).then(content => saveAs(content, `${name}files.zip`));
-            })
-        }
-    })
-
-    document.getElementById('dl-all-csv').onclick = () => {
-        Promise.all(get_docs().filter(doc => doc.csv).map(doc => {
-            return fetch('/media/' + doc.csv).then(response => response.text()).then(textContent => ({ docid: doc.id, textContent: textContent }));
-        })).then(blobdocs => {
-            let cocatenated = '';
-            blobdocs.forEach(({ docid, textContent }) => {
-                let doc = T.docs[docid];
-                let numCommas = textContent.substring(0, textContent.indexOf('\n')).split(',').length - 1;
-                cocatenated += `${doc.title}`;
-                for (let i = 0; i < numCommas; i++) cocatenated += ',';
-                cocatenated += '\n';
-                cocatenated += textContent;
-            })
-
-            saveAs(new Blob([cocatenated]), 'main.csv');
-        })
-    }
-
-    document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
-})()
-
-if(!T.ticking) {
-    T.ticking = true;
-    tick();
+function fr2x(fr) {
+    return t2x(fr / 100.0);
+}
+function t2x(t) {
+    return T.LPAD + t2w(t);
+}
+function x2t(x) {
+    return (x - T.LPAD) / T.XSCALE;
+}
+function t2w(t) {
+    return t * T.XSCALE;
 }
 
-render();
+function pitch2y(p, p_h) {
+    if (p == 0) {
+        return p;
+    }
+
+    // -- Linear
+    //return T.PITCH_H - p;
+
+    // -- Logscale
+    // This is the piano number formula
+    // (https://en.wikipedia.org/wiki/Piano_key_frequencies)
+    // n = 12 log2(f/440hz) + 49
+    return (-60 * Math.log2(p / 440));
+}
+
+///////////////// end Math utility functions /////////////////////
