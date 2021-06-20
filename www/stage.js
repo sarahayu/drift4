@@ -526,20 +526,9 @@ function render_docitem_data(root, doc) {
 
     /////////////// begin table section (stat table) ///////////////////
 
-    let tableSectionContainer = tableSection.div({ classes: ['table-section-container'] });
+    render_stats(tableSection.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
 
-    // tableSectionContainer.div({ classes: ['table-title'] }).a({
-    //     text: 'Voxit Prosodic Measures',
-    //     attrs: {
-    //         title: 'Click for more information about Voxit prosodic measurements',
-    //         href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape('What do the Voxit prosodic measures quantify?') : 'about.html#voxit-prosodic-measures',
-    //         target: '_blank'
-    //     }
-    // });
-
-    render_stats(tableSectionContainer.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
-
-    tableSectionContainer.span({}).a({
+    tableSection.span({}).a({
         text: '*vocal duration that corresponds to the transcript',
         attrs: {
             title: 'Click for more information',
@@ -548,7 +537,7 @@ function render_docitem_data(root, doc) {
         },
     });
     
-    tableSectionContainer.span({ id: doc.id + '-voxit' }).a({
+    tableSection.span({ id: doc.id + '-voxit' }).a({
         text: 'Prosodic measures are calculated using Voxit',
         attrs: {
             title: 'Click for more information about Voxit',
@@ -671,14 +660,13 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         let keys = Object.keys(stats).slice(2).filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
         
         // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures
-        keys.sort((d1, d2) => {
-            if (d1 === 'WPM' || d2 === 'WPM') return d1 === 'WPM' ? -1 : 1;
-            if (d1.startsWith('Drift') !== d2.startsWith('Drift'))
-                return d1.startsWith('Drift') ? -1 : 1;
-            if (d1.startsWith('Gentle') && d2.startsWith('Gentle'))
-                return d1.includes('Pause_Count') ? 1 : -1;
-            return 1;
-        });
+        let pauseCounts = keys.splice(
+            keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
+            keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
+        );
+        let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
+        keys.splice(1, 0, ...drifts);
+        keys.push(...pauseCounts);
 
         // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
         keys.forEach(dataLabel => {
@@ -687,7 +675,8 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
             }).a({
                 text: dataLabel.replace(/_/g, ' '),
                 attrs: T.descriptions[dataLabel] ? {
-                    href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.descriptions[dataLabel]) : 'prosodic-measures.html#' + dataLabel,
+                    href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.descriptions[dataLabel]) 
+                        : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
                     target: '_blank',
                     title: splitString(T.descriptions[dataLabel], 40, 4) + '\n(Click label for more information)'
                 } : {},
@@ -1043,8 +1032,9 @@ function render_overview(root, doc) {
 
         T.DRAGGING = true;
 
-        window.onmousemove = (ev) => {
+        ev.currentTarget.onmousemove = (ev) => {
             t2 = (ev.offsetX / width) * duration;
+            t2 = Math.max(0, Math.min(t2, duration));
 
             if (Math.abs(t2 - t1) > 0.2) {
 
@@ -1069,25 +1059,21 @@ function render_overview(root, doc) {
             }
 
         }
-        window.onmouseup = (ev) => {
+        ev.currentTarget.onmouseleave = ev.currentTarget.onmouseup = (ev) => {
             T.DRAGGING = false;
 
             set_active_doc(doc);
 
             if (Math.abs(t2 - t1) < 0.2) {
-                // TODO: Seek audio
                 T.razors[doc.id] = t2;
                 T.audio.currentTime = t2;
-
             }
             else {
                 delete T.razors[doc.id];
-                // T.audio.currentTime = T.razors[doc.id] = T.selections[doc.id].start_time + 0.01;
             }
             render();
 
-            window.onmousemove = null;
-            window.onmouseup = null;
+            ev.currentTarget.onmouseup = ev.currentTarget.onmouseleave = ev.currentTarget.onmousemove = null;
         };
     }
 
