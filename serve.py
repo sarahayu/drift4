@@ -29,7 +29,7 @@ if BUNDLE:
 
 def get_local():
     if BUNDLE:
-        return os.path.join(os.environ["HOME"], ".drift3", "local")
+        return os.path.join(os.environ["HOME"], ".drift4", "local")
     return "local"
 
 
@@ -39,7 +39,7 @@ def get_attachpath():
 
 def get_calc_sbpca():
     if BUNDLE:
-        return "./SAcC"
+        return "./sacc/SAcC"
     return "./ext/calc_sbpca/python/SAcC.py"
 
 

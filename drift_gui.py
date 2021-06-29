@@ -10,7 +10,7 @@ import threading
 import webbrowser
 import sys
 
-__version__ = "3.3"
+__version__ = "4.0"
 
 
 def get_open_port(desired=0):
@@ -87,7 +87,7 @@ app = QtWidgets.QApplication(sys.argv)
 
 w = QtWidgets.QWidget()
 w.resize(250, 150)
-w.setWindowTitle("drift3")
+w.setWindowTitle("drift4")
 
 
 def quit_server():
