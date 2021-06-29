@@ -87,14 +87,14 @@ table
 }
 
 .nav-links li:hover,
-.nav-links li:focus-visible
+.nav-links li:focus-within
 {
     background-color: var(--accent-700);
     color: white;
 }
 
 .nav-links li:hover > :not(:first-child),
-.nav-links li:focus-visible > :not(:first-child)
+.nav-links li:focus-within > :not(:first-child)
 {
     color: var(--accent-700);
 }
@@ -127,7 +127,7 @@ table
     font-weight: 600;
     white-space: nowrap;
     background-color: var(--neutral-375);
-    display: none;
+    visibility: hidden;
     position: absolute;
     /* min-width: 150%; */
     top: 100%;
@@ -144,14 +144,15 @@ table
 
 /* is there a better way to do this https://css-tricks.com/change-color-of-svg-on-hover/ */
 .has-dropdown:hover > :first-child::after,
-.has-dropdown:focus-visible > :first-child::after
+.has-dropdown:focus-within > :first-child::after
 {
     filter: brightness(0) saturate(100%) invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
 }
 
 .has-dropdown:hover > ul,
-.has-dropdown:focus-visible > ul
+.has-dropdown:focus-within > ul
 {
-    display: block;
     z-index: 1;
+    visibility: visible;
+    transition: visibility 0s 0.2s;
 }

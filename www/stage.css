@@ -73,7 +73,7 @@ table
 }
 
 #upload-area:hover,
-#upload-area:focus-visible
+#upload-area:focus
 {
     cursor: pointer;
     background-color: var(--primary-200);
@@ -170,7 +170,7 @@ table
 }
 
 .list-item:hover,
-.list-item:focus-visible
+.list-item:focus-within
 {
     transition: box-shadow ease 0.1s, transform ease 0.1s, background-color 0.1s;
     background-color: var(--primary-350);
@@ -205,17 +205,18 @@ table
     cursor: move;
 }
 
-.liste-item button > *
+.list-item button > *
 {
     display: block;
 }
 
 .list-item:hover button,
 .list-item:hover > img,
-.list-item:focus-visible button,
-.list-item:focus-visible > img
+.list-item:focus-within button,
+.list-item:focus-within > img
 {
     visibility: visible;
+    transition: visibility 0s 0.2s;
 }
 
 main
@@ -286,7 +287,7 @@ main.grabbed .driftitem
 }
 
 .startcard a:hover,
-.startcard a:focus-visible
+.startcard a:focus
 {
     background-color: var(--primary-200);
 }
@@ -374,7 +375,7 @@ main.grabbed .driftitem
 }
 
 .dl-btn:hover,
-.dl-btn:focus
+.dl-btn:focus-within
 {
     transition-duration: 0.1s;
     background-color: var(--accent-700);
@@ -386,14 +387,14 @@ main.grabbed .driftitem
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
-    display: none;
+    visibility: hidden;
     position: absolute;
     top: 100%;
     background-color: white;
     color: var(--accent-700);
-    overflow: hidden;
     transition: none;
     box-shadow: 0px 3px 7px -3px rgba(0, 0, 0, 0.25);
+    list-style: none;
 }
 
 .dl-dropdown.leftedge
@@ -406,11 +407,12 @@ main.grabbed .driftitem
     right: 0;
 }
 
-.dl-btn:focus .dl-dropdown,
+.dl-btn:focus-within .dl-dropdown,
 .dl-btn:hover .dl-dropdown
 {
-    display: block;
+    visibility: visible;
     z-index: 1;
+    transition: visibility 0s 0.2s;
 }
 
 .dl-dropdown a
@@ -421,6 +423,12 @@ main.grabbed .driftitem
     width: 100%;
     padding-right: 2em;
 }
+
+.dl-dropdown li:last-child a
+{
+    border-top: 1px solid #eee;
+}
+
 /* 
 .dl-btn:focus a
 {
@@ -428,7 +436,7 @@ main.grabbed .driftitem
 } */
 
 .dl-dropdown a:hover,
-.dl-dropdown a:focus-visible
+.dl-dropdown a:focus
 {
     background-color: var(--accent-700);
     color: white;
@@ -595,7 +603,7 @@ main.grabbed .driftitem
 }
 
 .dl-graph-btn:hover span,
-.dl-graph-btn:focus-visible span
+.dl-graph-btn:focus span
 {
     width: 17ch;
 }
@@ -680,7 +688,7 @@ main.grabbed .driftitem
 }
 
 .play-btn:hover,
-.play-btn:focus-visible
+.play-btn:focus
 {
     background-color: var(--primary-200);
 }
@@ -738,7 +746,7 @@ main.grabbed .driftitem
 }
 
 .table-section a:hover,
-.table-section a:focus-visible
+.table-section a:focus
 {
     text-decoration: underline;
 }
@@ -925,7 +933,7 @@ main.grabbed .driftitem
 }
 
 .bottom-wrapper button:hover,
-.bottom-wrapper button:focus-visible
+.bottom-wrapper button:focus
 {
     background-color: var(--primary-200);
 }
@@ -985,7 +993,7 @@ main.grabbed .driftitem
     }
 
     .list-item:hover,
-    .list-item:focus-visible
+    .list-item:focus
     {
         transition: box-shadow ease 0.1s, background-color 0.1s;
     }

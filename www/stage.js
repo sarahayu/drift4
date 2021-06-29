@@ -228,8 +228,18 @@ function render_listitem(root, doc) {
     let listItem = root.li({
         id: doc.id + '-listwrapper',
         classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
-        attrs: { title: doc.title },
-        events: { onclick: open_this_doc }
+        attrs: { title: doc.title, tabindex: '0' },
+        events: { 
+            onclick: open_this_doc,
+            onkeydown: ev => {
+                if (ev.target == ev.currentTarget && (ev.key == ' ' || ev.keyCode == 13))
+                {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    open_this_doc(ev);
+                }
+            }
+        }
     });
 
     // dragger
