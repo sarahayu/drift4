@@ -242,6 +242,12 @@ function render_filelist(root) {
     if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
     else document.getElementById(root._attrs.id).classList.remove('grabbed');
 
+    root.a({ 
+        text: 'Skip file list', 
+        classes: ['acsblty-skip'],
+        attrs: { href: '#main-content' },
+    });
+
     get_docs().forEach(doc => render_listitem(root, doc));
 }
 
@@ -250,7 +256,7 @@ function render_listitem(root, doc) {
     let listItem = root.li({
         id: doc.id + '-listwrapper',
         classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
-        attrs: { title: doc.title, tabindex: '0' },
+        attrs: { title: doc.title, tabindex: 0 },
         events: { 
             onclick: open_this_doc,
             onkeydown: ev => {
@@ -614,9 +620,9 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         fullRecordingDatarow = table.tr({ id: uid + '-row1' }),
         selectionDatarow = table.tr({ id: uid + '-row2' });
 
-    headers.th({})
-    fullRecordingDatarow.th({ text: "full recording duration*" })
-    selectionDatarow.th({ text: "selection" })
+    let firstcell = headers.th({});
+    fullRecordingDatarow.th({ text: "full recording duration*" });
+    selectionDatarow.th({ text: "selection" });
 
     let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
     let tfh = timeframe.tr({ id: uid + '-tfh' }),
@@ -734,7 +740,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                     href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.descriptions[dataLabel]) 
                         : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
                     target: '_blank',
-                    title: splitString(T.descriptions[dataLabel], 40, 4) + '\n(Click label for more information)'
+                    title: splitString(T.descriptions[dataLabel], 40, 4) + '\n(Click label for more information)',
                 } : {},
                 events: { onmousedown: ev => ev.preventDefault() }
             })
@@ -749,9 +755,15 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
             })
         })
 
+        firstcell.a({ 
+            text: 'Skip table headers', 
+            classes: ['acsblty-skip'],
+            attrs: { href: `#${doc.id}-copy-btn` } 
+        });
 
         mainTableRoot.button({
             text: 'Copy to Clipboard',
+            id: doc.id + '-copy-btn',
             classes: ['copy-btn'],
             events: {
                 onclick: () => {
