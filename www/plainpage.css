@@ -104,7 +104,8 @@ main a
     font-weight: 600;
 }
 
-main a:hover
+main a:hover,
+main a:focus
 {
     text-decoration: underline;
 }

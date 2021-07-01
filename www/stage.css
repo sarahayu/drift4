@@ -229,13 +229,42 @@ main
     justify-content: center;
 }
 
-main.grabbed,
-main.grabbed *
+.dashboard-wrapper
+{
+    width: 100%;
+    margin: auto 0;
+}
+
+#gentle-warning
+{
+    display: none;
+    align-items: center;
+    gap: 1em;
+    padding: 1em;
+    background-color: #eeeeee;
+    border: 1px solid var(--primary-400);
+    margin-bottom: 1em;
+}
+
+#gentle-warning b
+{
+    text-transform: uppercase;
+    color: var(--accent-700);
+}
+
+#gentle-warning button
+{
+    font-size: 2em;
+    line-height: 0;
+}
+
+#dashboard.grabbed,
+#dashboard.grabbed *
 {
     cursor: move !important;
 }
 
-main.grabbed .driftitem
+#dashboard.grabbed .driftitem
 {
     opacity: 0.8;
 }
@@ -248,6 +277,7 @@ main.grabbed .driftitem
     background-color: white;
     border: 1px solid var(--primary-400);
     padding-bottom: 3em;
+    margin: auto;
 }
 
 .startcard.show
@@ -301,14 +331,27 @@ main.grabbed .driftitem
     position: relative;
 }
 
+.driftitem.firstunfold
+{
+    animation: unfold 0.3s ease;
+    transform-origin: top;
+}
+
+@keyframes unfold
+{
+    from {
+        transform: scaleY(0);
+    }
+    to {
+        transform: scaleY(100%);
+    }
+}
+
 .driftitem::before
 {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: -1;
     box-shadow: 0px 4px 40px -11px black;
     opacity: 0.1875;
@@ -796,7 +839,7 @@ main.grabbed .driftitem
 {
     font-weight: 300;
     line-height: 1.2;
-    opacity: 0.9;
+    color: #646464;
 }
 
 .drift-table th
@@ -971,6 +1014,11 @@ main.grabbed .driftitem
 
 @media (prefers-reduced-motion)
 {
+    *
+    {
+        animation: none !important;
+    }
+
     #copied-alert
     {
         transform: translate(-50%, calc(-100% - 1em));

@@ -2,10 +2,15 @@
 
 (function() {
 
-    var cur_roots = [];
+    var cur_roots = {};
 
-    PAL.ExistingRoot = function (nodename, attrs) {
-        PAL.Element.call(this, nodename, attrs);
+    PAL.ExistingRoot = function (nodeID) {
+        // delete PAL.Element from scene graph if it has no children on initialization
+        // if it has no children, it might mean it was just newly created (if it's an element that's meant to have no children e.g. 
+        // our dashboard, this will have no effect on it. This check is mostly for things that are going to be repeatedly
+        // coming in and out of the HTML page, like our doc items)
+        if (document.getElementById(nodeID).children.length == 0) delete cur_roots[nodeID];
+        PAL.Element.call(this, document.getElementById(nodeID).tagName.toLowerCase(), { id: nodeID });
     }
     PAL.ExistingRoot.prototype = new PAL.Element;
     PAL.ExistingRoot.prototype.renderElement = function (node) {

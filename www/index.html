@@ -63,15 +63,22 @@
             </ul>
         </div>
     </aside>
-    <main id="dashboard">
-        <div id="nofiles" class="startcard">
-            <h2>No Files Uploaded</h2>
-            <p>Upload a file on the top left!</p>
-            <a href="instructions.html">Instructions</a>
+    <main>
+        <div id="gentle-warning">
+            <span><b>Warning:</b> No Gentle found! You may examine existing documents and upload audio files but you will not be able to align any transcripts!</span>
+            <button id="exit-gentle-warning">&times;</button>
         </div>
-        <div id="noneselected" class="startcard">
-            <h2>No Files Selected</h2>
-            <p>Select files on the left!</p>
+        <div class="dashboard-wrapper">
+            <div id="nofiles" class="startcard">
+                <h2>No Files Uploaded</h2>
+                <p>Upload a file on the top left!</p>
+                <a href="instructions.html">Instructions</a>
+            </div>
+            <div id="noneselected" class="startcard">
+                <h2>No Files Selected</h2>
+                <p>Select files on the left!</p>
+            </div>
+            <div id="dashboard"></div>
         </div>
     </main>
     <span id="copied-alert">Copied!</span>

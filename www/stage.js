@@ -10,7 +10,7 @@ var C = C || {
 };
 
 // "main" method
-// this function (along with the rest of this file) is run each time stage.js is saved
+// this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
 (function start() {
 
     T.XSCALE = 300;
@@ -45,6 +45,7 @@ var C = C || {
     }
 
     register_listeners();
+    check_gentle();
     render();
 })()
 
@@ -107,7 +108,7 @@ function tick() {
             }
         }
 
-        render();
+        render_opened_docitem(T.docs[T.cur_doc]);
     }
 
     window.requestAnimationFrame(tick);
@@ -203,11 +204,32 @@ function register_listeners() {
             toggle_playpause();
         }
     }
+
+    document.getElementById('exit-gentle-warning').onclick = ev => {
+        ev.currentTarget.parentElement.style.display = 'none';
+    };
+}
+
+function check_gentle() {
+    if (location.hostname == 'localhost')
+    {
+        fetch('//localhost:8765', { mode: 'no-cors' })
+        .then(() => {
+            console.log('Gentle seems to be running! (on port 8765)');
+            T.found_gentle = true;
+        })
+        .catch(() => {
+            T.found_gentle = false;
+            document.getElementById('gentle-warning').style.display = 'flex';
+        });
+    }
+    else
+        T.found_gentle = true;
 }
 
 function render() {
-    var fileList = new PAL.ExistingRoot("div", { id: "file-list" }),
-        docArea = new PAL.ExistingRoot("main", { id: "dashboard" })
+    var fileList = new PAL.ExistingRoot('file-list'),
+        docArea = new PAL.ExistingRoot('dashboard')
     render_filelist(fileList);
     render_dashboard(docArea);
 
@@ -232,7 +254,8 @@ function render_listitem(root, doc) {
         events: { 
             onclick: open_this_doc,
             onkeydown: ev => {
-                if (ev.target == ev.currentTarget && (ev.key == ' ' || ev.keyCode == 13))
+                // activate listitem if focused and pressed enter
+                if (ev.target == ev.currentTarget && ev.keyCode == 13)
                 {
                     ev.preventDefault();
                     ev.stopPropagation();
@@ -274,6 +297,7 @@ function render_listitem(root, doc) {
         ev.currentTarget.classList.toggle('active');
         if (T.opened[doc.id]) {
             delete T.opened[doc.id];
+            T.docs[doc.id].hasunfolded = false;
             if (T.cur_doc === doc.id) {
                 delete T.cur_doc;
                 if (T.audio) T.audio.pause();
@@ -343,24 +367,45 @@ function render_dashboard(root) {
     if (T.grabbed) document.getElementById(root._attrs.id).classList.add('grabbed');
     else document.getElementById(root._attrs.id).classList.remove('grabbed');
 
-    get_opened_docs().forEach((doc, i) => render_opened_docitem(root, doc, i));
+    get_opened_docs().forEach((doc, i) => {
+
+        root.div({
+            id: doc.id + '-docitem',
+            classes: ['driftitem', T.grabbed == doc.id ? 'grabbed' : '', !doc.hasunfolded ? 'firstunfold' : ''],
+        });
+        setTimeout(() => T.docs[doc.id].hasunfolded = true, 300);
+
+        // if only there was a Element.onload event T-T
+        // anyways, wait for the HTMLElement to actually get created by palilalia (during PAL.ExistingRoot#show() or PAL.Root#show()),
+        // before render_opened_docitem will create a PAL.ExistingRoot from the loaded HTMLElement
+        // this will speed up rendering for certain processes like ticking played audio
+        // since we don't have to render the whole page again, just docitems that have been changed
+        (function queryDocContainer() {
+            if (document.getElementById(doc.id + '-docitem'))
+                render_opened_docitem(doc, i);
+            else
+                setTimeout(queryDocContainer, 100);
+        })()
+    });
 }
 
-function render_opened_docitem(root, doc, offset) {
+function render_opened_docitem(doc, offset) {
 
-    let docitem = root.div({
-        id: doc.id,
-        classes: ['driftitem', T.grabbed == doc.id ? 'grabbed' : '']
-    });
+    if (offset === undefined)
+        offset = get_opened_docs().findIndex(d => d.id == doc.id);
 
-    render_docitem_topbar(docitem, doc, offset);
+    let docContainer = new PAL.ExistingRoot(doc.id + '-docitem');
 
-    let contentarea = docitem.div({ classes: ['driftitem-content'] });
+    render_docitem_topbar(docContainer, doc, offset);
+
+    let contentarea = docContainer.div({ classes: ['driftitem-content'] });
 
     if (!has_data(doc.id))
         render_transcript_input(contentarea, doc);
     else
         render_docitem_data(contentarea, doc);
+    
+    docContainer.show();
 }
 
 function render_docitem_topbar(root, doc, offset) {
@@ -479,7 +524,7 @@ function render_docitem_data(root, doc) {
                     delete T.razors[doc.id];
                     let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
                     T.selections[doc.id] = { start_time: start, end_time: end };
-                    render();
+                    render_opened_docitem(T.docs[doc.id]);
                 }
             },
         }
@@ -646,7 +691,8 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
                     else if (Math.abs(value - otherValue) > 30 || Math.abs(value - otherValue) < 0.2) error = 'Range must be between 0.2s and 30s';
                     else {
                         ev.currentTarget.value = T.selections[doc.id][thisTime] = Math.min(value, T.docs[doc.id].duration);
-                        render();
+                        delete T.razors[doc.id];
+                        render_opened_docitem(T.docs[doc.id]);
                     }
                 }
             }
@@ -769,7 +815,7 @@ function render_transcript_input(root, doc) {
     let bottomWrapper = root.div({ classes: ["bottom-wrapper"] });
     bottomWrapper.button({
         text: readyForTranscript ? "set transcript" : "uploading...",
-        attrs: readyForTranscript ? {} : { disabled: false },
+        attrs: readyForTranscript && T.found_gentle ? {} : { disabled: false },
         events: { onclick: set_transcript }
     });
 
@@ -822,6 +868,7 @@ function render_transcript_input(root, doc) {
                     // Immediately trigger an alignment
                     FARM.post_json("/_align", { id: doc.id }, (p_ret) => {
                         console.log("align returned");
+                        set_active_doc(T.docs[ret.id]);
 
                         // Trigger CSV & MAT computation (assuming pitch also there)
                         FARM.post_json("/_csv", { id: doc.id }, (c_ret) => {
@@ -1059,7 +1106,7 @@ function render_overview(root, doc) {
                     end_time: end
                 };
 
-                render();
+                render_opened_docitem(T.docs[doc.id]);
             }
             else {
                 // if(doc.id in T.selections) {
@@ -1081,7 +1128,7 @@ function render_overview(root, doc) {
             else {
                 delete T.razors[doc.id];
             }
-            render();
+            render_opened_docitem(T.docs[doc.id]);
 
             ev.currentTarget.onmouseup = ev.currentTarget.onmouseleave = ev.currentTarget.onmousemove = null;
         };
@@ -1361,15 +1408,15 @@ function render_graph(root, doc, start_time, end_time) {
                 T.razors[doc.id] = t;
                 set_active_doc(doc);
                 T.audio.currentTime = t;
-                render();
+                render_opened_docitem(T.docs[doc.id]);
             },
             onmousemove: ev => {
                 T.razors[doc.id + '-hover'] = start_time + x2t(ev.offsetX);
-                render();
+                render_opened_docitem(T.docs[doc.id]);
             },
             onmouseleave: ev => {
                 delete T.razors[doc.id + '-hover'];
-                render();
+                render_opened_docitem(T.docs[doc.id]);
             }
         }
     });
@@ -1446,7 +1493,7 @@ function download_graph_png(docid) {
 }
 
 function render_is_ready(root, docid) {
-    if (!T.docs[docid] || !get_data(docid) || !T.docs[docid].duration) {
+    if (!T.docs[docid] || !get_data(docid)) {
         root.div({
             classes: ["loading-placement"],
             text: "Loading... If this is taking too long, try reuploading this data file"
@@ -1520,7 +1567,7 @@ function set_active_doc(doc) {
         T.audio = new Audio('/media/' + doc.path);
         T.audio.addEventListener("canplaythrough", () => {
             T.docs[doc.id].duration = T.audio.duration;
-            render();
+            render_opened_docitem(T.docs[doc.id]);
         });
 
         if (T.razors[doc.id])
@@ -1560,7 +1607,6 @@ function got_files(files) {
                                 // Immediately trigger a pitch trace
                                 FARM.post_json("/_pitch", { id: ret.id }, (p_ret) => {
                                     console.log("pitch returned", p_ret);
-                                    set_active_doc(T.docs[ret.id]);
                                 });
 
                                 // ...and RMS
@@ -1634,7 +1680,7 @@ function toggle_playpause() {
         else {
             T.audio.pause();
         }
-        render();
+        render_opened_docitem(T.docs[T.cur_doc]);
     }
 }
 
