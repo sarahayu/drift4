@@ -1451,7 +1451,7 @@ function download_graph_png(docid) {
     svg2.setAttribute("x", svg1.width.baseVal.value);
     let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif; font-size: 14.4px;`);
+    svgWhole.setAttribute("style", `font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif; font-size: 14.4px; background: white;`);
     svgWhole.setAttribute("width", svg1.width.baseVal.value + svg2.width.baseVal.value);
     svgWhole.setAttribute("height", svg2.height.baseVal.value);
     svgWhole.appendChild(svg1);
@@ -1478,7 +1478,7 @@ function download_graph_png(docid) {
 
     // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
     // https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
-    let svgBlob = new Blob([svgWhole.outerHTML], { type: "image/svg+xml;charset=utf-8" });
+    let svgBlob = new Blob([svgWhole.outerHTML], { type: "image/svg+xml" });
     let svgUrl = URL.createObjectURL(svgBlob);
     let img = new Image();
     let canvas = document.createElement('canvas');
