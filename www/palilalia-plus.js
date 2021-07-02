@@ -5,10 +5,17 @@
     var cur_roots = {};
 
     PAL.ExistingRoot = function (nodeID) {
-        // delete PAL.Element from scene graph if it has no children on initialization
-        // if it has no children, it might mean it was just newly created (if it's an element that's meant to have no children e.g. 
-        // our dashboard, this will have no effect on it. This check is mostly for things that are going to be repeatedly
-        // coming in and out of the HTML page, like our doc items)
+        /* 
+        delete PAL.Element from scene graph if the corresponding HTML Element has no children
+
+        if it has no children, it might mean the HTML Element was recently removed,
+        so if the PAL.Element is not deleted, palilalia will assume nothing has changed and would
+        render an empty container
+        (if it's an element that's meant to have no children e.g. 
+        our dashboard, this will have no effect on it. This check is mostly for things that are going to be repeatedly
+        coming in and out of the HTML page, like our doc items. In this case, there might be a better way to do this
+        by deleting the PAL.Element from stage.js in case the default children is not 0, but meh this works for now) 
+        */
         if (document.getElementById(nodeID).children.length == 0) delete cur_roots[nodeID];
         PAL.Element.call(this, document.getElementById(nodeID).tagName.toLowerCase(), { id: nodeID });
     }

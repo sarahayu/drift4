@@ -193,7 +193,7 @@ function register_listeners() {
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
 
     // spacebar play/pause
-    window.onkeydown = (ev) => {
+    window.onkeydown = ev => {
         // XXX: Make sure we're not editing a transcript or toggling checkbox
         if (ev.target.tagName == 'TEXTAREA'
             || ev.target.tagName == 'INPUT') {
@@ -201,9 +201,9 @@ function register_listeners() {
         }
         if (ev.key == ' ') {
             ev.preventDefault();
-            toggle_playpause();
+            toggle_playpause(); 
         }
-    }
+    };
 
     document.getElementById('exit-gentle-warning').onclick = ev => {
         ev.currentTarget.parentElement.style.display = 'none';
@@ -503,12 +503,17 @@ function render_docitem_data(root, doc) {
             onclick: ev => {
                 set_active_doc(doc);
                 toggle_playpause();
+            },
+            onkeyup: ev => {
+                if (ev.key == ' ')
+                    ev.preventDefault();
             }
         },
     })
 
-    playBtn.img({ attrs: { src: "play-icon.svg" } });
-    playBtn.span({ text: (T.cur_doc != doc.id || !T.audio || T.audio.paused) ? 'play' : 'pause' });
+    const thisPlaying = (T.cur_doc != doc.id || !T.audio || T.audio.paused);
+    playBtn.img({ attrs: { src: thisPlaying ? 'play-icon.svg' : 'pause-icon.svg' } });
+    playBtn.span({ text: thisPlaying ? 'play' : 'pause' });
 
     let ov_div = topSection.div({
         id: doc.id + '-ovdiv',
