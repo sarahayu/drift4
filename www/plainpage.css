@@ -98,6 +98,11 @@ p > img
     transform: translateY(0.1em);
 }
 
+img
+{
+    display: inline-block;
+}
+
 main a
 {
     color: var(--accent-400);
@@ -129,4 +134,20 @@ main ol,
 main ul
 {
     padding-left: 3ch;
+}
+
+.screenshot-wrapper
+{
+    text-align: center;
+}
+
+.screenshot
+{
+    max-width: min(80%, 35rem);
+    max-height: 25rem;
+}
+
+ol ol
+{
+    list-style-type: lower-roman;
 }

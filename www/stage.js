@@ -122,24 +122,24 @@ function register_listeners() {
         ev.preventDefault();
         ev.dataTransfer.dropEffect = "copy";
         ev.currentTarget.children[0].textContent = "RELEASE FILE TO UPLOAD";
-    },
-        $uplArea.ondragleave = function (ev) {
-            ev.stopPropagation();
-            ev.preventDefault();
-            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
-        },
-        $uplArea.ondrop = function (ev) {
-            ev.stopPropagation();
-            ev.preventDefault();
+    };
+    $uplArea.ondragleave = function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+    };
+    $uplArea.ondrop = function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
 
-            console.log("drop");
-            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+        console.log("drop");
+        ev.currentTarget.children[0].textContent = "UPLOAD FILE";
 
-            got_files(ev.dataTransfer.files);
-        },
-        $uplArea.onclick = function () {
-            document.getElementById("upload-button").click()
-        }
+        got_files(ev.dataTransfer.files);
+    };
+    $uplArea.onclick = function () {
+        document.getElementById("upload-button").click()
+    };
 
     document.getElementById("upload-button").onchange = function (ev) {
         got_files(ev.target.files);
@@ -409,7 +409,7 @@ function render_opened_docitem(doc, offset) {
     if (!has_data(doc.id))
         render_transcript_input(contentarea, doc);
     else
-        render_docitem_data(contentarea, doc);
+        render_docitem_content(contentarea, doc);
     
     docContainer.show();
 }
@@ -485,7 +485,7 @@ function render_docitem_topbar(root, doc, offset) {
     /////////////// end doc item click events //////////////////
 }
 
-function render_docitem_data(root, doc) {
+function render_docitem_content(root, doc) {
 
     let topSection = root.section({
         classes: ['top-section']
@@ -496,6 +496,21 @@ function render_docitem_data(root, doc) {
     })
 
     ////////// begin top section (play button, overview, and timeframe table) /////////////
+    /*
+            +-----------------------------------------+  
+            |+--+ +----------------------+ +---------+|  <
+            ||  | |     overview         | | tf table||  | top section
+            |+--+ +----------------------+ +---------+|  <
+            |+---------------------------------------+|
+            ||                                       ||
+            ||                                       ||
+            ||                                       ||
+            |+---------------------------------------+|
+            |+---------------------------------------+|
+            ||                                       ||
+            |+---------------------------------------+|
+            +-----------------------------------------+
+    */
 
     let playBtn = topSection.button({
         classes: ['play-btn'],
@@ -570,6 +585,21 @@ function render_docitem_data(root, doc) {
     /////////////// end top section //////////////
 
     /////////////// begin graph section (graph) //////////////
+    /*
+            +-----------------------------------------+  
+            |+--+ +----------------------+ +---------+|
+            ||  | |                      | |         ||
+            |+--+ +----------------------+ +---------+|
+            |+---------------------------------------+|  <
+            ||                                       ||  |
+            ||             graph                     ||  | graph section
+            ||                                       ||  |
+            |+---------------------------------------+|  <
+            |+---------------------------------------+|
+            ||                                       ||
+            |+---------------------------------------+|
+            +-----------------------------------------+
+    */
 
     let det_div = graphSection.div({
         id: doc.id + '-detdiv',
@@ -591,6 +621,21 @@ function render_docitem_data(root, doc) {
     /////////////// end graph section ///////////////////
 
     /////////////// begin table section (stat table) ///////////////////
+    /*
+            +-----------------------------------------+  
+            |+--+ +----------------------+ +---------+|
+            ||  | |                      | |         ||
+            |+--+ +----------------------+ +---------+|
+            |+---------------------------------------+|
+            ||                                       ||
+            ||                                       ||
+            ||                                       ||
+            |+---------------------------------------+|
+            |+---------------------------------------+|  <
+            ||              stat table               ||  |  table section
+            |+---------------------------------------+|  <
+            +-----------------------------------------+
+    */
 
     render_stats(tableSection.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
 
@@ -721,6 +766,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     });
 
     const { stats, timedStats } = T.docs[doc.id];
+    // if stats are loaded, render them in table
     if (stats) {
 
         // take out start_time and end_time and pause counts that are not 100, 500, 1000, or 2000
