@@ -1559,7 +1559,7 @@ function render_is_ready(root, docid) {
     if (!T.docs[docid] || !get_data(docid)) {
         root.div({
             classes: ["loading-placement"],
-            text: "Loading... If this is taking too long, try reuploading this data file"
+            text: "Loading... If this is taking too long, try reuploading this data file or reloading the webpage"
         });
 
         return false;
