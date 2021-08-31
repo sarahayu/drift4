@@ -43,8 +43,8 @@ def get_calc_sbpca():
     return "./ext/calc_sbpca/python/SAcC.py"
 
 
-port = int(sys.argv[1]) if len(sys.argv) > 2 else 9899
-root = guts.Root(port=port, interface="127.0.0.1", dirpath="www")
+port = int(sys.argv[1]) if len(sys.argv) > 1 else 9899
+root = guts.Root(port=port, interface="0.0.0.0", dirpath="www")
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
