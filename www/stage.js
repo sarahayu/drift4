@@ -51,14 +51,14 @@ var PORT = 5000;        // see script.js
         FARM.post_json = (function() {
             var old_poster = FARM.post_json
             return function(url, data, cb) {
-                old_poster(`${ window.location.hostname }:${ PORT }${ url }`, data, cb)
+                old_poster(`${ window.location.origin }:${ PORT }${ url }`, data, cb)
             }
         })()
         
         FARM.get = (function() {
             var old_getter = FARM.get
             return function(url, cb) {
-                old_getter(`${ window.location.hostname }:${ PORT }${ url }`, cb)
+                old_getter(`${ window.location.origin }:${ PORT }${ url }`, cb)
             }
         })()
 
