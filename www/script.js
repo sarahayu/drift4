@@ -1,4 +1,6 @@
-var db = new BS.DB([], ':5000/_db');
-var attach = new A.Attachments(':5000/_attach');
+var PORT = 5000;
 
-FARM.track();
+var db = new BS.DB([], `:${PORT}/_db`);
+var attach = new A.Attachments(`:${PORT}/_attach`);
+
+FARM.track(`:${PORT}/`);
