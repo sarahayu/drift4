@@ -48,13 +48,19 @@ var PORT = 5000;        // see script.js
 
     // quickfix for not being able to establish websockets with webserver because webserver doesn't like me
     if (!T.overloadedFARM) {
-        FARM.post_json = function(url, data, cb) {
-            FARM.post_json(`${ window.location.hostname }:${ PORT }${ url }`, data, cb)
-        }
+        FARM.post_json = (function() {
+            var old_poster = FARM.post_json
+            return function(url, data, cb) {
+                old_poster(`${ window.location.hostname }:${ PORT }${ url }`, data, cb)
+            }
+        })()
         
-        FARM.get = function(url, cb) {
-            FARM.get(`${ window.location.hostname }:${ PORT }${ url }`, cb)
-        }
+        FARM.get = (function() {
+            var old_getter = FARM.get
+            return function(url, cb) {
+                old_getter(`${ window.location.hostname }:${ PORT }${ url }`, cb)
+            }
+        })()
 
         T.overloadedFARM = true
     }
