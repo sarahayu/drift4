@@ -9,8 +9,6 @@ var C = C || {
     }
 };
 
-var PORT = 5000;        // see script.js
-
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
 (function start() {
@@ -44,25 +42,6 @@ var PORT = 5000;        // see script.js
     if (!T.ticking) {
         T.ticking = true;
         tick();
-    }
-
-    // quickfix for not being able to establish websockets with webserver because webserver doesn't like me
-    if (!T.overloadedFARM) {
-        FARM.post_json = (function() {
-            var old_poster = FARM.post_json
-            return function(url, data, cb) {
-                old_poster(`${ window.location.origin }:${ PORT }${ url }`, data, cb)
-            }
-        })()
-        
-        FARM.get = (function() {
-            var old_getter = FARM.get
-            return function(url, cb) {
-                old_getter(`${ window.location.origin }:${ PORT }${ url }`, cb)
-            }
-        })()
-
-        T.overloadedFARM = true
     }
 
     register_listeners();
