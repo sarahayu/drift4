@@ -960,6 +960,7 @@ main
     color: rgba(86, 86, 86, 0.73);
     padding: 0.5em;
     margin-bottom: 1em;
+    font-size: 1.1em;
 }
 
 .driftitem textarea[disabled]
