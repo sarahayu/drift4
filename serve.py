@@ -16,7 +16,10 @@ import time
 
 import prosodic_measures
 
+# specifies if we are releasing for MAC DMG
 BUNDLE = False
+# specifies if we are running ./serve for the purpose of developing (and not as a dedicated web server)
+DEV_MODE = True
 
 
 def get_ffmpeg():
@@ -544,8 +547,8 @@ root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 
 with open("www/script.js", mode="w") as final_script_js:
-    with open("www/script.template.js", mode="r") as template_script_js:
-        final_script_js.write(template_script_js.read().replace("PORTVAR", str(port)))
+    with open("www-template/script.template.js", mode="r") as template_script_js:
+        final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$BUNDLE", str(BUNDLE or DEV_MODE).lower()))
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 
