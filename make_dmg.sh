@@ -1,3 +1,6 @@
+# remove web-script.js file (if it exists) when bundling so index.html calls correct default script.js
+rm www/web-script.js
+
 python3 -m PyInstaller --onedir -y serve.py
 
 cd ext/calc_sbpca/python
