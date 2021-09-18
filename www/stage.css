@@ -1029,9 +1029,9 @@ main
     transform: translate(-50%, 200%);
     display: block;
     color: white;
-    background-color: var(--accent-400);
+    background-color: var(--accent-700);
     border-radius: 100vh;
-    padding: 0.5em 1em;
+    padding: 0.5em 1.2em;
     font-weight: 300;
     font-style: italic;
     opacity: 0;
