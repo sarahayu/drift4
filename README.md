@@ -43,7 +43,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
 
 # Gentle on Windows/Linux
 
-If, like the developer, you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you must be able to run Gentle first. Simply follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle) with some additional changes:
+If, like the developer, you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you must be able to run Gentle first. Simply follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle). If you are building from source, make the following change:
 * Fix the broken download link in `ext/kaldi/tools/Makefile` by changing the link on line 87
     ```shell
     wget -T 10 -t 1 http://openfst.cs.nyu.edu/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
@@ -52,6 +52,8 @@ If, like the developer, you need to put yourself through the ordeal of running D
     ```shell
     wget -T 10 -t 1 http://openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
     ```
+The following pointers may also help:
+* Make sure to include submodules. Use `git clone --recurse-submodules` instead of downloading the released `zip` source code.
 * You might have to install gfortran with the following:
     ```shell
     sudo apt install gfortran
