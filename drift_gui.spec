@@ -1,4 +1,5 @@
-# -*- mode: python -*-
+# -*- mode: python ; coding: utf-8 -*-
+
 
 block_cipher = None
 
@@ -26,18 +27,16 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False )
+          console=False , icon='drift4.icns')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
                strip=False,
                upx=True,
+               upx_exclude=[],
                name='drift_gui')
 app = BUNDLE(coll,
              name='drift_gui.app',
-             icon='drift3.icns',
-             bundle_identifier=None,
-             info_plist={
-                 'NSHighResolutionCapable': 'True'
-             })
+             icon='drift4.icns',
+             bundle_identifier=None)

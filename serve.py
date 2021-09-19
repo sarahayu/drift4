@@ -549,7 +549,7 @@ root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js:
         with open("www-template/web-script.template.js", mode="r") as template_script_js:
-            final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$BUNDLE", str(BUNDLE or DEV_MODE).lower()))
+            final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$BUNDLE", str(DEV_MODE).lower()))
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 
