@@ -37,9 +37,9 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     1. Install the `PyInstaller` package on both python2 and python3
     2. Rollback PyQt to version 5.12.3 to avoid segfault errors:
         ```shell
-        pip install --upgrade PyQt5==5.12.3
+        python3 -m pip install --upgrade PyQt5==5.12.3
         ```
-    3. Run `make_dmg.sh`. Make sure to delete the `build` and `dist` folders from previous compilations before running `make_dmg.sh`.
+    3. Set `BUNDLE` to true and run `make_dmg.sh`. Make sure to delete the `build` and `dist` folders from previous compilations before running `make_dmg.sh`. The DMG file will be found in the `dist` folder as `drift4.dmg`.
 
 # Sample transcripts
 
