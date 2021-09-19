@@ -1,6 +1,6 @@
 # Usage
 
-Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/releases) tab on the right or navigate to the limited [web version](https://github.com/sarahayu/drift4/releases).
+Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/releases) tab on the right or navigate to the limited [web version](http://drift4.spokenweb.ca/).
 
 # Development
 
@@ -40,6 +40,26 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
         python3 -m pip install --upgrade PyQt5==5.12.3
         ```
     3. Set `BUNDLE` to true and run `make_dmg.sh`. Make sure to delete the `build` and `dist` folders from previous compilations before running `make_dmg.sh`. The DMG file will be found in the `dist` folder as `drift4.dmg`.
+
+# Gentle on Windows/Linux
+
+If, like the developer, you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you must be able to run Gentle first. Simply follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle) with some additional changes:
+* Fix the broken download link in `ext/kaldi/tools/Makefile` by changing the link on line 87
+    ```shell
+    wget -T 10 -t 1 http://openfst.cs.nyu.edu/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
+    ```
+    to `openfst.org` so it looks like so
+    ```shell
+    wget -T 10 -t 1 http://openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
+    ```
+* You might have to install gfortran with the following:
+    ```shell
+    sudo apt install gfortran
+    ```
+* Compiling Gentle from source might require more memory than available. If Gentle fails to compile and running the command `dmesg` returns "Out of memory", you can follow [this StackOverflow answer](https://stackoverflow.com/a/47374605) and then rerun `install.sh`.
+* If you still run into errors, consult the [Gentle issues](https://github.com/lowerquality/gentle/issues) page; [this thread](https://github.com/lowerquality/gentle/issues/194) might be a good starting point.
+
+Otherwise, following the Drift installation instructions from earlier above should work on both Windows and Linux.
 
 # Sample transcripts
 
