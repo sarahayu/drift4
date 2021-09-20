@@ -28,6 +28,7 @@
 body
 {
     min-height: 100vh;
+    min-width: 100%;
     background-color: var(--neutral-400);
     display: grid;
     grid-template-columns: 18rem 1fr;
@@ -50,6 +51,7 @@ nav
     justify-content: flex-end;
     padding: 0 1.75em;
     display: flex;
+    gap: 1em;
     font-size: 1.1em;
     font-weight: 600;
 }
@@ -62,16 +64,13 @@ table
 .nav-links
 {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0 2em;
 }
 
 .nav-links li
 {
     display: block;
-}
-
-.nav-links > li + li
-{
-    margin-left: 2em;
 }
 
 /* element which contains label, whether it be <a> or <span> */
