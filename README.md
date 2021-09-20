@@ -61,7 +61,7 @@ The following pointers may also help:
 * Compiling Gentle from source might require more memory than available. If Gentle fails to compile and running the command `dmesg` returns "Out of memory", you can follow [this StackOverflow answer](https://stackoverflow.com/a/47374605) and then rerun `install.sh`.
 * If you still run into errors, consult the [Gentle issues](https://github.com/lowerquality/gentle/issues) page; [this thread](https://github.com/lowerquality/gentle/issues/194) might be a good starting point.
 
-Otherwise, following the Drift installation instructions from earlier above should work on both Windows and Linux.
+Otherwise, following the Drift installation instructions from the [Development](#development) section should work on both Windows and Linux.
 
 # Sample transcripts
 
