@@ -31,9 +31,14 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     ```
     When bundling, make sure to include the ffmpeg executable inside the main directory. You can download an executable from the [ffmpeg official website](https://www.ffmpeg.org/download.html).
 4. Change the `BUNDLE` and `DEV_MODE` options at the top of the `serve.py` depending on your needs:
-    * Set `BUNDLE` to true when you are making a DMG for Mac. 
-    * Set `DEV_MODE` to true when running the Drift repo on localhost (setting this true when `BUNDLE` is false will have no effect)
-5. Bundling Drift to a Mac DMG is a finicky process. The following steps seem to work only for High Sierra on Mac:
+    * Set `BUNDLE` to true when you are making a DMG for Mac. Otherwise, this should always be false.
+    * Set `DEV_MODE` to true when running the Drift repo on localhost (setting this true when `BUNDLE` is false will have no effect). This should always be true, unless you need to run a webserver in which case this can be set to false.
+5. Run Gentle. Then, run Drift by running the following command from inside Drift's main directory:
+    ```shell
+    ./serve [port]
+    ```
+    By default, Drift will run on port 9899. Navigate to `localhost:<port>` on any browser and you should see the Drift main page. 
+6. Bundling Drift to a Mac DMG is a finicky process. The following steps seem to work only for High Sierra on Mac:
     1. Install the `PyInstaller` package on both python2 and python3
     2. Rollback PyQt to version 5.12.3 to avoid segfault errors:
         ```shell
