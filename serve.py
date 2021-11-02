@@ -13,13 +13,13 @@ import numpy as np
 import scipy.io as sio
 import sys
 import time
+import argparse
 
 import prosodic_measures
+import secureroot
 
 # specifies if we are releasing for MAC DMG
 BUNDLE = False
-# specifies if we are running ./serve for the purpose of developing (and not as a dedicated web server)
-DEV_MODE = True
 
 
 def get_ffmpeg():
@@ -45,9 +45,17 @@ def get_calc_sbpca():
         return "./sacc/SAcC"
     return "./ext/calc_sbpca/python/SAcC.py"
 
+parser = argparse.ArgumentParser(description = "Drift4")
+parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
+parser.add_argument("-w", "--webrelease", help="run as a web server; useful for serving on remote host and not localhost", action='store_true')
+parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets; only applicable in webrelease", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
 
-port = int(sys.argv[1]) if len(sys.argv) > 1 else 9899
-root = guts.Root(port=port, interface="0.0.0.0", dirpath="www")
+driftargs = parser.parse_args()
+
+port = driftargs.port
+webrelease = driftargs.webrelease
+root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftargs.ssl and driftargs.webrelease) \
+    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=driftargs.ssl[0], crt_path=driftargs.ssl[1])
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
@@ -548,8 +556,10 @@ root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js:
-        with open("www-template/web-script.template.js", mode="r") as template_script_js:
-            final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$BUNDLE", str(DEV_MODE).lower()))
+        if webrelease:
+            with open("www-template/web-script.template.js", mode="r") as template_script_js:
+                final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)))
+        
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 

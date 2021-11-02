@@ -5,3 +5,4 @@ autobahn[twisted,accelerate]
 watchdog
 Pillow
 numba
+argparse
