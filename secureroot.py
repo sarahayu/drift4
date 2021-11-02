@@ -12,7 +12,7 @@ class SecureRoot(Root):
 
     def run_forever(self):
         site = Site(self._root)
-        reactor.listenSSL(self._port, site, interface=self._interface, factory=ssl.DefaultOpenSSLContextFactory(self._key_path, self._crt_path))
-        print("http://localhost:%d" % (self._port))
+        reactor.listenSSL(self._port, site, interface=self._interface, contextFactory=ssl.DefaultOpenSSLContextFactory(self._key_path, self._crt_path))
+        print("https://localhost:%d" % (self._port))
         print("Using wss secure")
         reactor.run()        
