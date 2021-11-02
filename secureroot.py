@@ -6,7 +6,7 @@ from twisted.internet import reactor, ssl
 
 class SecureRoot(Root):
     def __init__(self, key_path, crt_path, port=8000, interface='0.0.0.0', dirpath='.'):
-        Root.__init__(self, port, interface, dirpath)
+        super().__init__(port, interface, dirpath)
         self._key_path = key_path
         self._crt_path = crt_path
 
