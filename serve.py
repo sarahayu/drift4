@@ -47,7 +47,7 @@ def get_calc_sbpca():
 
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
-parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets; only applicable in webrelease", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
+parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
 
 driftargs = parser.parse_args()
 
