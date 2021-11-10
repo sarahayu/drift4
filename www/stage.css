@@ -250,17 +250,12 @@ table
 main
 {
     min-width: 0;
-    padding: 2.5em;
+    padding: 2.5rem;
+    padding-bottom: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-
-.dashboard-wrapper
-{
-    width: 100%;
-    margin: auto 0;
 }
 
 #gentle-warning
@@ -269,9 +264,9 @@ main
     align-items: center;
     gap: 1em;
     padding: 1em;
+    margin-bottom: 1rem;
     background-color: #eeeeee;
     border: 1px solid var(--primary-400);
-    margin-bottom: 1em;
 }
 
 #gentle-warning b
@@ -286,6 +281,12 @@ main
     line-height: 0.5;
 }
 
+.dashboard-wrapper
+{
+    width: 100%;
+    margin: auto 0;
+}
+
 #dashboard.grabbed,
 #dashboard.grabbed *
 {
@@ -295,6 +296,12 @@ main
 #dashboard.grabbed .driftitem
 {
     opacity: 0.8;
+}
+
+#version
+{
+    align-self: flex-end;
+    margin-top: 1em;
 }
 
 .startcard

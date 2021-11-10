@@ -1,5 +1,6 @@
 
-if (typeof webPort === 'undefined' || window.location.port)
+if (true)
+// if (typeof webPort === 'undefined' || window.location.port)
 {
     var db = new BS.DB();
     var attach = new A.Attachments();

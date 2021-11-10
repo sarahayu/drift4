@@ -9,9 +9,11 @@ var C = C || {
     }
 };
 
+var DRIFT_VER = 'v4.0';
+
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
-(function start() {
+(function main() {
 
     T.XSCALE = 300;
     T.PITCH_H = 250;
@@ -43,6 +45,8 @@ var C = C || {
         T.ticking = true;
         tick();
     }
+
+    document.getElementById("version").textContent = DRIFT_VER;
 
     register_listeners();
     check_gentle();
@@ -487,6 +491,22 @@ function render_docitem_topbar(root, doc, offset) {
 
 function render_docitem_content(root, doc) {
 
+    /*
+            +-----------------------------------------+  
+            |+--+ +----------------------+ +---------+|  <
+            ||  | |     overview         | | tf table||  | top section
+            |+--+ +----------------------+ +---------+|  <
+            |+---------------------------------------+|  <
+            ||                                       ||  |
+            ||             graph                     ||  | graph section
+            ||                                       ||  |
+            |+---------------------------------------+|  <
+            |+---------------------------------------+|  <
+            ||              stat table               ||  |  table section
+            |+---------------------------------------+|  <
+            +-----------------------------------------+
+    */
+
     let topSection = root.section({
         classes: ['top-section']
     }), graphSection = root.section({
@@ -495,24 +515,16 @@ function render_docitem_content(root, doc) {
         classes: ['table-section']
     })
 
-    ////////// begin top section (play button, overview, and timeframe table) /////////////
-    /*
-            +-----------------------------------------+  
-            |+--+ +----------------------+ +---------+|  <
-            ||  | |     overview         | | tf table||  | top section
-            |+--+ +----------------------+ +---------+|  <
-            |+---------------------------------------+|
-            ||                                       ||
-            ||                                       ||
-            ||                                       ||
-            |+---------------------------------------+|
-            |+---------------------------------------+|
-            ||                                       ||
-            |+---------------------------------------+|
-            +-----------------------------------------+
-    */
+    let tftable = {}
 
-    let playBtn = topSection.button({
+    render_top_section(topSection, doc, tftable)
+    render_graph_section(graphSection, doc)
+    render_table_section(tableSection, doc, tftable)
+}
+
+function render_top_section(root, doc, tftable) {
+
+    let playBtn = root.button({
         classes: ['play-btn'],
         events: {
             onclick: ev => {
@@ -530,7 +542,7 @@ function render_docitem_content(root, doc) {
     playBtn.img({ attrs: { src: thisPlaying ? 'play-icon.svg' : 'pause-icon.svg' } });
     playBtn.span({ text: thisPlaying ? 'play' : 'pause' });
 
-    let ov_div = topSection.div({
+    let ov_div = root.div({
         id: doc.id + '-ovdiv',
         classes: ['overview']
     });
@@ -580,28 +592,12 @@ function render_docitem_content(root, doc) {
     render_overview(ov_div.div({ id: doc.id + '-ov-wrapper', classes: ['overview-wrapper'] }), doc);
 
     // initialize div for timeframe table, but populate it later down when we call render_stats
-    let timeframeInfo = topSection.div({ classes: ['timeframe-wrapper'] });
+    tftable.value = root.div({ classes: ['timeframe-wrapper'] });
+}
 
-    /////////////// end top section //////////////
+function render_graph_section(root, doc) {
 
-    /////////////// begin graph section (graph) //////////////
-    /*
-            +-----------------------------------------+  
-            |+--+ +----------------------+ +---------+|
-            ||  | |                      | |         ||
-            |+--+ +----------------------+ +---------+|
-            |+---------------------------------------+|  <
-            ||                                       ||  |
-            ||             graph                     ||  | graph section
-            ||                                       ||  |
-            |+---------------------------------------+|  <
-            |+---------------------------------------+|
-            ||                                       ||
-            |+---------------------------------------+|
-            +-----------------------------------------+
-    */
-
-    let det_div = graphSection.div({
+    let det_div = root.div({
         id: doc.id + '-detdiv',
         classes: ['detail']
     });
@@ -614,32 +610,16 @@ function render_docitem_content(root, doc) {
         }
     }
 
+    render_graph(det_div, doc);
+}
+
+function render_table_section(root, doc, tftable) {
+
     let { start_time, end_time } = T.selections[doc.id] || {};
 
-    render_graph(det_div, doc, start_time, end_time);
+    render_stats(root.div({ classes: ['table-wrapper'] }), tftable.value, doc, start_time, end_time);
 
-    /////////////// end graph section ///////////////////
-
-    /////////////// begin table section (stat table) ///////////////////
-    /*
-            +-----------------------------------------+  
-            |+--+ +----------------------+ +---------+|
-            ||  | |                      | |         ||
-            |+--+ +----------------------+ +---------+|
-            |+---------------------------------------+|
-            ||                                       ||
-            ||                                       ||
-            ||                                       ||
-            |+---------------------------------------+|
-            |+---------------------------------------+|  <
-            ||              stat table               ||  |  table section
-            |+---------------------------------------+|  <
-            +-----------------------------------------+
-    */
-
-    render_stats(tableSection.div({ classes: ['table-wrapper'] }), timeframeInfo, doc, start_time, end_time);
-
-    tableSection.span({}).a({
+    root.span({}).a({
         text: '*vocal duration that corresponds to the transcript',
         attrs: {
             title: 'Click for more information',
@@ -648,7 +628,7 @@ function render_docitem_content(root, doc) {
         },
     });
     
-    tableSection.span({ id: doc.id + '-voxit' }).a({
+    root.span({ id: doc.id + '-voxit' }).a({
         text: 'Prosodic measures are calculated using Voxit',
         attrs: {
             title: 'Click for more information about Voxit',
@@ -656,8 +636,6 @@ function render_docitem_content(root, doc) {
             target: '_blank'
         },
     });
-
-    /////////////// end table section ///////////////////
 }
 
 function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
@@ -987,8 +965,9 @@ function render_overview(root, doc) {
 
     let align = get_cur_align(doc.id);
     let { duration } = T.docs[doc.id];
+    let { start_time, end_time } = T.selections[doc.id] || {};
 
-    let width = duration * 10;
+    let width = duration * 10;      // scale of overview is 10 pixels/1 second
     let height = 50;
 
     let svg = root.svg({
@@ -1014,12 +993,15 @@ function render_overview(root, doc) {
     })
 
     // render word gaps
+    let firstword = Infinity, lastword = -1
     align.segments
         .forEach((seg, seg_idx) => {
+            let gap = false, wdstart = Infinity
             seg.wdlist.forEach((wd, wd_idx) => {
                 if (!wd.end || !wd.start) { return }
 
                 if (wd.type == 'gap') {
+                    gap = true
                     svg.rect({
                         id: 'gap-' + seg_idx + '-' + wd_idx,
                         attrs: {
@@ -1031,43 +1013,51 @@ function render_overview(root, doc) {
                         }
                     })
                 }
+                else {
+                    if (wd.end > lastword)
+                        lastword = wd.end
+                    if (wd.start < firstword)
+                        firstword = wd.start
+                }
             })
         });
 
     // render simplified pitch trace
     let { smoothed } = (pitch_stats(get_cur_pitch(doc.id)) || {});
 
+    let pitch_step = 0.01;      // each index of array `smoothed` is 10 ms
     let voiceStart;
-    (smoothed || []).forEach((p, p_idx) => {
-        if (p > 0) {
-            if (!voiceStart) {
-                voiceStart = p_idx;
-            }
+
+    (smoothed || []).forEach((pitch, p_idx) => {
+        if (pitch > 0 && !voiceStart) {
+            voiceStart = p_idx;
         }
-        else {
-            // if voiced period is greater than 20 ms, render a rectangle
-            // that represents the average pitch of that voice period
-            if (p_idx - voiceStart > 20 && voiceStart) {
+        // if voiced period ends, is greater than 20 ms or passes between the boundary of either start or end_time,
+        // render a rectangle that represents the average pitch of that voice period
+        else if (voiceStart 
+            && ((pitch === 0 && p_idx - voiceStart > 20)
+                || ((p_idx - 1) * pitch_step <= firstword && p_idx * pitch_step > firstword)
+                || ((p_idx - 1) * pitch_step < lastword && p_idx * pitch_step >= lastword))) {
 
-                let voicedPeriod = get_cur_pitch(doc.id)
-                    .slice(Math.floor(voiceStart), Math.floor(p_idx));
-                let pitch_mean = (pitch_stats(voicedPeriod) || {})['pitch_mean'];
-                if (pitch_mean) {
+            let voicedPeriod = get_cur_pitch(doc.id)
+                .slice(Math.floor(voiceStart), Math.floor(p_idx));
+            let pitch_mean = (pitch_stats(voicedPeriod) || {})['pitch_mean'];
+            if (pitch_mean) {
 
-                    let y = pitch2y(pitch_mean) / 5;
-                    svg.rect({
-                        id: doc.id + '-word-' + p_idx,
-                        attrs: {
-                            x: width * (voiceStart / 100 / duration),
-                            y: y,
-                            width: width * (p_idx / 100 - voiceStart / 100) / duration,
-                            height: 2,
-                            fill: '#E4B186'
-                        }
-                    })
-                }
-                voiceStart = false;
+                let y = pitch2y(pitch_mean) / 5,
+                    within_transcript_duration = p_idx * pitch_step >= firstword && p_idx * pitch_step <= lastword;
+                svg.rect({
+                    id: doc.id + '-word-' + p_idx,
+                    attrs: {
+                        x: width * (voiceStart * pitch_step / duration),
+                        y: y,
+                        width: width * (p_idx - voiceStart) * pitch_step / duration,
+                        height: within_transcript_duration ? 2 : 1,
+                        fill: within_transcript_duration ? '#E4B186' : '#C9C9C9'
+                    }
+                })
             }
+            voiceStart = pitch === 0 ? null : p_idx;
         }
 
     });
@@ -1200,8 +1190,10 @@ function render_overview(root, doc) {
     /////////////// end overview click events //////////////////
 }
 
-function render_graph(root, doc, start_time, end_time) {
+function render_graph(root, doc) {
     if (!render_is_ready(root, doc.id)) return;
+
+    let { start_time, end_time } = T.selections[doc.id] || {};
 
     root._attrs.classes.push('loaded');
     let segs = get_cur_align(doc.id).segments;
@@ -1364,7 +1356,7 @@ function render_graph(root, doc, start_time, end_time) {
                     y1: cy - (h / 2),
                     x2: fr2x(r_idx),
                     y2: cy + (h / 2),
-                    stroke: 'rgba(0,0,0,0.1)',
+                    stroke: '#646464',
                     'stroke-width': 2,
                 }
             })
@@ -1559,7 +1551,7 @@ function render_is_ready(root, docid) {
     if (!T.docs[docid] || !get_data(docid)) {
         root.div({
             classes: ["loading-placement"],
-            text: "Loading... If this is taking too long, try reuploading this data file or reloading the webpage"
+            text: "Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file"
         });
 
         return false;

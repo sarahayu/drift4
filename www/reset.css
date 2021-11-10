@@ -20,6 +20,10 @@ time, mark, audio, video {
 	box-sizing: border-box;
 }
 
+video, img {
+	max-width: 100%;
+}
+
 b, u, i
 {
 	margin: 0;
@@ -37,6 +41,7 @@ button
     border: none;
     color: inherit;
     font-family: inherit;
+	font-weight: inherit;
     padding: 0;
     margin: 0;
 }

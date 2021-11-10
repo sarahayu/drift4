@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Instructions</title>
   </head>
 
@@ -38,81 +38,148 @@
       <section>
         <div class="section-container">
           <h2>Instructions</h2>
-          <h4>Opening Drift</h4>
-          <ol>
-            <li>
-              Install and open
-              <a href="https://lowerquality.com/gentle/" target="_blank">Gentle</a>. Gentle must be installed and open in order for Drift to work.
-            </li>
-            <li>
-              Open the Drift application.
-              <ol>
-                <li>When first running Drift after opening the dmg application, Mac might warn you against running it.</li>
-                <div class="screenshot-wrapper">
-                  <img class="screenshot" src="mac-warning-big-sur.png" alt="A warning dialog on Mac Big Sur saying that drift_gui cannot be opened because the developer cannot be verified." />
-                  <img class="screenshot" src="mac-warning-high-sierra.png" alt="A similar warning dialog as the previous picture but in High Sierra, with the Ok option replacing the Cancel option" />
-                </div>
-                <li>
-                  When that happens, simply click “Cancel” (in Big Sur shown in the picture on the left) or “Ok” (in older versions of Mac shown in the picture to the right) to close the window. Then
-                  right-click or press the “Ctrl” key while left-clicking the Drift icon to bring up the “Open” option, and click on that.
-                </li>
-                <div class="screenshot-wrapper">
-                  <img class="screenshot" src="mac-opt-big-sur.png" alt="Right click options on Big Sur with an option saying Open" />
-                  <img class="screenshot" src="mac-opt-high-sierra.png" alt="A similar menu as the previous picture but in High Sierra" />
-                </div>
-                <li>This time, an option to open the application should appear on the warning window, and you can click “Open” to run Drift.</li>
-                <div class="screenshot-wrapper">
-                  <img class="screenshot" src="mac-open-big-sur.png" alt="A similar dialog as the initial warning dialog on Big Sur, but with an option to open" />
-                  <img class="screenshot" src="mac-open-high-sierra.png" alt="A similar dialog as the previous picture but in High Sierra" />
-                </div>
-              </ol>
-            </li>
-            <li>Click “Open in Browser.” The software should open on your default browser.</li>
-            <li>
-              <i>
-                Note: Before running an audio file through Drift, it is helpful to have a correct transcript of the recording, or a (manually) corrected transcript from Gentle. This will help generate
-                more accurate calculations.
-              </i>
-            </li>
-          </ol>
-          <h4>Adding a file</h4>
-          <ol>
-            <li>Drag an audio file into the Drift interface. Or, you can click the “choose files” button and find the file by browsing on your computer.</li>
-            <li>Paste in the corrected transcript generated from Gentle into the transcript box.</li>
-            <li>Select “set transcript”. Drift should align the transcript with the audio file, and also perform calculations of the Voxit prosodic measures.</li>
-          </ol>
-          <h4>Arranging Files</h4>
-          <ul>
-            <li>You can add a file to the dashboard by clicking on it from the sidebar. You can hide a file from the dashboard by clicking on it again</li>
-            <li>You can rearrange the order of the files by dragging them along the sidebar to see a desired order</li>
-          </ul>
-          <h4>Voxit Prosodic Measures</h4>
-          <ul>
-            <li>
-              If you press play, the audio recording will play, and you can see a vertical bar called a “razor” move within the pitch contour. You can also press the spacebar to play or pause the most recent
-              document (either the document most recently opened or the last one to have been played by clicking the “play” button, whichever was the most recent action). The overview along the top and the graph at the center will
-              scroll according to where the razor moves to during playing.
-            </li>
-            <li>If you hover over the graph, a tag will appear on a razor indicating pitch and time. You can click on the graph to set the razor to a certain point in time.</li>
-            <li>The Voxit prosodic measures for the whole region appear below the pitch contour.</li>
-            <li>
-              You can also select a smaller region within the large audio file, and Drift will perform the calculations on the selected region. You can do this by dragging along the overview at
-              the top.
-            </li>
-          </ul>
-          <h4>Downloading the audio files</h4>
-          <ul>
-            <li>Click the three dots above each recording, and you can download the calculations as a .csv, .mat, or .txt file.</li>
-            <li>Copy the Voxit prosodic measure table to your clipboard by hovering over the table and clicking the “Copy to Clipboard” button that appears.</li>
-            <li>Download the graph as a PNG by hovering over the download icon in the top right corner of the graph.</li>
-          </ul>
-          <h4>Deleting Files</h4>
-          <ul>
-            <li>You can delete a file by hovering over the three dots above each recording, and clicking on the “Delete Audioclip” button</li>
-            <li>You can delete all of the audio files by hovering over the three dots on the left sidebar, then clicking on the “Delete All Audio” button.</li>
-          </ul>
+          <h4 class="acc-btn" id="video-tutorials"><button>Video Tutorials</button></h4>
+          <div class="acc-content video-tuts">
+            <div class="video-card">
+              <h5>Launching the Drift application on Mac</h5>
+              <span class="platform" title="This tutorial applies for Mac users">Mac</span>
+              <video controls preload="none" src="./drift-application-launch-mac.mp4"><source src="./drift-application-launch-mac.mp4" type="video/mp4"></video>
+            </div>
+            <div class="video-card">
+              <h5>Uploading files to Drift</h5>
+              <span class="platform" title="This tutorial applies for Mac users">Mac</span>
+              <span class="platform" title="This tutorial applies for Windows users">Windows</span>
+              <span class="platform" title="This tutorial applies for Web users">Web</span>
+              <video controls preload="none"><source src="./drift-upload.mp4" type="video/mp4"></video>
+            </div>
+            <div class="video-card">
+              <h5>Features of a Drift document</h5>
+              <span class="platform" title="This tutorial applies for Mac users">Mac</span>
+              <span class="platform" title="This tutorial applies for Windows users">Windows</span>
+              <span class="platform" title="This tutorial applies for Web users">Web</span>
+              <video controls preload="none"><source src="./drift-features.mp4" type="video/mp4"></video>
+            </div>
+            <div class="video-card">
+              <h5>Launching Voxit on Mac</h5>
+              <span class="platform" title="This tutorial applies for Mac users">Mac</span>
+              <video controls preload="none"><source src="./voxit-mac.mp4" type="video/mp4"></video>
+            </div>
+            <div class="video-card">
+              <h5>Launching Voxit on Windows</h5>
+              <span class="platform" title="This tutorial applies for Windows users">Windows</span>
+              <video controls preload="none"><source src="./voxit-windows.mp4" type="video/mp4"></video>
+            </div>
+          </div>
+          <h4 class="acc-btn" id="opening-drift"><button>Opening Drift</button></h4>
+          <div class="acc-content">
+            <ol>
+              <li>
+                Install and open
+                <a href="https://lowerquality.com/gentle/" target="_blank">Gentle</a>. Gentle must be installed and open in order for Drift to work.
+              </li>
+              <li>
+                Open the Drift application.
+                <ol>
+                  <li>When first running Drift after opening the dmg application, Mac might warn you against running it.</li>
+                  <div class="screenshot-wrapper">
+                    <img class="screenshot" src="mac-warning-big-sur.png" alt="A warning dialog on Mac Big Sur saying that drift_gui cannot be opened because the developer cannot be verified." />
+                    <img
+                      class="screenshot"
+                      src="mac-warning-high-sierra.png"
+                      alt="A similar warning dialog as the previous picture but in High Sierra, with the Ok option replacing the Cancel option"
+                    />
+                  </div>
+                  <li>
+                    When that happens, simply click “Cancel” (in Big Sur shown in the picture on the left) or “Ok” (in older versions of Mac shown in the picture to the right) to close the window.
+                    Then right-click or press the “Ctrl” key while left-clicking the Drift icon to bring up the “Open” option, and click on that.
+                  </li>
+                  <div class="screenshot-wrapper">
+                    <img class="screenshot" src="mac-opt-big-sur.png" alt="Right click options on Big Sur with an option saying Open" />
+                    <img class="screenshot" src="mac-opt-high-sierra.png" alt="A similar menu as the previous picture but in High Sierra" />
+                  </div>
+                  <li>This time, an option to open the application should appear on the warning window, and you can click “Open” to run Drift.</li>
+                  <div class="screenshot-wrapper">
+                    <img class="screenshot" src="mac-open-big-sur.png" alt="A similar dialog as the initial warning dialog on Big Sur, but with an option to open" />
+                    <img class="screenshot" src="mac-open-high-sierra.png" alt="A similar dialog as the previous picture but in High Sierra" />
+                  </div>
+                </ol>
+              </li>
+              <li>Click “Open in Browser.” The software should open on your default browser.</li>
+              <li>
+                <i>
+                  Note: Before running an audio file through Drift, it is helpful to have a correct transcript of the recording, or a (manually) corrected transcript from Gentle. This will help
+                  generate more accurate calculations.
+                </i>
+              </li>
+            </ol>
+          </div>
+          <h4 class="acc-btn" id="adding-files"><button>Adding a file</button></h4>
+          <div class="acc-content">
+            <ol>
+              <li>Drag an audio file into the Drift interface. Or, you can click the “choose files” button and find the file by browsing on your computer.</li>
+              <li>Paste in the corrected transcript generated from Gentle into the transcript box.</li>
+              <li>Select “set transcript”. Drift should align the transcript with the audio file, and also perform calculations of the Voxit prosodic measures.</li>
+            </ol>
+          </div>
+          <h4 class="acc-btn" id="arranging-files"><button>Arranging Files</button></h4>
+          <div class="acc-content">
+            <ul>
+              <li>You can add a file to the dashboard by clicking on it from the sidebar. You can hide a file from the dashboard by clicking on it again</li>
+              <li>You can rearrange the order of the files by dragging them along the sidebar to see a desired order</li>
+            </ul>
+          </div>
+          <h4 class="acc-btn" id="prosodic-measures"><button>Voxit Prosodic Measures</button></h4>
+          <div class="acc-content">
+            <ul>
+              <li>
+                If you press play, the audio recording will play, and you can see a vertical bar called a “razor” move within the pitch contour. You can also press the spacebar to play or pause the
+                most recent document (either the document most recently opened or the last one to have been played by clicking the “play” button, whichever was the most recent action). The overview
+                along the top and the graph at the center will scroll according to where the razor moves to during playing.
+              </li>
+              <li>If you hover over the graph, a tag will appear on a razor indicating pitch and time. You can click on the graph to set the razor to a certain point in time.</li>
+              <li>The Voxit prosodic measures for the whole region appear below the pitch contour.</li>
+              <li>
+                You can also select a smaller region within the large audio file, and Drift will perform the calculations on the selected region. You can do this by dragging along the overview at the
+                top.
+              </li>
+            </ul>
+          </div>
+          <h4 class="acc-btn" id="downloading-audio"><button>Downloading the audio files</button></h4>
+          <div class="acc-content">
+            <ul>
+              <li>Click the three dots above each recording, and you can download the calculations as a .csv, .mat, or .txt file.</li>
+              <li>Copy the Voxit prosodic measure table to your clipboard by hovering over the table and clicking the “Copy to Clipboard” button that appears.</li>
+              <li>Download the graph as a PNG by hovering over the download icon in the top right corner of the graph.</li>
+            </ul>
+          </div>
+          <h4 class="acc-btn" id="deleting-files"><button>Deleting Files</button></h4>
+          <div class="acc-content">
+            <ul>
+              <li>You can delete a file by hovering over the three dots above each recording, and clicking on the “Delete Audioclip” button</li>
+              <li>You can delete all of the audio files by hovering over the three dots on the left sidebar, then clicking on the “Delete All Audio” button.</li>
+            </ul>
+          </div>
         </div>
       </section>
     </main>
+    <script>
+
+      let acc = document.location.toString().split('#')[1]
+      if (acc)
+      {
+        let header = document.querySelector(`#${acc}`)
+        header.children[0].classList.add('open')
+        header.nextElementSibling.classList.add('open')
+        document.querySelector(`#${acc}`).classList.add("open")
+      }
+
+      document.querySelectorAll(".acc-btn button").forEach((btn) => {
+        btn.addEventListener("click", (evt) => {
+          evt.currentTarget.classList.toggle("open");
+          evt.currentTarget.parentNode.nextElementSibling.classList.toggle("open");
+        });
+      });
+      
+    </script>
   </body>
 </html>

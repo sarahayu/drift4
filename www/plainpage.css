@@ -159,6 +159,7 @@ ol ol
     border-radius: 0.5em;
     padding: 0.5em 1.2em;
     display: inline-block;
+    margin-right: 3em;
 }
 
 .dl-btn:hover,
@@ -167,4 +168,133 @@ ol ol
     text-decoration: none;
     background-color: var(--accent-400);
     color: var(--neutral-300);
+}
+
+.howdo
+{
+    font-weight: normal;
+    text-decoration: underline;
+    display: inline-block;
+    margin-top: 1em;
+}
+
+.acc-content
+{
+    background-color: white;
+    height: 0;
+    overflow: hidden;
+}
+
+.acc-btn
+{
+    display: block;
+    margin: 0;
+}
+
+.acc-btn button
+{
+    padding: 1em 0;
+    width: 100%;
+    text-align: left;
+    position: relative;
+}
+
+.acc-btn button::before,
+.acc-btn button::after
+{
+    content: '';
+    background-color: currentColor;
+    position: absolute;
+    width: 1em;
+    height: 0.25em;
+    top: 50%;
+    right: 0;
+}
+
+.acc-btn button::before
+{
+    transform: translateY(-50%);
+}
+
+.acc-btn button::after
+{
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.acc-btn button.open::after
+{
+    display: none;
+}
+
+.acc-content + .acc-btn
+{
+    border-top: 1px solid #c6c6cc;
+}
+
+.acc-content.open,
+.acc-content:focus-within
+{
+    height: min-content;
+    padding: 1em;
+    border-top: 1px solid #c6c6cc;
+}
+
+.video-tuts
+{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0 1em;
+}
+
+.video-card
+{
+    padding: 1em;
+    text-align: center;
+}
+
+.video-card h5
+{
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    margin-right: 1em;
+}
+
+.video-card .platform
+{
+    color: #555;
+    font-size: 0.8em;
+    border: 1px solid currentColor;
+    border-radius: 0.3em;
+    padding: 0.2em 0.5em;
+    margin: 0;
+    margin-bottom: 1em;
+    display: inline-block;
+}
+
+.platform + .platform
+{
+    margin-left: 1em;
+}
+
+.video-card video
+{
+    width: 100%;
+}
+
+@media (min-width: 64rem) {
+
+    .video-card
+    {
+        text-align: left;
+    }
+    
+    .video-card h5
+    {
+        display: inline-block;
+    }
+
+    .video-tuts
+    {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
