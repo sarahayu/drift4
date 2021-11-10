@@ -552,6 +552,8 @@ root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 
+# this has not been necessary anymore since a port number was not needed to access endpoints
+# but I'll keep it in in case one needs the functionality (see also script.js:0)
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js, \
         open("www-template/web-script.template.js", mode="r") as template_script_js:

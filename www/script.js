@@ -1,3 +1,5 @@
+// this if statement was necessary when a port number was needed to access Drift's endpoints
+// feel free to uncomment it if you need the functionality
 
 if (true)
 // if (typeof webPort === 'undefined' || window.location.port)

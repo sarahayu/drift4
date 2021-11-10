@@ -236,6 +236,7 @@ table
 .list-item button > *
 {
     display: block;
+    max-width: min-content;
 }
 
 .list-item:hover button,
