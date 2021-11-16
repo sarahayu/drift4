@@ -1636,7 +1636,7 @@ function render_hamburger(root, doc) {
         let displayName = {
             csv: 'Drift Data (.csv)',
             mat: 'Voxit Data (.mat)',
-            align: 'Gentle Align (.txt)',
+            align: 'Gentle Align (.json)',
             pitch: 'Drift Pitch (.txt)'
         }
 
