@@ -194,6 +194,24 @@ function register_listeners() {
         })
     }
 
+    // TODO fix
+    // document.getElementById('dl-all-voxitcsv').onclick = () => {
+    //     let cocatenated = '';
+    //     get_docs().forEach(doc => {            
+            
+    //         T.docs[doc.id].stats = cached_get_url(url, JSON.parse).measure;
+    //         T.docs[doc.id].timedStats = cached_get_url(timedURL, JSON.parse).measure;
+    //         let csvContent = voxit_to_tab_separated(doc, filter_stats(T.docs[doc.id].stats));
+    //         csvContent = csvContent.replace(/\t/g, ',')
+    //         let numCommas = csvContent.substring(0, csvContent.indexOf('\n')).split(',').length - 1;
+    //         cocatenated += `${doc.title}`;
+    //         for (let i = 0; i < numCommas; i++) cocatenated += ',';
+    //         cocatenated += '\n';
+    //         cocatenated += csvContent;
+    //     })
+    //     saveAs(new Blob([cocatenated]), 'main.csv');
+    // }
+
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
 
     // spacebar play/pause
@@ -747,17 +765,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
     // if stats are loaded, render them in table
     if (stats) {
 
-        // take out start_time and end_time and pause counts that are not 100, 500, 1000, or 2000
-        let keys = Object.keys(stats).slice(2).filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
-        
-        // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures
-        let pauseCounts = keys.splice(
-            keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
-            keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
-        );
-        let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
-        keys.splice(1, 0, ...drifts);
-        keys.push(...pauseCounts);
+        let keys = filter_stats(stats);
 
         // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
         keys.forEach(dataLabel => {
@@ -796,23 +804,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
             classes: ['copy-btn'],
             events: {
                 onclick: () => {
-                    let cliptxt = '\t';
-                    keys.forEach((key) => {
-                        cliptxt += key + '\t';
-                    });
-                    cliptxt += "start_time\tend_time\t"
-                    cliptxt += '\nfull clip\t';
-                    keys.forEach((key) => {
-                        cliptxt += stats[key] + '\t';
-                    });
-
-                    cliptxt += segments[0].start + '\t' + segments[segments.length - 1].end + '\t';
-                    cliptxt += '\nselection\t';
-                    keys.forEach((key) => {
-                        cliptxt += timedStats[key] + '\t';
-                    });
-                    cliptxt += start + '\t' + end + '\t';
-                    cliptxt += '\n';
+                    let cliptxt = voxit_to_tab_separated(doc, keys, stats, timedStats, segments[0].start, segments[segments.length - 1].end, start, end);
 
                     // Create, select, copy, and remove a textarea.
                     let $el = document.createElement('textarea');
@@ -832,6 +824,59 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
         mainTableRoot.div({ text: "Loading...", classes: ["table-loading"] })
     }
 
+}
+
+function filter_stats(stats) {
+    // take out start_time and end_time and pause counts that are not 100, 500, 1000, or 2000
+    let keys = Object.keys(stats).slice(2).filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
+    
+    // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures
+    let pauseCounts = keys.splice(
+        keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
+        keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
+    );
+    let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
+    keys.splice(1, 0, ...drifts);
+    keys.push(...pauseCounts);
+
+    return keys;
+}
+
+// I add these extra arguments so we don't have to recalculate a bunch of stuff IF we already have them on hand
+function voxit_to_tab_separated(doc, keys, stats, timedStats, fulStart, fulEnd, selStart, selEnd) {  
+    
+    if (stats === undefined) {
+        stats = T.docs[doc.id].stats;
+        timedStats = T.docs[doc.id].timedStats;
+
+        let segments = (get_cur_align(doc.id) || {}).segments;
+        fulStart = segments[0].start;
+        fulEnd = segments[segments.length - 1].end;
+
+        let { start_time, end_time } = T.selections[doc.id] || {};
+        selStart = start_time;
+        selEnd = end_time;
+    }
+
+    let cliptxt = '\t';
+    keys.forEach((key) => {
+        cliptxt += key + '\t';
+    });
+    cliptxt += "start_time\tend_time\t"
+    cliptxt += '\nfull clip\t';
+    keys.forEach((key) => {
+        cliptxt += stats[key] + '\t';
+    });
+
+    cliptxt += fulStart + '\t' + fulEnd + '\t';
+    cliptxt += '\nselection\t';
+    keys.forEach((key) => {
+        cliptxt += timedStats[key] + '\t';
+    });
+    cliptxt += selStart + '\t' + selEnd + '\t';
+    cliptxt += '\n';
+
+    return cliptxt;
 }
 
 function render_transcript_input(root, doc) {
@@ -1575,20 +1620,31 @@ function render_hamburger(root, doc) {
 
     let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown rightedge'] });
 
-    let pregen_downloads = ['csv', 'mat', 'align', 'pitch'];
+    let pregen_downloads = ['align', 'pitch', 'csv', 'mat'];
+
+    let filename = doc.title.split('.').reverse()
+    filename.shift()
+    filename = filename.reverse().join('')
+
     pregen_downloads.forEach(name => {
         if (!doc[name]) {
             return;
         }
-        let filename = doc.title.split('.').reverse()
-        filename.shift()
 
-        let out_filename = filename.reverse().join('') + '-' + name + '.' + doc[name].split('.')[1];
+        let out_filename = filename + '-' + name + '.' + doc[name].split('.').reverse()[0];
+
+        let displayName = {
+            csv: 'Drift Data (.csv)',
+            mat: 'Voxit Data (.mat)',
+            align: 'Gentle Align (.txt)',
+            pitch: 'Drift Pitch (.txt)'
+        }
 
         dlDropdown.li({
             id: `ham-${name}-${doc.id}`,
         }).a({
-            text: "download " + (name == 'align' ? 'Gentle align' : name),
+            text: "Download - " + displayName[name],
+            classes: ['action-btn'],
             attrs: {
                 href: '/media/' + doc[name],
                 _target: '_blank',
@@ -1598,12 +1654,23 @@ function render_hamburger(root, doc) {
     })
 
     dlDropdown.li({
+        id: `ham-voxitcsv-${doc.id}`,
+    }).button({
+        text: "Download - Voxit Data (.csv)",
+        classes: ['action-btn'],
+        events: {
+            onclick: ev => {
+                ev.preventDefault();
+                download_voxitcsv(doc);
+            }
+        }
+    });
+
+    dlDropdown.li({
         id: `ham-del-${doc.id}`,
-    }).a({
-        text: "delete audioclip",
-        attrs: {
-            href: '#'
-        },
+    }).button({
+        text: "Delete Audioclip",
+        classes: ['action-btn'],
         events: {
             onclick: ev => {
                 ev.preventDefault();
@@ -1971,6 +2038,17 @@ function delete_action(doc) {
         delete T.opened[ret.remove];
         render();
     });
+}
+
+function download_voxitcsv(doc) {
+    let csvContent = voxit_to_tab_separated(doc, filter_stats(T.docs[doc.id].stats));
+    csvContent = csvContent.replace(/\t/g, ',')
+    let filename = doc.title.split('.').reverse()
+    filename.shift()
+
+    let out_filename = filename + '-voxitcsv.csv';
+
+    saveAs(new Blob([csvContent]), out_filename);
 }
 
 function fr2x(fr) {

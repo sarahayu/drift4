@@ -42,6 +42,7 @@ button
     color: inherit;
     font-family: inherit;
 	font-weight: inherit;
+	text-transform: inherit;
     padding: 0;
     margin: 0;
 }

@@ -467,11 +467,14 @@ main
     font-weight: 600;
     text-transform: uppercase;
     visibility: hidden;
+    height: 1px;
+    overflow: hidden;
     position: absolute;
     top: 100%;
     background-color: white;
     color: var(--accent-700);
     transition: none;
+    z-index: 1;
     box-shadow: 0px 3px 7px -3px rgba(0, 0, 0, 0.25);
     list-style: none;
 }
@@ -489,12 +492,12 @@ main
 .dl-btn:focus-within .dl-dropdown,
 .dl-btn:hover .dl-dropdown
 {
+    height: min-content;
     visibility: visible;
-    z-index: 1;
     transition: visibility 0s 0.2s;
 }
 
-.dl-dropdown a
+.dl-dropdown .action-btn
 {
     text-align: left;
     display: inline-block;
@@ -503,19 +506,19 @@ main
     padding-right: 2em;
 }
 
-.dl-dropdown li:last-child a
+.dl-dropdown li:last-child .action-btn
 {
     border-top: 1px solid #eee;
 }
 
 /* 
-.dl-btn:focus a
+.dl-btn:focus .action-btn
 {
     display: inline-block;
 } */
 
-.dl-dropdown a:hover,
-.dl-dropdown a:focus
+.dl-dropdown .action-btn:hover,
+.dl-dropdown .action-btn:focus
 {
     background-color: var(--accent-700);
     color: white;
