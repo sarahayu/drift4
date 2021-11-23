@@ -19,6 +19,7 @@ var DRIFT_VER = 'v4.0';
     T.PITCH_H = 250;
     T.LPAD = 0;
     T.MAX_A = 15;
+    T.DESCRIPTIONS = get_descriptions();
 
     // initialize global variables, making sure to only initialize them
     // when the page first loads and not everytime this file is saved
@@ -37,9 +38,6 @@ var DRIFT_VER = 'v4.0';
     }
     if (!T.selections) {
         T.selections = {};
-    }
-    if (!T.descriptions) {
-        T.descriptions = get_descriptions();
     }
     if (!T.ticking) {
         T.ticking = true;
@@ -152,7 +150,7 @@ function register_listeners() {
     ////////// file-list bulk actions (download alls) ///////////
 
     // zip these, but cocatenate for csv
-    ['mat', 'align', 'pitch'].forEach(name => {
+    ['mat', 'align', 'pitch','transcript'].forEach(name => {
         document.getElementById('dl-all-' + name).onclick = () => {
             Promise.all(get_docs().filter(doc => doc[name]).map(doc =>
                 fetch('/media/' + doc[name]).then(response => response.blob()).then(blob => ({ docid: doc.id, blob: blob }))
@@ -183,34 +181,51 @@ function register_listeners() {
             let cocatenated = '';
             blobdocs.forEach(({ docid, textContent }) => {
                 let doc = T.docs[docid];
+                cocatenated += `"${doc.title}"`;
                 let numCommas = textContent.substring(0, textContent.indexOf('\n')).split(',').length - 1;
-                cocatenated += `${doc.title}`;
                 for (let i = 0; i < numCommas; i++) cocatenated += ',';
                 cocatenated += '\n';
                 cocatenated += textContent;
             })
 
-            saveAs(new Blob([cocatenated]), 'main.csv');
+            saveAs(new Blob([cocatenated]), 'driftcsvfiles.csv');
         })
     }
 
-    // TODO fix
-    // document.getElementById('dl-all-voxitcsv').onclick = () => {
-    //     let cocatenated = '';
-    //     get_docs().forEach(doc => {            
-            
-    //         T.docs[doc.id].stats = cached_get_url(url, JSON.parse).measure;
-    //         T.docs[doc.id].timedStats = cached_get_url(timedURL, JSON.parse).measure;
-    //         let csvContent = voxit_to_tab_separated(doc, filter_stats(T.docs[doc.id].stats));
-    //         csvContent = csvContent.replace(/\t/g, ',')
-    //         let numCommas = csvContent.substring(0, csvContent.indexOf('\n')).split(',').length - 1;
-    //         cocatenated += `${doc.title}`;
-    //         for (let i = 0; i < numCommas; i++) cocatenated += ',';
-    //         cocatenated += '\n';
-    //         cocatenated += csvContent;
-    //     })
-    //     saveAs(new Blob([cocatenated]), 'main.csv');
-    // }
+    document.getElementById('dl-all-voxitcsv').onclick = () => {
+        
+        let ranges = {}
+
+        Promise.all(get_docs().filter(doc => doc.align).map(doc =>
+            fetch('/media/' + doc.align)
+                .then(align => align.json())
+                .then(align => {
+                    let [ start, end ] = ranges[doc.id] = get_transcript_range(doc.id, align)
+                    return fetch(`/_measure?id=${doc.id}&start_time=${start}&end_time=${end}`)
+                })
+                .then(response => response.json())
+                .then(resjson => ({ stats: resjson.measure, docid: doc.id }))
+        )).then(measuredocs => { 
+
+            let cocatenated = '';
+            let keys;
+
+            measuredocs.forEach(({ docid, stats }, i) => {
+                let [ fulStart, fulEnd ] = ranges[docid]
+
+                if (i === 0) {
+                    keys = filter_stats(stats);
+                    cocatenated = ['audio_document',...keys, 'start_time', 'end_time'].join(',') + '\n';
+                }
+
+                let doc = T.docs[docid];
+                cocatenated += `"${doc.title}"` + ',';
+                cocatenated += [...keys.map(key => stats[key]), fulStart, fulEnd].join(',') + '\n';
+            })
+
+            saveAs(new Blob([cocatenated]), 'voxitcsvfiles.csv');
+        })
+    }
 
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
 
@@ -589,7 +604,8 @@ function render_top_section(root, doc, tftable) {
         id: doc.id + '-lab1',
         text: 'continuous scrolling',
         attrs: {
-            for: doc.id + '-rad1'
+            for: doc.id + '-rad1',
+            title: 'auto-select next region on playthrough'
         }
     })
     playOpt.input({
@@ -620,22 +636,12 @@ function render_graph_section(root, doc) {
         classes: ['detail']
     });
 
-    if (!(doc.id in T.selections)) {
-        let segments = (get_cur_align(doc.id) || {}).segments;
-        if (segments) {
-            let start = segments[0].start, end = Math.min(start + 20, segments[segments.length - 1].end);
-            T.selections[doc.id] = { start_time: start, end_time: end };
-        }
-    }
-
     render_graph(det_div, doc);
 }
 
 function render_table_section(root, doc, tftable) {
 
-    let { start_time, end_time } = T.selections[doc.id] || {};
-
-    render_stats(root.div({ classes: ['table-wrapper'] }), tftable.value, doc, start_time, end_time);
+    render_stats(root.div({ classes: ['table-wrapper'] }), tftable.value, doc);
 
     root.span({}).a({
         text: '*vocal duration that corresponds to the transcript',
@@ -656,51 +662,34 @@ function render_table_section(root, doc, tftable) {
     });
 }
 
-function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
+function render_stats(mainTableRoot, timeframeRoot, doc) {
+    
+    let { start_time: selStart, end_time: selEnd } = (get_selection(doc.id) || {});
+    let statsFullTSDur = get_measures_fullTS(doc.id)
 
-    let uid = doc.id + '-' + start + '-' + end;
-
+    let uid = doc.id + '-' + selStart + '-' + selEnd;
+    
     let table = mainTableRoot.table({ classes: ['stat-table drift-table'] });
-
     let headers = table.tr({ classes: ['stat-header'] }),
-        fullRecordingDatarow = table.tr({ id: uid + '-row1' }),
-        selectionDatarow = table.tr({ id: uid + '-row2' });
-
+    fullRecordingDatarow = table.tr({ id: uid + '-row1' }),
+    selectionDatarow = table.tr({ id: uid + '-row2' });
+    
     let firstcell = headers.th({});
     fullRecordingDatarow.th({ text: "full recording duration*" });
     selectionDatarow.th({ text: "selection" });
-
+    
     let timeframe = timeframeRoot.table({ classes: ['timeframe-table drift-table'] });
     let tfh = timeframe.tr({ id: uid + '-tfh' }),
-        tfb = timeframe.tr({ id: uid + '-tfb' });
+    tfb = timeframe.tr({ id: uid + '-tfb' });
 
-    let segments = (get_cur_align(doc.id) || {}).segments;
-    let fullTSDuration;
-    let url, timedURL;
-    if (segments) {
-        fullTSDuration = segments[segments.length - 1].end - segments[0].start;
-        url = '/_measure?id=' + doc.id, timedURL = url;
-        url += `&start_time=${segments[0].start}&end_time=${segments[segments.length - 1].end}`;
-
-        if (start) {
-            timedURL += '&start_time=' + start;
-        }
-        if (end) {
-            timedURL += '&end_time=' + end;
-        }
-
-        // only send request for prosodic measures if user has finished dragging
-        if (!T.DRAGGING) {
-            T.docs[doc.id].stats = cached_get_url(url, JSON.parse).measure;
-            T.docs[doc.id].timedStats = cached_get_url(timedURL, JSON.parse).measure;
-        }
-    }
+    let [ fulStart, fulEnd ] = get_transcript_range(doc.id) || []
+    let fullTSDuration = fulEnd - fulStart
 
     Object.entries({
         'full recording duration*': Math.round(fullTSDuration * 10) / 10 + 's',
-        'selection start': (Math.round(start * 10) / 10 || '0') + 's',
-        'selection end': Math.round(end * 10) / 10 + 's',
-        'selection length': Math.round((end - start) * 10) / 10 + 's'
+        'selection start': Math.round(selStart * 10) / 10 + 's',
+        'selection end': Math.round(selEnd * 10) / 10 + 's',
+        'selection length': Math.round((selEnd - selStart) * 10) / 10 + 's'
     }).forEach(([label, data], i) => {
         tfh.th({ text: label });
         if (i == 1 || i == 2) {
@@ -760,70 +749,95 @@ function render_stats(mainTableRoot, timeframeRoot, doc, start, end) {
 
         /////////////// end timeframe item click event //////////////////
     });
-
-    const { stats, timedStats } = T.docs[doc.id];
-    // if stats are loaded, render them in table
-    if (stats) {
-
-        let keys = filter_stats(stats);
-
-        // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
-        keys.forEach(dataLabel => {
-            headers.th({
-                id: dataLabel + '-h'
-            }).a({
-                text: dataLabel.replace(/_/g, ' '),
-                attrs: T.descriptions[dataLabel] ? {
-                    href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.descriptions[dataLabel]) 
-                        : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
-                    target: '_blank',
-                    title: splitString(T.descriptions[dataLabel], 40, 4) + '\n(Click label for more information)',
-                } : {},
-                events: { onmousedown: ev => ev.preventDefault() }
-            })
-            fullRecordingDatarow.td({
-                id: dataLabel + '-d',
-                text: '' + Math.round(stats[dataLabel] * 100) / 100
-            })
-            selectionDatarow.td({
-                parent: selectionDatarow,
-                id: dataLabel + '-d',
-                text: '' + (timedStats ? Math.round(timedStats[dataLabel] * 100) / 100 : 'n/a')
-            })
-        })
-
-        firstcell.a({ 
-            text: 'Skip table headers', 
-            classes: ['acsblty-skip'],
-            attrs: { href: `#${doc.id}-copy-btn` } 
-        });
-
-        mainTableRoot.button({
-            text: 'Copy to Clipboard',
-            id: doc.id + '-copy-btn',
-            classes: ['copy-btn'],
-            events: {
-                onclick: () => {
-                    let cliptxt = voxit_to_tab_separated(doc, keys, stats, timedStats, segments[0].start, segments[segments.length - 1].end, start, end);
-
-                    // Create, select, copy, and remove a textarea.
-                    let $el = document.createElement('textarea');
-                    $el.textContent = cliptxt;
-                    document.body.appendChild($el);
-                    $el.select();
-                    document.execCommand("copy");
-                    document.body.removeChild($el);
-                    document.getElementById('copied-alert').classList.add('visible');
-                    setTimeout(() =>
-                        document.getElementById('copied-alert').classList.remove('visible'), 2000);
-                }
-            }
-        });
-    }
-    else {
+    
+    if (selStart === undefined || statsFullTSDur === undefined) {
         mainTableRoot.div({ text: "Loading...", classes: ["table-loading"] })
+        return
     }
 
+    // only send request for prosodic measures if user has finished dragging
+    if (!T.DRAGGING) {
+        T.docs[doc.id].curSelStats = get_measures(doc.id, selStart, selEnd);
+    }
+    
+    let { curSelStats } = T.docs[doc.id];
+    let keys = filter_stats(statsFullTSDur);
+
+    // TODO fix link bookmarks with > symbols (works on firefox, not on safari)
+    keys.forEach(dataLabel => {
+        headers.th({
+            id: dataLabel + '-h'
+        }).a({
+            text: dataLabel.replace(/_/g, ' '),
+            attrs: T.DESCRIPTIONS[dataLabel] ? {
+                href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.DESCRIPTIONS[dataLabel]) 
+                    : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
+                target: '_blank',
+                title: splitString(T.DESCRIPTIONS[dataLabel], 40, 4) + '\n(Click label for more information)',
+            } : {},
+            events: { onmousedown: ev => ev.preventDefault() }
+        })
+        fullRecordingDatarow.td({
+            id: dataLabel + '-d',
+            text: '' + Math.round(statsFullTSDur[dataLabel] * 100) / 100
+        })
+        selectionDatarow.td({
+            parent: selectionDatarow,
+            id: dataLabel + '-d',
+            text: '' + (curSelStats ? Math.round(curSelStats[dataLabel] * 100) / 100 : 'n/a')
+        })
+    })
+
+    firstcell.a({ 
+        text: 'Skip table headers', 
+        classes: ['acsblty-skip'],
+        attrs: { href: `#${doc.id}-copy-btn` } 
+    });
+
+    mainTableRoot.button({
+        text: 'Copy to Clipboard',
+        id: doc.id + '-copy-btn',
+        classes: ['copy-btn'],
+        events: {
+            onclick: () => {
+                let cliptxt = voxit_to_tab_separated(doc, keys, statsFullTSDur, curSelStats, fulStart, fulEnd, selStart, selEnd);
+
+                // Create, select, copy, and remove a textarea.
+                let $el = document.createElement('textarea');
+                $el.textContent = cliptxt;
+                document.body.appendChild($el);
+                $el.select();
+                document.execCommand("copy");
+                document.body.removeChild($el);
+                document.getElementById('copied-alert').classList.add('visible');
+                setTimeout(() =>
+                    document.getElementById('copied-alert').classList.remove('visible'), 2000);
+            }
+        }
+    });
+
+}
+
+function get_transcript_range(docid, align) {
+    let { segments } = align || get_cur_align(docid) || {}; 
+
+    if (segments === undefined)
+        return;
+    
+    return [ segments[0].start, segments[segments.length - 1].end ];
+}
+
+function get_measures_fullTS(docid) {
+    let [ start, end ] = get_transcript_range(docid) || []; 
+
+    if (start === undefined)
+        return;
+    
+    return get_measures(docid, start, end);
+}
+
+function get_measures(docid, start, end) {
+        return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}`, JSON.parse).measure;
 }
 
 function filter_stats(stats) {
@@ -843,17 +857,17 @@ function filter_stats(stats) {
 }
 
 // I add these extra arguments so we don't have to recalculate a bunch of stuff IF we already have them on hand
-function voxit_to_tab_separated(doc, keys, stats, timedStats, fulStart, fulEnd, selStart, selEnd) {  
+function voxit_to_tab_separated(doc, keys, stats, curSelStats, fulStart, fulEnd, selStart, selEnd) {  
     
     if (stats === undefined) {
-        stats = T.docs[doc.id].stats;
-        timedStats = T.docs[doc.id].timedStats;
+        stats = get_measures_fullTS(doc.id);
+        curSelStats = T.docs[doc.id].curSelStats;
 
         let segments = (get_cur_align(doc.id) || {}).segments;
         fulStart = segments[0].start;
         fulEnd = segments[segments.length - 1].end;
 
-        let { start_time, end_time } = T.selections[doc.id] || {};
+        let { start_time, end_time } = T.selections[doc.id];
         selStart = start_time;
         selEnd = end_time;
     }
@@ -871,7 +885,7 @@ function voxit_to_tab_separated(doc, keys, stats, timedStats, fulStart, fulEnd, 
     cliptxt += fulStart + '\t' + fulEnd + '\t';
     cliptxt += '\nselection\t';
     keys.forEach((key) => {
-        cliptxt += timedStats[key] + '\t';
+        cliptxt += curSelStats[key] + '\t';
     });
     cliptxt += selStart + '\t' + selEnd + '\t';
     cliptxt += '\n';
@@ -1006,11 +1020,10 @@ function render_pitch(root, id, seq, attrs) {
 
 function render_overview(root, doc) {
 
-    if (!render_is_ready(root, doc.id)) return;
+    if (placeholder_on_unready(root, doc.id)) return;
 
     let align = get_cur_align(doc.id);
     let { duration } = T.docs[doc.id];
-    let { start_time, end_time } = T.selections[doc.id] || {};
 
     let width = duration * 10;      // scale of overview is 10 pixels/1 second
     let height = 50;
@@ -1107,16 +1120,17 @@ function render_overview(root, doc) {
 
     });
 
+    let { start_time, end_time } = (get_selection(doc.id) || {});
+    
     // render selection overlay
-    if (T.selections[doc.id]) {
-        let sel = T.selections[doc.id];
+    if (start_time) {        
 
         svg.rect({
             id: doc.id + '-o-selection-pre',
             attrs: {
                 x: 0,
                 y: 0,
-                width: width * (sel.start_time / duration),
+                width: width * (start_time / duration),
                 height: height,
                 fill: 'rgba(218,218,218,0.4)'
             }
@@ -1124,9 +1138,9 @@ function render_overview(root, doc) {
         svg.rect({
             id: doc.id + '-o-selection-post',
             attrs: {
-                x: width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration),
+                x: width * (start_time / duration) + width * ((end_time - start_time) / duration),
                 y: 0,
-                width: width - (width * (sel.start_time / duration) + width * ((sel.end_time - sel.start_time) / duration)),
+                width: width - (width * (start_time / duration) + width * ((end_time - start_time) / duration)),
                 height: height,
                 fill: 'rgba(218,218,218,0.4)'
             }
@@ -1135,9 +1149,9 @@ function render_overview(root, doc) {
         svg.rect({
             id: doc.id + '-o-selection',
             attrs: {
-                x: width * (sel.start_time / duration),
+                x: width * (start_time / duration),
                 y: 1,
-                width: width * ((sel.end_time - sel.start_time) / duration),
+                width: width * ((end_time - start_time) / duration),
                 height: height - 2,
                 stroke: 'rgba(128, 55, 43, 1)',
                 'stroke-width': 1,
@@ -1236,9 +1250,10 @@ function render_overview(root, doc) {
 }
 
 function render_graph(root, doc) {
-    if (!render_is_ready(root, doc.id)) return;
 
-    let { start_time, end_time } = T.selections[doc.id] || {};
+    let { start_time, end_time } = (get_selection(doc.id) || {});
+
+    if (placeholder_on_unready(root, doc.id) || start_time === undefined ) return;
 
     root._attrs.classes.push('loaded');
     let segs = get_cur_align(doc.id).segments;
@@ -1592,17 +1607,17 @@ function download_graph_png(docid) {
 
 }
 
-function render_is_ready(root, docid) {
+function placeholder_on_unready(root, docid) {
     if (!T.docs[docid] || !get_data(docid)) {
         root.div({
             classes: ["loading-placement"],
             text: "Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file"
         });
 
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 function render_hamburger(root, doc) {
@@ -1620,7 +1635,7 @@ function render_hamburger(root, doc) {
 
     let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown rightedge'] });
 
-    let pregen_downloads = ['align', 'pitch', 'csv', 'mat'];
+    let pregen_downloads = ['transcript', 'align', 'pitch', 'csv', 'mat', ];
 
     let filename = doc.title.split('.').reverse()
     filename.shift()
@@ -1637,7 +1652,8 @@ function render_hamburger(root, doc) {
             csv: 'Drift Data (.csv)',
             mat: 'Voxit Data (.mat)',
             align: 'Gentle Align (.json)',
-            pitch: 'Drift Pitch (.txt)'
+            pitch: 'Drift Pitch (.txt)',
+            transcript: 'Audio Transcript (.txt)'
         }
 
         dlDropdown.li({
@@ -1888,6 +1904,23 @@ function get_descriptions() {
         };
 }
 
+function get_selection(id) {
+
+    if (T.selections[id] === undefined) {
+        let segments = (get_cur_align(id) || {}).segments;
+
+        if (segments === undefined)
+            return
+
+        T.selections[id] = { 
+            start_time:     segments[0].start, 
+            end_time:       Math.min(segments[0].start + 20, segments[segments.length - 1].end) 
+        };
+    }
+    
+    return T.selections[id]
+}
+
 function splitString(str, len, maxlines) {
     let strs = [], i = 0, j = len;
 
@@ -2041,7 +2074,7 @@ function delete_action(doc) {
 }
 
 function download_voxitcsv(doc) {
-    let csvContent = voxit_to_tab_separated(doc, filter_stats(T.docs[doc.id].stats));
+    let csvContent = voxit_to_tab_separated(doc, filter_stats(get_measures_fullTS(doc.id)));
     csvContent = csvContent.replace(/\t/g, ',')
     let filename = doc.title.split('.').reverse()
     filename.shift()
