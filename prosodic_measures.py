@@ -20,7 +20,8 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     gentle_start = []
     gentle_end = []
     gentle_wordcount = 0
-    gentle_length = 0
+    gentle_start_time = None
+    gentle_end_time = None
     # Read the Gentle align csv file
     gentle = csv.reader(gentlecsv, delimiter=' ')
     for row in gentle:
@@ -34,15 +35,21 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
             continue
         # End time
         if end_time and measures[3] and float(end_time) < round(float(measures[3]) * 10000)/10000:
-            continue
+            break
         # Ignore noise
         if measures[0] != '[noise]':
-            gentle_wordcount += 1
             if not (measures[1] or measures[2] or measures[3]): # ignore rows with empty cells
                 continue
+            gentle_words.append(measures[0])
+            gentle_wordcount += 1
             gentle_start.append(round(float(measures[2]) * 10000)/10000)
             gentle_end.append(round(float(measures[3]) * 10000)/10000)
-            gentle_length = float(measures[3]) * 10000/10000 # save the last length
+            if gentle_start_time is None:
+                gentle_start_time = round(float(measures[2]) * 10000)/10000
+            gentle_end_time = float(measures[3]) * 10000/10000 # save the last length
+
+    
+    gentle_length = gentle_end_time - gentle_start_time
 
     # Speaking rate calculated as words per minute, or WPM.
     # Divided by the length of the recording and normalized if the recording was longer
