@@ -40,7 +40,6 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         if measures[0] != '[noise]':
             if not (measures[1] or measures[2] or measures[3]): # ignore rows with empty cells
                 continue
-            gentle_words.append(measures[0])
             gentle_wordcount += 1
             gentle_start.append(round(float(measures[2]) * 10000)/10000)
             gentle_end.append(round(float(measures[3]) * 10000)/10000)
