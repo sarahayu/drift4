@@ -150,7 +150,7 @@ function register_listeners() {
     ////////// file-list bulk actions (download alls) ///////////
 
     // zip these, but cocatenate for csv
-    ['mat', 'align', 'pitch','transcript'].forEach(name => {
+    ['align', 'transcript'].forEach(name => {
         document.getElementById('dl-all-' + name).onclick = () => {
             Promise.all(get_docs().filter(doc => doc[name]).map(doc =>
                 fetch('/media/' + doc[name]).then(response => response.blob()).then(blob => ({ docid: doc.id, blob: blob }))
@@ -201,7 +201,7 @@ function register_listeners() {
                 .then(align => align.json())
                 .then(align => {
                     let [ start, end ] = ranges[doc.id] = get_transcript_range(doc.id, align)
-                    return fetch(`/_measure?id=${doc.id}&start_time=${start}&end_time=${end}`)
+                    return fetch(`/_measure?id=${doc.id}&start_time=${start}&end_time=${end}&full_ts=true`)
                 })
                 .then(response => response.json())
                 .then(resjson => ({ stats: resjson.measure, docid: doc.id }))
@@ -832,11 +832,11 @@ function get_measures_fullTS(docid) {
 
     if (start === undefined)
         return;
-    
-    return get_measures(docid, start, end);
+
+    return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}&full_ts=true`, JSON.parse).measure;
 }
 
-function get_measures(docid, start, end) {
+function get_measures(docid, start, end, ) {
         return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}`, JSON.parse).measure;
 }
 
@@ -1635,26 +1635,44 @@ function render_hamburger(root, doc) {
 
     let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown rightedge'] });
 
-    let pregen_downloads = ['transcript', 'align', 'pitch', 'csv', 'mat', ];
+    let pregen_downloads = ['transcript', 'voxit', 'csv', 'align'];
 
     let filename = doc.title.split('.').reverse()
     filename.shift()
     filename = filename.reverse().join('')
+    
+    let displayName = {
+        csv: 'Drift Data (.csv)',
+        align: 'Gentle Align (.json)',
+        pitch: 'Drift Pitch (.txt)',
+        transcript: 'Audio Transcript (.txt)',
+        voxit: 'Voxit Data (.csv)'
+    }
 
     pregen_downloads.forEach(name => {
+
+        if (name === 'voxit') {
+            dlDropdown.li({
+                id: `ham-voxitcsv-${doc.id}`,
+            }).button({
+                text: "Download - " + displayName[name],
+                classes: ['action-btn'],
+                events: {
+                    onclick: ev => {
+                        ev.preventDefault();
+                        download_voxitcsv(doc);
+                    }
+                }
+            })
+
+            return
+        }
+
         if (!doc[name]) {
-            return;
+            return
         }
 
         let out_filename = filename + '-' + name + '.' + doc[name].split('.').reverse()[0];
-
-        let displayName = {
-            csv: 'Drift Data (.csv)',
-            mat: 'Voxit Data (.mat)',
-            align: 'Gentle Align (.json)',
-            pitch: 'Drift Pitch (.txt)',
-            transcript: 'Audio Transcript (.txt)'
-        }
 
         dlDropdown.li({
             id: `ham-${name}-${doc.id}`,
@@ -1666,21 +1684,8 @@ function render_hamburger(root, doc) {
                 _target: '_blank',
                 download: out_filename
             }
-        });
+        })
     })
-
-    dlDropdown.li({
-        id: `ham-voxitcsv-${doc.id}`,
-    }).button({
-        text: "Download - Voxit Data (.csv)",
-        classes: ['action-btn'],
-        events: {
-            onclick: ev => {
-                ev.preventDefault();
-                download_voxitcsv(doc);
-            }
-        }
-    });
 
     dlDropdown.li({
         id: `ham-del-${doc.id}`,

@@ -509,7 +509,7 @@ def gen_mat(cmd):
 root.putChild(b"_mat", guts.PostJson(gen_mat, runasync=True))
 
 
-def _measure(id=None, start_time=None, end_time=None, raw=False):
+def _measure(id=None, start_time=None, end_time=None, full_ts=False, raw=False):
 
     if start_time is not None:
         start_time = float(start_time)
@@ -517,6 +517,12 @@ def _measure(id=None, start_time=None, end_time=None, raw=False):
         end_time = float(end_time)
 
     meta = rec_set.get_meta(id)
+
+    # full transcription duration should be the same for any given document,
+    # prosodic measures for these are cached so we can bulk download them.
+    if full_ts and meta.get("full_ts"):
+        return json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
+
     pitch = [
         [float(Y) for Y in X.split(" ")]
         for X in open(os.path.join(get_attachpath(), meta["pitch"]))
@@ -541,8 +547,21 @@ def _measure(id=None, start_time=None, end_time=None, raw=False):
             "end_time": end_time if end_time is not None else ((len(pitch) / 100.0) - st)
         }
     }
-
+    
     full_data["measure"].update(pm_data)
+
+    if full_ts:
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
+            json.dump(full_data, dfh, indent=2)
+
+            dfh.close()
+        fulltshash = guts.attach(dfh.name, get_attachpath())
+
+        guts.bschange(
+            rec_set.dbs[id],
+            {"type": "set", "id": "meta", "key": "full_ts", "val": fulltshash},
+        )
+
     return full_data
 
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
