@@ -47,8 +47,17 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
                 gentle_start_time = round(float(measures[2]) * 10000)/10000
             gentle_end_time = float(measures[3]) * 10000/10000 # save the last length
 
+    if gentle_end_time is None:
+        gentle_end_time = 0
+    if gentle_start_time is None:
+        gentle_start_time = 0
     
     gentle_length = gentle_end_time - gentle_start_time
+
+    if start_time is None or end_time is None:
+        selection_duration = 0
+    else:
+        selection_duration = end_time - start_time
 
     # Speaking rate calculated as words per minute, or WPM.
     # Divided by the length of the recording and normalized if the recording was longer
@@ -56,7 +65,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
     if gentle_length == 0:
         WPM = 0
     else:
-        WPM = math.floor(gentle_wordcount / (gentle_length / 60))
+        WPM = math.floor(gentle_wordcount / (selection_duration / 60))
     results["WPM"] = WPM
 
     # Pause counts and average pause length.
