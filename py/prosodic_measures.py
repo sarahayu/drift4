@@ -348,8 +348,6 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
         f0entropy += f0prob[i] * f0log2prob[i]
     PE = -f0entropy
     results["Drift_f0_Entropy"] = PE
-    
-    print('SYSTEM: Finished calculating Voxit measurements')
 
     # results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
     
@@ -508,6 +506,8 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     results["Intensity_Mean_Abs_Velocity"] = np.mean(np.abs(Ivelocity))
     results["Intensity_Mean_Abs_Accel"] = np.mean(np.abs(Iaccel))
     results["Intensity_Segment_Range_95_Percent"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
+
+    print('SYSTEM: Finished calculating Voxit measurements')
 
     return results
 

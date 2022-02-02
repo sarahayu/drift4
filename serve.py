@@ -135,8 +135,23 @@ def harvest(cmd):
 
     return {"harvest": harvesthash}
 
+def save_audio_info(cmd):
+    docid = cmd["id"]
 
-root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
+    meta = rec_set.get_meta(docid)
+
+    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
+    duration = librosa.get_duration(y=x, sr=fs)
+
+    guts.bschange(
+        rec_set.dbs[docid],
+        {"type": "set", "id": "meta", "key": "info", "val": str(duration)},
+    )
+
+    return {"info": duration}
+
+
+# root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
 
 
 def parse_speakers_in_transcript(trans):
@@ -565,19 +580,23 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
 
     if not meta.get("csv"):
         gen_csv({ "id": id })
-
-    x, sr = librosa.load(os.path.join(get_attachpath(), meta["path"]))
-    duration = librosa.get_duration(y=x, sr=sr)
-
-    # server crashes when duration is more than 100 seconds being sent to harvest
-    harvestable = duration < 100
-    if harvestable and not meta.get("harvest"):
-        harvest({ "id": id })
-        
+    if not meta.get("info"):
+        save_audio_info({ "id": id })
+    # if not meta.get("harvest"):
+    #     harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
         pass
+    
+    while not rec_set.get_meta(id).get("info"):
+        pass
+
+    # server crashes when duration is more than 100 seconds being sent to harvest
+    harvestable = float(meta.get("info")) < 100
+    if harvestable and not meta.get("harvest"):
+        harvest({ "id": id })
+        
     
     while harvestable and not rec_set.get_meta(id).get("harvest"):
         pass
