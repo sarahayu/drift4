@@ -140,8 +140,11 @@ def save_audio_info(cmd):
 
     meta = rec_set.get_meta(docid)
 
-    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
-    duration = librosa.get_duration(y=x, sr=fs)
+    if os.path.getsize(os.path.join(get_attachpath(), meta["path"])) > 10e6:
+        duration = sys.maxsize
+    else:
+        x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
+        duration = librosa.get_duration(y=x, sr=fs)
 
     guts.bschange(
         rec_set.dbs[docid],
