@@ -750,7 +750,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         /////////////// end timeframe item click event //////////////////
     });
     
-    if (selStart === undefined || statsFullTSDur === undefined || !("Dynamism" in statsFullTSDur)) {
+    if (selStart === undefined || statsFullTSDur === undefined || (!("Dynamism" in statsFullTSDur))) {
         if (statsFullTSDur && !("Dynamism" in statsFullTSDur)) {
             console.log("Outdated full_ts found, triggering new full_ts")
             get_measures_fullTS(doc.id, true)
@@ -783,12 +783,12 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         })
         fullRecordingDatarow.td({
             id: dataLabel + '-d',
-            text: '' + Math.round(statsFullTSDur[dataLabel] * 100) / 100
+            text: isNaN(statsFullTSDur[dataLabel]) ? statsFullTSDur[dataLabel] : '' + Math.round(statsFullTSDur[dataLabel] * 100) / 100
         })
         selectionDatarow.td({
             parent: selectionDatarow,
             id: dataLabel + '-d',
-            text: '' + (curSelStats ? Math.round(curSelStats[dataLabel] * 100) / 100 : 'n/a')
+            text: isNaN(statsFullTSDur[dataLabel]) ? statsFullTSDur[dataLabel] : '' + (curSelStats ? Math.round(curSelStats[dataLabel] * 100) / 100 : 'n/a')
         })
     })
 

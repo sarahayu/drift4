@@ -565,7 +565,13 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
 
     if not meta.get("csv"):
         gen_csv({ "id": id })
-    if not meta.get("harvest"):
+
+    x, sr = librosa.load(os.path.join(get_attachpath(), meta["path"]))
+    duration = librosa.get_duration(y=x, sr=sr)
+
+    # server crashes when duration is more than 100 seconds being sent to harvest
+    harvestable = duration < 100
+    if harvestable and not meta.get("harvest"):
         harvest({ "id": id })
         
 
@@ -573,7 +579,7 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
     while not rec_set.get_meta(id).get("csv"):
         pass
     
-    while not rec_set.get_meta(id).get("harvest"):
+    while harvestable and not rec_set.get_meta(id).get("harvest"):
         pass
 
     meta = rec_set.get_meta(id)
@@ -581,10 +587,13 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
     gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
 
     gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
-    voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
-        open(os.path.join(get_attachpath(), meta["pitch"])), 
-        open(os.path.join(get_attachpath(), meta["harvest"])), 
-        start_time, end_time)
+    if harvestable:
+        voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
+            open(os.path.join(get_attachpath(), meta["pitch"])), 
+            open(os.path.join(get_attachpath(), meta["harvest"])), 
+            start_time, end_time)
+    else:
+        voxit_data = { "Dynamism": "n/a" }
 
     st = start_time if start_time is not None else 0
     full_data = {
