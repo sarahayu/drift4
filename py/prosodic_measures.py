@@ -1,7 +1,12 @@
+import numpy as np
+import pyworld
+# import soundfile as sf
+import librosa
+import json
+import time
 import csv
 import math
 import decimal
-import numpy
 import sys
 import os
 import argparse
@@ -10,7 +15,7 @@ import argparse
 from numba import jit
 from scipy.signal import savgol_filter
 
-def measure(gentlecsv, driftcsv, start_time, end_time):
+def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
 
     csv.field_size_limit(sys.maxsize)
 
@@ -159,13 +164,13 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
 
     # Normalized
     if len(s) != 0:
-        CP = lempel_ziv_complexity("".join([str(i) for i in s])) / ((len(s) - 1) / math.log2(len(s) - 1))
+        CP = lempel_ziv_complexity("".join([str(i) for i in s]))
     else:
         CP = 0
     results["Gentle_Complexity_All_Pauses"] = CP * 100
 
     # Output message
-    print('SYSTEM: Finished calculating file')
+    print('SYSTEM: Finished calculating Drift and Gentle measurements')
 
     # DRIFT
     drift_time = []
@@ -243,7 +248,7 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
 
     # Calculate f0hist
     # f0hist = histcounts(diffoctf0,25,'BinLimits',[-1 +1]); % 1/12 octave bins
-    f0hist, bin_edges = numpy.histogram(diffoctf0, 25, (-1, 1))
+    f0hist, bin_edges = np.histogram(diffoctf0, 25, (-1, 1))
 
     # Calculate f0prob (probability distribution)
     # f0prob = f0hist./sum(f0hist);
@@ -309,9 +314,9 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = 7)
         # f0velocity = [f0velocity; diff(diffocttmp)/ts];
         # f0accel = [f0accel; diff(diff(diffocttmp))/ts];
-        for d in numpy.diff(diffocttmp):
+        for d in np.diff(diffocttmp):
             f0velocity.append(d/ts)
-        for d in numpy.diff(diffocttmp, n = 2):
+        for d in np.diff(diffocttmp, n = 2):
             f0accel_d2.append(d/ts) # double diff
 
     # S.analysis.f0speed = mean(abs(f0velocity)) * sign(mean(f0velocity));
@@ -343,13 +348,188 @@ def measure(gentlecsv, driftcsv, start_time, end_time):
         f0entropy += f0prob[i] * f0log2prob[i]
     PE = -f0entropy
     results["Drift_f0_Entropy"] = PE
+    
+    print('SYSTEM: Finished calculating Voxit measurements')
 
     # results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
     
     return results
 
-# https://en.wikipedia.org/wiki/Lempel-Ziv_complexity
-# TODO: optimize, probably by porting from matlab code. For now, just use wikipedia pseudocode
+# make sure sound file is the original sampling rate if it has been converted
+def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
+
+    if start_time is None:
+        start_time = 0.0
+    
+    if start_time and end_time and end_time > start_time:
+        duration = end_time - start_time
+    else:
+        duration = None
+    x, fs = librosa.load(soundfile, sr=None, offset=start_time, duration=duration)
+
+    # load tsacc and psacc from sacctxt
+    tsacc = []
+    psacc = []
+    for line in sacctxt:
+        data = line.split()
+        if start_time and float(data[0]) < round(start_time * 10000) / 10000:
+            continue
+        if end_time and float(data[0]) > round(end_time * 10000) / 10000:
+            continue
+        tsacc.append(float(data[0]))
+        psacc.append(float(data[1]))
+    tsacc = np.array(tsacc)
+    psacc = np.array(psacc)
+    
+    # load timeaxis and f0 from harvesttxt
+    timeaxis = []
+    f0 = []
+    fullf0 = []
+    for line in harvesttxt:
+        data = line.split()
+        if start_time and float(data[0]) < round(start_time * 10000) / 10000:
+            continue
+        if end_time and float(data[0]) > round(end_time * 10000) / 10000:
+            continue
+        timeaxis.append(float(data[0]))
+        f0.append(float(data[1]))
+    timeaxis = np.array(timeaxis)
+    f0 = np.array(f0)
+
+    results = {}
+
+    ## start calculations
+
+    # this is the bottleneck of voxit calculations, but there's nothing we can do about it (?)
+    sp = pyworld.cheaptrick(x.astype(np.float64), f0, timeaxis, fs)
+    
+    linPower = np.sum(np.divide(sp, np.max(sp)), axis=1)
+    logPower = 10 * np.log10(linPower)    
+
+    # interpolate harvest pitch to sacc timeframe since sacc sampling rate is higher, but also filter to only work with voiced time regions (do not interpolate between voiced and non voiced regions)
+    # if Dr. Miller is reading this, yes even though this part of the code looks different from the MATLAB version I checked the values/graphs of the resulting vuv and f0 arrays and they match up perfectly
+    vuv = psacc != 0
+    saccvuv = np.floor(np.interp(timeaxis, tsacc, vuv))
+    saccf0 = np.interp(timeaxis, tsacc, psacc)
+    saccf0[saccvuv != 1] = 0
+    saccvuv = saccvuv.astype(bool)
+
+    Imean = 10 ** np.mean(logPower[saccvuv] / 10)
+
+    ts = timeaxis[1] - timeaxis[0]
+    dminvoice = 0.100
+    vdurthresh = round(dminvoice/ts)
+    ixtmp = contiguous(saccvuv, np.array([1]))
+    ixallvoicebounds = ixtmp[1]
+    ixdiff = ixallvoicebounds[:,1] - ixallvoicebounds[:,0]
+    ixvoicedbounds = ixallvoicebounds[ixdiff > vdurthresh,:]
+
+    difflogI = 10 * np.log10(linPower / Imean)
+    Ivelocity = []
+    IsegmentMeans = []
+    Iaccel = []
+
+    for i in range(np.size(ixvoicedbounds, 0)):
+        difflogItmp = difflogI[ixvoicedbounds[i, 0]:ixvoicedbounds[i, 1]]
+        IsegmentMeans.append(np.mean(difflogItmp))
+        Ivelocity.extend(np.diff(difflogItmp) / ts)
+        Iaccel.extend(np.diff(np.diff(difflogItmp)) / ts)
+        
+    f0log = np.log2(saccf0, out=np.full_like(saccf0, np.NINF), where=saccf0 != 0)
+    f0mean = 2 ** np.mean(f0log[saccvuv])
+    diffoctf0 = f0log - np.log2(f0mean)
+    (f0hist,_) = np.histogram(diffoctf0, bins=25, range=(-1,1))
+    f0prob = f0hist / np.sum(f0hist)
+    f0log2prob = np.log2(f0prob, out=np.full_like(f0prob, np.NINF), where=f0prob != 0)
+    f0log2prob[f0prob == 0] = 0
+    f0Entropy = -np.sum(f0prob * f0log2prob)
+
+    f0velocity = []
+    f0accel = []
+    for i in range(np.size(ixvoicedbounds, 0)):
+        diffocttmp = diffoctf0[ixvoicedbounds[i,0]:ixvoicedbounds[i,1]]
+        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = 7)
+        f0velocity.extend(np.diff(diffocttmp) / ts)
+        f0accel.extend(np.diff(np.diff(diffocttmp)) / ts)
+
+    f0MeanAbsVelocity = np.mean(np.abs(f0velocity))
+
+    results["f0_Mean"] = f0mean
+    results["f0_Entropy"] = f0Entropy
+    results["f0_Range_95_Percent"] = np.quantile(diffoctf0[saccvuv], .975) - np.quantile(diffoctf0[saccvuv], .025)
+    results["f0_Mean_Abs_Velocity"] = f0MeanAbsVelocity
+    results["f0_Mean_Abs_Accel"] = np.mean(np.abs(f0accel))
+
+    SylMax = 0.400
+    ixSylBounds = ixallvoicebounds[ixdiff < (SylMax / ts),:]
+    for ii in range(np.size(ixSylBounds,0) - 1):
+        if (ixSylBounds[ii+1, 0] - ixSylBounds[ii, 1]) > (SylMax / ts):
+            shiftup = ixSylBounds[ii+1, 0] - ixSylBounds[ii, 1] - round(SylMax / ts)
+            ixSylBounds[ii + 1:, :] = ixSylBounds[ii + 1:, :] - shiftup
+
+    iSyl = []
+    for jj in range(np.size(ixSylBounds, 0)):
+        iSyl.extend(range(ixSylBounds[jj, 0], ixSylBounds[jj, 1] + 1))
+
+    try:
+        vuvSyl = np.zeros(np.max(iSyl) + 1)
+        vuvSyl[iSyl] = 1
+        ComplexitySyllables = 100 * lempel_ziv_complexity(vuvSyl)
+    except:
+        ComplexitySyllables = 0
+
+    results["Complexity_Syllables"] = ComplexitySyllables
+
+    ixPhraseBoundsTmp = ixallvoicebounds
+    ixPhraseBounds = []
+    iPhrase = []
+    if np.size(ixPhraseBoundsTmp, 0) > 1:
+        for kk in range(np.size(ixPhraseBoundsTmp, 0) - 1):
+            if (ixPhraseBoundsTmp[kk+1, 0]-ixPhraseBoundsTmp[kk, 1]) < (SylMax / ts):
+                ixPhraseBounds.append([ixPhraseBoundsTmp[kk, 0], ixPhraseBoundsTmp[kk+1, 1]])
+            else:
+                ixPhraseBounds.append([ixPhraseBoundsTmp[kk, 0], ixPhraseBoundsTmp[kk, 1]])
+
+        ixPhraseBounds.append([ixPhraseBoundsTmp[kk+1, 0], ixPhraseBoundsTmp[kk+1, 1]])
+    ixPhraseBounds = np.array(ixPhraseBounds)
+    for ll in range(np.size(ixPhraseBounds, 0)):
+        iPhrase.extend(range(ixPhraseBounds[ll, 0], ixPhraseBounds[ll, 1] + 1))
+
+    vuvPhrase = np.zeros(len(saccvuv)) 
+    vuvPhrase[iPhrase] = 1
+    ComplexityPhrases = 100 * lempel_ziv_complexity(vuvPhrase)
+    
+    results["Complexity_Phrases"] = ComplexityPhrases
+
+    results["Dynamism"] = np.abs(f0MeanAbsVelocity) * f0Entropy + (ComplexitySyllables + ComplexityPhrases) / 2 * 0.439
+    # results["Dynamism"] = (f0MeanAbsVelocity/.1167627388 + f0Entropy/.3331034878)/2 + ComplexityAllPauses/.6691896835
+
+    results["Intensity_Mean"] = 10 ** np.mean(logPower[saccvuv] / 10)
+    results["Intensity_Mean_Abs_Velocity"] = np.mean(np.abs(Ivelocity))
+    results["Intensity_Mean_Abs_Accel"] = np.mean(np.abs(Iaccel))
+    results["Intensity_Segment_Range_95_Percent"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
+
+    return results
+
+def contiguous(A, varargin):
+    num = varargin
+    runs = {}
+
+    for numCount in range(len(num)):
+        (indexVect,) = np.where(A == num[numCount])
+        shiftVect = np.concatenate((indexVect[1:], indexVect[-1:]))
+        diffVect = shiftVect - indexVect        
+        (transitions,) = np.where(diffVect != 1)
+
+        runEnd = indexVect[transitions]
+        runStart = np.concatenate((indexVect[:1], indexVect[transitions[0:-1] + 1]))
+        runs[num[numCount]] = np.stack((runStart, runEnd), axis=1)
+
+    return runs
+
+# pseudocode yoinked straight from https://en.wikipedia.org/wiki/Lempel-Ziv_complexity
+# lz causing bottleneck, slap on a jit annotation
+@jit
 def lempel_ziv_complexity(S):
     i = 0
     C = 1
@@ -373,4 +553,4 @@ def lempel_ziv_complexity(S):
                 v = 1
     if v != 1:
         C = C+1
-    return C
+    return C / ((len(S)) / np.log2(len(S)))

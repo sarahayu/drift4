@@ -750,8 +750,12 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         /////////////// end timeframe item click event //////////////////
     });
     
-    if (selStart === undefined || statsFullTSDur === undefined) {
-        mainTableRoot.div({ text: "Loading...", classes: ["table-loading"] })
+    if (selStart === undefined || statsFullTSDur === undefined || !("Dynamism" in statsFullTSDur)) {
+        if (statsFullTSDur && !("Dynamism" in statsFullTSDur)) {
+            console.log("Outdated full_ts found, triggering new full_ts")
+            get_measures_fullTS(doc.id, true)
+        }
+        mainTableRoot.div({ text: "Loading... This may take a few minutes the first time you open this document", classes: ["table-loading"] })
         return
     }
 
@@ -770,7 +774,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         }).a({
             text: dataLabel.replace(/_/g, ' '),
             attrs: T.DESCRIPTIONS[dataLabel] ? {
-                href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.DESCRIPTIONS[dataLabel]) 
+                href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.DESCRIPTIONS[dataLabel]).replaceAll('-', '%2D') 
                     : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
                 target: '_blank',
                 title: splitString(T.DESCRIPTIONS[dataLabel], 40, 4) + '\n(Click label for more information)',
@@ -827,13 +831,16 @@ function get_transcript_range(docid, align) {
     return [ segments[0].start, segments[segments.length - 1].end ];
 }
 
-function get_measures_fullTS(docid) {
+function get_measures_fullTS(docid, force_gen) {
     let [ start, end ] = get_transcript_range(docid) || []; 
 
     if (start === undefined)
         return;
 
-    return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}&full_ts=true`, JSON.parse).measure;
+    if (force_gen === undefined)
+        force_gen = false
+
+    return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}&full_ts=true&force_gen=${force_gen}`, JSON.parse).measure;
 }
 
 function get_measures(docid, start, end, ) {
@@ -852,6 +859,23 @@ function filter_stats(stats) {
     let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
     keys.splice(1, 0, ...drifts);
     keys.push(...pauseCounts);
+
+    // finally, remove these unneeded Voxit values
+    let unneeded = [
+        "f0_Mean",
+        "f0_Entropy",
+        "f0_Range_95_Percent",
+        "f0_Mean_Abs_Velocity",
+        "f0_Mean_Abs_Accel",
+        "Intensity_Mean",
+        "Intensity_Mean_Abs_Velocity",
+        "Intensity_Mean_Abs_Accel",
+        "Intensity_Segment_Range_95_Percent",
+        "Complexity_Syllables",
+        "Complexity_Phrases",
+    ]
+
+    keys = keys.filter(key => !unneeded.includes(key))
 
     return keys;
 }
@@ -1906,6 +1930,7 @@ function get_descriptions() {
             'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
             'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
             'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
+            'Dynamism': 'This is a measure-in-progress, an attempt to put on a number on how predictable or repetitive a speaker’s pitch, or intonation, and rhythmic patterns are in combination.'
         };
 }
 

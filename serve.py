@@ -14,12 +14,14 @@ import scipy.io as sio
 import sys
 import time
 import argparse
+import pyworld
+import librosa
 
-import prosodic_measures
+from py import prosodic_measures
 import secureroot
 
 # specifies if we are releasing for MAC DMG
-BUNDLE = False
+BUNDLE = hasattr(sys, "frozen")
 
 
 def get_ffmpeg():
@@ -44,6 +46,7 @@ def get_calc_sbpca():
     if BUNDLE:
         return "./sacc/SAcC"
     return "./ext/calc_sbpca/python/SAcC.py"
+    # return "./py/py2/sacc_cli.py"
 
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
@@ -83,6 +86,8 @@ def pitch(cmd):
             ]
         )
 
+        print("using new pitch func")
+
         # ...and use it to compute pitch
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as pitch_fp:
             subprocess.call([get_calc_sbpca(), wav_fp.name, pitch_fp.name])
@@ -102,6 +107,36 @@ def pitch(cmd):
 
 
 root.putChild(b"_pitch", guts.PostJson(pitch, runasync=True))
+
+def harvest(cmd):
+    docid = cmd["id"]
+
+    meta = rec_set.get_meta(docid)
+
+    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
+    print("harvesting...")
+    f0, timeaxis = pyworld.harvest(x.astype(np.float64), fs)
+    print("finished harvesting!")
+
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w") as harvest_fp:
+        for i in range(len(timeaxis)):
+            harvest_fp.write(f'{timeaxis[i]} {f0[i]}\n')
+
+    if len(open(harvest_fp.name).read().strip()) == 0:
+        return {"error": "Harvest computation failed"}
+
+    # XXX: frozen attachdir
+    harvesthash = guts.attach(harvest_fp.name, get_attachpath())
+
+    guts.bschange(
+        rec_set.dbs[docid],
+        {"type": "set", "id": "meta", "key": "harvest", "val": harvesthash},
+    )
+
+    return {"harvest": harvesthash}
+
+
+root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
 
 
 def parse_speakers_in_transcript(trans):
@@ -509,7 +544,7 @@ def gen_mat(cmd):
 root.putChild(b"_mat", guts.PostJson(gen_mat, runasync=True))
 
 
-def _measure(id=None, start_time=None, end_time=None, full_ts=False, raw=False):
+def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=False, raw=False):
 
     if start_time is not None:
         start_time = float(start_time)
@@ -520,7 +555,7 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, raw=False):
 
     # full transcription duration should be the same for any given document,
     # prosodic measures for these are cached so we can bulk download them.
-    if full_ts and meta.get("full_ts"):
+    if full_ts and not force_gen and meta.get("full_ts"):
         return json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
 
     pitch = [
@@ -530,15 +565,26 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, raw=False):
 
     if not meta.get("csv"):
         gen_csv({ "id": id })
+    if not meta.get("harvest"):
+        harvest({ "id": id })
+        
 
+    # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
+        pass
+    
+    while not rec_set.get_meta(id).get("harvest"):
         pass
 
     meta = rec_set.get_meta(id)
     driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
     gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
 
-    pm_data = prosodic_measures.measure(gentlecsv, driftcsv, start_time, end_time)
+    gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
+    voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
+        open(os.path.join(get_attachpath(), meta["pitch"])), 
+        open(os.path.join(get_attachpath(), meta["harvest"])), 
+        start_time, end_time)
 
     st = start_time if start_time is not None else 0
     full_data = {
@@ -548,7 +594,8 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, raw=False):
         }
     }
     
-    full_data["measure"].update(pm_data)
+    full_data["measure"].update(gentle_drift_data)
+    full_data["measure"].update(voxit_data)
 
     if full_ts:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
