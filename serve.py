@@ -145,7 +145,7 @@ def save_audio_info(cmd):
 
     guts.bschange(
         rec_set.dbs[docid],
-        {"type": "set", "id": "meta", "key": "info", "val": str(duration)},
+        {"type": "set", "id": "meta", "key": "info", "val": duration},
     )
 
     return {"info": duration}
@@ -593,7 +593,7 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
         pass
 
     # server crashes when duration is more than 100 seconds being sent to harvest
-    harvestable = float(meta.get("info")) < 100
+    harvestable = rec_set.get_meta(id).get("info") < 100
     if harvestable and not meta.get("harvest"):
         harvest({ "id": id })
         
