@@ -51,12 +51,15 @@ def get_calc_sbpca():
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
 parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
+parser.add_argument("-c", "--calc-intense", help="allow for more intensive native Voxit calculations; disabled by default", action='store_true')
 
 driftargs = parser.parse_args()
 
 port = driftargs.port
 root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftargs.ssl) \
     else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=driftargs.ssl[0], crt_path=driftargs.ssl[1])
+
+calc_intense = driftargs.calc_intense
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
@@ -134,6 +137,9 @@ def harvest(cmd):
     )
 
     return {"harvest": harvesthash}
+
+if calc_intense:
+    root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
 
 def save_audio_info(cmd):
     docid = cmd["id"]
@@ -574,7 +580,11 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
     # full transcription duration should be the same for any given document,
     # prosodic measures for these are cached so we can bulk download them.
     if full_ts and not force_gen and meta.get("full_ts"):
-        return json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
+        cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
+
+        # if dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
+        if 'Dynamism' in cached or not calc_intense:
+            return cached
 
     pitch = [
         [float(Y) for Y in X.split(" ")]
@@ -583,39 +593,24 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
 
     if not meta.get("csv"):
         gen_csv({ "id": id })
-    if not meta.get("info"):
-        save_audio_info({ "id": id })
-    # if not meta.get("harvest"):
-    #     harvest({ "id": id })
+    # if not meta.get("info"):
+    #     save_audio_info({ "id": id })
+    if calc_intense and not meta.get("harvest"):
+        harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
         pass
     
-    while not rec_set.get_meta(id).get("info"):
-        pass
-
-    # server crashes when duration is more than 100 seconds being sent to harvest
-    harvestable = rec_set.get_meta(id).get("info") < 100
-    if harvestable and not meta.get("harvest"):
-        harvest({ "id": id })
-        
+    # while not rec_set.get_meta(id).get("info"):
+    #     pass
     
-    while harvestable and not rec_set.get_meta(id).get("harvest"):
+    while calc_intense and not rec_set.get_meta(id).get("harvest"):
         pass
 
     meta = rec_set.get_meta(id)
     driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
     gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
-
-    gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
-    if harvestable:
-        voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
-            open(os.path.join(get_attachpath(), meta["pitch"])), 
-            open(os.path.join(get_attachpath(), meta["harvest"])), 
-            start_time, end_time)
-    else:
-        voxit_data = { "Dynamism": "n/a" }
 
     st = start_time if start_time is not None else 0
     full_data = {
@@ -624,9 +619,17 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
             "end_time": end_time if end_time is not None else ((len(pitch) / 100.0) - st)
         }
     }
+
+    gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
     
     full_data["measure"].update(gentle_drift_data)
-    full_data["measure"].update(voxit_data)
+
+    if calc_intense:
+        voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
+            open(os.path.join(get_attachpath(), meta["pitch"])), 
+            open(os.path.join(get_attachpath(), meta["harvest"])), 
+            start_time, end_time)
+        full_data["measure"].update(voxit_data)
 
     if full_ts:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
@@ -649,12 +652,13 @@ root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 
-# this has not been necessary anymore since a port number was not needed to access endpoints
+# PORTVAR has not been necessary anymore since a port number was not needed to access endpoints
 # but I'll keep it in in case one needs the functionality (see also script.js:0)
+# but keep CALC_INTENSE for now
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js, \
         open("www-template/web-script.template.js", mode="r") as template_script_js:
-        final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)))
+        final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$CALC_INTENSE", str(calc_intense).lower()))
         
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))

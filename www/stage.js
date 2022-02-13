@@ -47,6 +47,7 @@ var DRIFT_VER = 'v4.0';
     document.getElementById("version").textContent = DRIFT_VER;
 
     register_listeners();
+    check_local();
     check_gentle();
     render();
 })()
@@ -248,7 +249,7 @@ function register_listeners() {
 }
 
 function check_gentle() {
-    if (location.hostname == 'localhost')
+    if (T.localhost)
     {
         fetch('//localhost:8765', { mode: 'no-cors' })
         .then(() => {
@@ -262,6 +263,18 @@ function check_gentle() {
     }
     else
         T.found_gentle = true;
+}
+
+function check_local() {
+    if (location.hostname == 'localhost')
+        T.localhost = true;
+    else
+        T.localhost = false;
+
+    if (typeof calcIntense !== 'undefined')
+        T.calcIntense = calcIntense;
+    else
+        T.calcIntense = false;
 }
 
 function render() {
@@ -750,8 +763,8 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         /////////////// end timeframe item click event //////////////////
     });
     
-    if (selStart === undefined || statsFullTSDur === undefined || (!("Dynamism" in statsFullTSDur))) {
-        if (statsFullTSDur && !("Dynamism" in statsFullTSDur)) {
+    if (selStart === undefined || statsFullTSDur === undefined || (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
+        if (statsFullTSDur && (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
             console.log("Outdated full_ts found, triggering new full_ts")
             get_measures_fullTS(doc.id, true)
         }
@@ -779,7 +792,12 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
                 target: '_blank',
                 title: splitString(T.DESCRIPTIONS[dataLabel], 40, 4) + '\n(Click label for more information)',
             } : {},
-            events: { onmousedown: ev => ev.preventDefault() }
+            events: {
+                onmousedown: ev => {
+                    console.log(escape(T.DESCRIPTIONS[dataLabel]).replaceAll('-', '%2D'))
+                    ev.preventDefault()
+                }
+            }
         })
         fullRecordingDatarow.td({
             id: dataLabel + '-d',
@@ -1675,7 +1693,7 @@ function render_hamburger(root, doc) {
 
     pregen_downloads.forEach(name => {
 
-        if (name === 'voxit') {
+        if (name === 'voxit' && doc.harvest) {
             dlDropdown.li({
                 id: `ham-voxitcsv-${doc.id}`,
             }).button({
@@ -1780,6 +1798,12 @@ function got_files(files) {
                                 FARM.post_json("/_rms", { id: ret.id }, (c_ret) => {
                                     console.log("rms returned", c_ret);
                                 });
+
+                                // ...and harvest
+                                if (T.calcIntense)
+                                    FARM.post_json("/_harvest", { id: ret.id }, (c_ret) => {
+                                        console.log("harvest returned", c_ret);
+                                    });
 
                             });
 
@@ -1930,7 +1954,7 @@ function get_descriptions() {
             'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
             'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
             'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
-            'Dynamism': 'This is a measure-in-progress, an attempt to put on a number on how predictable or repetitive a speaker’s pitch, or intonation, and rhythmic patterns are in combination.'
+            'Dynamism': 'how predictable or repetitive a speaker\'s pitch, or intonation, and rhythmic patterns are in combination.'
         };
 }
 
