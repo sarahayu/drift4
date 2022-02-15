@@ -6,3 +6,7 @@ watchdog
 Pillow
 numba
 argparse
+requests
+pyworld
+librosa
+pyOpenSSL

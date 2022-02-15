@@ -22,6 +22,7 @@ import secureroot
 
 # specifies if we are releasing for MAC DMG
 BUNDLE = hasattr(sys, "frozen")
+GENTLE_PORT = 8765
 
 
 def get_ffmpeg():
@@ -302,7 +303,7 @@ def align(cmd):
     )
 
     tscript_txt = "\n".join([X["line"] for X in segs])
-    url = "http://localhost:8765/transcriptions"
+    url = f"http://localhost:{GENTLE_PORT}/transcriptions"
 
     res = requests.post(url,
                         data={"transcript": tscript_txt},
@@ -658,7 +659,11 @@ root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js, \
         open("www-template/web-script.template.js", mode="r") as template_script_js:
-        final_script_js.write(template_script_js.read().replace("$PORTVAR", str(port)).replace("$CALC_INTENSE", str(calc_intense).lower()))
+        final_script_js.write(template_script_js.read()
+            .replace("$PORTVAR", str(port))
+            .replace("$CALC_INTENSE", str(calc_intense).lower())
+            .replace("$GENTLE_PORT", str(GENTLE_PORT))
+        )
         
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))

@@ -5,6 +5,8 @@ thumbs.db
 calc_sbpca
 __pycache__/
 local/
+.venv
+web-script.js
 
 # symlinks
 guts

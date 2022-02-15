@@ -251,9 +251,9 @@ function register_listeners() {
 function check_gentle() {
     if (T.localhost)
     {
-        fetch('//localhost:8765', { mode: 'no-cors' })
+        fetch(`//localhost:${T.gentlePort}`, { mode: 'no-cors' })
         .then(() => {
-            console.log('Gentle seems to be running! (on port 8765)');
+            console.log(`Gentle seems to be running! (on port ${T.gentlePort})`);
             T.found_gentle = true;
         })
         .catch(() => {
@@ -274,7 +274,12 @@ function check_local() {
     if (typeof calcIntense !== 'undefined')
         T.calcIntense = calcIntense;
     else
-        T.calcIntense = false;
+        T.calcIntense = true;
+
+    if (typeof gentlePort !== 'undefined')
+        T.gentlePort = gentlePort;
+    else
+        T.gentlePort = 8765;
 }
 
 function render() {
@@ -806,7 +811,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         selectionDatarow.td({
             parent: selectionDatarow,
             id: dataLabel + '-d',
-            text: isNaN(statsFullTSDur[dataLabel]) ? statsFullTSDur[dataLabel] : '' + (curSelStats ? Math.round(curSelStats[dataLabel] * 100) / 100 : 'n/a')
+            text: isNaN(statsFullTSDur[dataLabel]) ? statsFullTSDur[dataLabel] : '' + (curSelStats ? Math.round(curSelStats[dataLabel] * 100) / 100 : '...')
         })
     })
 
@@ -1693,7 +1698,7 @@ function render_hamburger(root, doc) {
 
     pregen_downloads.forEach(name => {
 
-        if (name === 'voxit' && doc.harvest) {
+        if (name === 'voxit' && doc.harvest && doc.align) {
             dlDropdown.li({
                 id: `ham-voxitcsv-${doc.id}`,
             }).button({

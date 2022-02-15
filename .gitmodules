@@ -9,3 +9,4 @@
 [submodule "numpy-media-tricks"]
 	path = numpy-media-tricks
 	url = https://github.com/strob/numpy-media-tricks.git
+    ignore = dirty

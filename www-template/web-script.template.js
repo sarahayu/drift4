@@ -2,3 +2,4 @@
 
 var webPort = $PORTVAR;
 var calcIntense = $CALC_INTENSE;
+var gentlePort = $GENTLE_PORT
