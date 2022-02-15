@@ -1698,7 +1698,7 @@ function render_hamburger(root, doc) {
 
     pregen_downloads.forEach(name => {
 
-        if (name === 'voxit' && doc.harvest && doc.align) {
+        if (name === 'voxit' && doc.align) {
             dlDropdown.li({
                 id: `ham-voxitcsv-${doc.id}`,
             }).button({
