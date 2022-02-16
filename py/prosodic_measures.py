@@ -17,6 +17,8 @@ from scipy.signal import savgol_filter
 
 def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
 
+    entered = time.time()
+
     csv.field_size_limit(sys.maxsize)
 
     results = {}
@@ -168,9 +170,6 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
     else:
         CP = 0
     results["Gentle_Complexity_All_Pauses"] = CP * 100
-
-    # Output message
-    print('SYSTEM: Finished calculating Drift and Gentle measurements')
 
     # DRIFT
     drift_time = []
@@ -350,11 +349,16 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
     results["Drift_f0_Entropy"] = PE
 
     # results["Dynamism"] = (f0velocity_mean/0.1167627388 + PE/0.3331034878)/2 + CP * 100/0.6691896835
+
+    # Output message
+    print(f'SYSTEM: Finished calculating Drift and Gentle measurements (took {time.time() - entered:.2f}s)')
     
     return results
 
 # make sure sound file is the original sampling rate if it has been converted
 def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
+
+    entered = time.time()
 
     if start_time is None:
         start_time = 0.0
@@ -363,7 +367,12 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
         duration = end_time - start_time
     else:
         duration = None
+
+    lb_start = time.time()
+
     x, fs = librosa.load(soundfile, sr=None, offset=start_time, duration=duration)
+
+    print(f'SYSTEM: Librosa took {time.time() - lb_start}s')
 
     # load tsacc and psacc from sacctxt
     tsacc = []
@@ -398,8 +407,12 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
 
     ## start calculations
 
+    ct_start = time.time()
+
     # this is the bottleneck of voxit calculations, but there's nothing we can do about it (?)
     sp = pyworld.cheaptrick(x.astype(np.float64), f0, timeaxis, fs)
+
+    print(f'SYSTEM: Cheaptrick took {time.time() - ct_start:.2f}s')
     
     linPower = np.sum(np.divide(sp, np.max(sp)), axis=1)
     logPower = 10 * np.log10(linPower)    
@@ -507,7 +520,8 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     results["Intensity_Mean_Abs_Accel"] = np.mean(np.abs(Iaccel))
     results["Intensity_Segment_Range_95_Percent"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
 
-    print('SYSTEM: Finished calculating Voxit measurements')
+    # Output message
+    print(f'SYSTEM: Finished calculating Voxit measurements (took {time.time() - entered:.2f}s)')
 
     return results
 

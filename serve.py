@@ -74,6 +74,7 @@ def pitch(cmd):
 
     # Create an 8khz wav file
     with tempfile.NamedTemporaryFile(suffix=".wav") as wav_fp:
+        ff_start = time.time()
         subprocess.call(
             [
                 get_ffmpeg(),
@@ -90,7 +91,7 @@ def pitch(cmd):
             ]
         )
 
-        print("using new pitch func")
+        print(f'SYSTEM: FFMPEG took {time.time() - ff_start:.2f}s')
 
         # ...and use it to compute pitch
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as pitch_fp:
@@ -118,9 +119,10 @@ def harvest(cmd):
     meta = rec_set.get_meta(docid)
 
     x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
-    print("harvesting...")
+    print("SYSTEM: harvesting...")
+    hv_start = time.time()
     f0, timeaxis = pyworld.harvest(x.astype(np.float64), fs)
-    print("finished harvesting!")
+    print(f"SYSTEM: finished harvesting! (took {time.time() - hv_start:.2f}s)")
 
     with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w") as harvest_fp:
         for i in range(len(timeaxis)):
@@ -159,9 +161,6 @@ def save_audio_info(cmd):
     )
 
     return {"info": duration}
-
-
-# root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
 
 
 def parse_speakers_in_transcript(trans):
@@ -592,10 +591,15 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
         for X in open(os.path.join(get_attachpath(), meta["pitch"]))
     ]
 
+    # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
     if not meta.get("csv"):
         gen_csv({ "id": id })
+
     # if not meta.get("info"):
     #     save_audio_info({ "id": id })
+
+    # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
+    # Generate Harvest if nonexistent
     if calc_intense and not meta.get("harvest"):
         harvest({ "id": id })
 
@@ -655,7 +659,7 @@ root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 
 # PORTVAR has not been necessary anymore since a port number was not needed to access endpoints
 # but I'll keep it in in case one needs the functionality (see also script.js:0)
-# but keep CALC_INTENSE for now
+# but keep CALC_INTENSE and GENTLE_PORT for now
 if not BUNDLE:
     with open("www/web-script.js", mode="w") as final_script_js, \
         open("www-template/web-script.template.js", mode="r") as template_script_js:
