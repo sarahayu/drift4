@@ -1,7 +1,7 @@
 # remove web-script.js file (if it exists) when bundling so index.html calls correct default script.js
 rm www/web-script.js
 
-python3 -m PyInstaller --onedir -y serve.py
+python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all librosa --collect-all sklearn
 
 cd ext/calc_sbpca/python
 # for bundling SAcC, use python2 version of PyInstaller, i.e. PyInstaller v3.6

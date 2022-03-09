@@ -24,14 +24,9 @@ import secureroot
 BUNDLE = hasattr(sys, "frozen")
 GENTLE_PORT = 8765
 
-
-def get_ffmpeg():
-    if BUNDLE:
-        return "./ffmpeg"
-    return "ffmpeg"
-
-if BUNDLE:
-    nmt.FFMPEG = get_ffmpeg()
+# add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
+# I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
+os.environ["PATH"] += os.pathsep + '.'
 
 def get_local():
     if BUNDLE:
@@ -77,7 +72,7 @@ def pitch(cmd):
         ff_start = time.time()
         subprocess.call(
             [
-                get_ffmpeg(),
+                "ffmpeg",
                 "-y",
                 "-loglevel",
                 "panic",

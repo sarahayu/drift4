@@ -6,6 +6,7 @@ calc_sbpca
 __pycache__/
 local/
 .venv
+.spec
 web-script.js
 
 # symlinks
