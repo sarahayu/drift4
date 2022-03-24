@@ -1,170 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="base.css" />
-    <link rel="stylesheet" href="plainpage.css" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prosodic Measures</title>
-  </head>
 
-  <body>
-    <nav>
-      <a href="/">
-        <h1>Drift4</h1>
-      </a>
-      <ul class="nav-links">
-        <li class="has-dropdown" tabindex="0">
-          <span>ABOUT</span>
-          <ul>
-            <li><a href="about.html">ABOUT DRIFT AND VOXIT</a></li>
-            <li>
-              <a href="https://lowerquality.com/gentle/" target="_blank"
-                >ABOUT GENTLE</a
-              >
-            </li>
-            <li><a href="prosodic-measures.html">PROSODIC MEASURES</a></li>
-          </ul>
-        </li>
-        <li><a href="instructions.html">INSTRUCTIONS</a></li>
-        <li>
-          <a href="https://github.com/sarahayu/drift4" target="_blank"
-            >SOURCE CODE</a
-          >
-        </li>
-      </ul>
-    </nav>
-    <main>
-      <section>
-        <div class="section-container">
-          <h2>Prosodic Measures</h2>
-          <h3 id="voxit-prosodic-measures">
-            What do the Voxit prosodic measures quantify?
-          </h3>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="reset.css" />
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="plainpage.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prosodic Measures</title>
+</head>
 
-          <p id="WPM">
-            <b>Words Per Minute</b><br />
-            The average number of words per minute. The transcript of the
-            recording created by Gentle, corrected when necessary, produced the
-            number of words read, which was divided by the length of the
-            recording and normalized, if the recording was longer or shorter
-            than one minute, to reflect the speaking rate for 60 seconds.
-          </p>
-          <p id="Drift_f0_Mean_(hz)">
-            <b>f0 Mean</b><br />
-            Average Pitch. Mean f0, or the fundamental frequency, of a voice is
-            sampled every 10 milliseconds, measured in Hertz (cycles per
-            second), excluding outliers. This actually measures the number of
-            times the vocal cords vibrate per second.
-          </p>
-          <p id="Drift_f0_Range_(octaves)">
-            <b>f0 Range</b><br />
-            Range of pitches measured in octaves, excluding outliers.
-          </p>
-          <p id="Drift_f0_Mean_Abs_Velocity_(octaves/sec)">
-            <b>f0 Mean Absolute Velocity</b><br />
-            Speed of f0 in octaves per second. This is simply a measure of how
-            fast pitch is changing. While we calculate this with attention to
-            direction of pitch speed, or velocity—that is, whether pitch is
-            typically rising or falling, which can indicate a questioning,
-            leading, or tentative tone, versus an authoritative, declarative or
-            conclusive tone—we remove the +/- sign to compare the absolute value
-            of the pitch speed among speakers.
-          </p>
-          <p id="Drift_f0_Mean_Abs_Accel_(octaves/sec^2)">
-            <b>f0 Mean Absolute Acceleration</b><br />
-            Acceleration of f0 in octaves per second squared. Acceleration is
-            the rate of change of pitch velocity, that is how rapidly the
-            changes in pitch change, which we perceive as the lilt of a voice.
-            Again, while we calculate the rate of change in speed with attention
-            to direction—that is, whether pitch change is typically curving
-            upward or curving downward —we compare pitch acceleration among
-            speakers without regard to direction. This is also a very useful
-            measure for expressivity.
-          </p>
-          <p id="Drift_f0_Entropy">
-            <b>f0 Entropy</b><br />
-            or entropy for f0, indicating the predictability of pitch patterns.
-            Entropy is an information theoretic measure of predictability (or
-            strictly speaking, its opposite – unpredictability or disorder).
-            Mathematically, if P(f) is the probability that a given talker uses
-            a particular pitch frequency f, then entropy is given by the
-            negative of the sum of all pitch probabilities times the log (base
-            2) of those pitch probabilities -
-            <img src="entropy-equation.svg" alt="entropy equation" />. In this
-            case, entropy quantifies how uniformly a speaker uses all possible
-            pitches within +/-1 octave of their mean—that is, how much of the
-            available pitch values the speaker uses. Staying narrowly close to
-            the mean most of the time (even with high f0speed) gives low
-            entropy. Using all pitches with equal probability gives high
-            entropy.
-          </p>
-          <p id="Gentle_Complexity_All_Pauses">
-            <b>Rhythmic Complexity All Pauses</b><br />
-            This measure is unitless, calculated using the Lempel-Ziv algorithm
-            to estimate Kolomogorov complexity, also used for compression, as
-            with gif or zip files. A higher value indicates less predictable &
-            less repetitive pauses, normalized for audio length. The idea is to
-            find any and all repeated temporal patterns, counting speech and
-            moments of pause vs. speech or voiced vs. unvoiced as 1's and 0's
-            respectively over time. For pause complexity we used pause (1) vs.
-            speech (0). This measure reflects how many unique speech-pause
-            patterns are required to combine in order to reproduce the observed
-            speech-pause signal. The more easily one can reconstruct the data
-            with a set of repeated patterns, the simpler it is, i.e. lower
-            rhythmic complexity, or more predictable, regular rhythm. As a
-            generalization, the more predictable a poet’s rhythmic measures, the
-            more formally they may read, while the less predictable, the more
-            conversationally they may read.
-          </p>
-          <p id="Gentle_Pause_Rate_(pause/sec)">
-            <b>Average Pause Rate</b><br />
-            Average number of pauses greater than 100, 250 and 500 ms,
-            normalized for recording length.
-          </p>
-          <p id="Gentle_Mean_Pause_Duration_(sec)">
-            <b>Average Pause Duration</b><br />
-            Average length of pauses
-          </p>
-          <p id="Gentle_Pause_Count">
-            <b>Pause Count</b><br />
-            The number of pauses between words greater than 100, 500, 1000, and
-            2000 milliseconds, per minute, normalized for recording length. We
-            do not consider pauses less than 100ms because fully continuous
-            speech also naturally has such brief gaps in energy, nor do we
-            consider pauses that exceed 1,999 ms (that is, 2 seconds), because
-            they are quite rare within the reading of a poem.
-          </p>
-          <p id="Dynamism">
-            <b>Dynamism (only available on the downloadable version)</b><br />
-            This is a composite measure, multiplying average pitch speed by average pitch entropy, and adding the average of syllabic and phrasal rhythmic complexity, with the terms weighted to have equal influence (dynamism = (abs(f0speed) * f0entropy) + (complexitySyllables+complexityPhrases)*.2195. This is a measure-in-progress, an attempt to put on a number on how predictable or repetitive a speaker’s pitch, or intonation, and rhythmic patterns are in combination. We note that a predictable rhythmic pattern may be characteristic of more formal poetry that uses repetition and anaphora when the poet emphasizes those patterns vocally, while pitch and intonation patterns would seem to be more independent of poetic form.
-          </p>
-          <p><i>Note: The graph is scaled in log-based hertz.</i></p>
+<body>
+  <nav>
+    <a href="/">
+      <h1>Drift4</h1>
+    </a>
+    <ul class="nav-links">
+      <li class="has-dropdown" tabindex="0">
+        <span>ABOUT</span>
+        <ul>
+          <li><a href="about.html">ABOUT DRIFT AND VOXIT</a></li>
+          <li>
+            <a href="https://lowerquality.com/gentle/" target="_blank">ABOUT GENTLE</a>
+          </li>
+          <li><a href="prosodic-measures.html">PROSODIC MEASURES</a></li>
+        </ul>
+      </li>
+      <li><a href="instructions.html">INSTRUCTIONS</a></li>
+      <li>
+        <a href="https://github.com/sarahayu/drift4" target="_blank">SOURCE CODE</a>
+      </li>
+    </ul>
+  </nav>
+  <main>
+    <section>
+      <div class="section-container">
+        <h2>Prosodic Measures</h2>
+        <h3 id="voxit-prosodic-measures">
+          What do the Voxit prosodic measures quantify?
+        </h3>
 
-          <h3 id="full-vs-selection">Full Recording Duration vs. Selection</h3>
-          <p>
-            Drift calculates prosodic measurements for both a selected timeframe
-            and a “full recording duration”. A full recording duration is
-            <b>not</b>
-            defined as the duration of the full audio file, but the duration
-            between when Gentle aligns the first word of the transcript and the
-            last word of the transcript to the audio file. For example, given a
-            long audio clip with a short transcript, “full recording duration”
-            refers only to the period between the first word and the last word
-            of the transcript corresponding to the audio clip. However, you can
-            make a selection outside a transcript duration and Drift will
-            calculate Voxit prosodic measurements for that full selection
-            duration, regardless whether a transcript is found in the selection.
-          </p>
-        </div>
-      </section>
-    </main>
-  </body>
+        <p id="WPM">
+          <b>Words Per Minute</b><br />
+          The average number of words per minute. The transcript of the
+          recording created by Gentle, corrected when necessary, produced the
+          number of words read, which was divided by the length of the
+          recording and normalized, if the recording was longer or shorter
+          than one minute, to reflect the speaking rate for 60 seconds.
+        </p>
+        <p id="Drift_f0_Mean_(hz)">
+          <b>f0 Mean</b><br />
+          Average Pitch. Mean f0, or the fundamental frequency, of a voice is
+          sampled every 10 milliseconds, measured in Hertz (cycles per
+          second), excluding outliers. This actually measures the number of
+          times the vocal cords vibrate per second.
+        </p>
+        <p id="Drift_f0_Range_(octaves)">
+          <b>f0 Range</b><br />
+          Range of pitches measured in octaves, excluding outliers.
+        </p>
+        <p id="Drift_f0_Mean_Abs_Velocity_(octaves/sec)">
+          <b>f0 Mean Absolute Velocity</b><br />
+          Speed of f0 in octaves per second. This is simply a measure of how
+          fast pitch is changing. While we calculate this with attention to
+          direction of pitch speed, or velocity—that is, whether pitch is
+          typically rising or falling, which can indicate a questioning,
+          leading, or tentative tone, versus an authoritative, declarative or
+          conclusive tone—we remove the +/- sign to compare the absolute value
+          of the pitch speed among speakers.
+        </p>
+        <p id="Drift_f0_Mean_Abs_Accel_(octaves/sec^2)">
+          <b>f0 Mean Absolute Acceleration</b><br />
+          Acceleration of f0 in octaves per second squared. Acceleration is
+          the rate of change of pitch velocity, that is how rapidly the
+          changes in pitch change, which we perceive as the lilt of a voice.
+          Again, while we calculate the rate of change in speed with attention
+          to direction—that is, whether pitch change is typically curving
+          upward or curving downward —we compare pitch acceleration among
+          speakers without regard to direction. This is also a very useful
+          measure for expressivity.
+        </p>
+        <p id="Drift_f0_Entropy">
+          <b>f0 Entropy</b><br />
+          or entropy for f0, indicating the predictability of pitch patterns.
+          Entropy is an information theoretic measure of predictability (or
+          strictly speaking, its opposite – unpredictability or disorder).
+          Mathematically, if P(f) is the probability that a given talker uses
+          a particular pitch frequency f, then entropy is given by the
+          negative of the sum of all pitch probabilities times the log (base
+          2) of those pitch probabilities -
+          <img src="entropy-equation.svg" alt="entropy equation" />. In this
+          case, entropy quantifies how uniformly a speaker uses all possible
+          pitches within +/-1 octave of their mean—that is, how much of the
+          available pitch values the speaker uses. Staying narrowly close to
+          the mean most of the time (even with high f0speed) gives low
+          entropy. Using all pitches with equal probability gives high
+          entropy.
+        </p>
+        <p id="Gentle_Complexity_All_Pauses">
+          <b>Rhythmic Complexity All Pauses</b><br />
+          This measure is unitless, calculated using the Lempel-Ziv algorithm
+          to estimate Kolomogorov complexity, also used for compression, as
+          with gif or zip files. A higher value indicates less predictable &
+          less repetitive pauses, normalized for audio length. The idea is to
+          find any and all repeated temporal patterns, counting speech and
+          moments of pause vs. speech or voiced vs. unvoiced as 1's and 0's
+          respectively over time. For pause complexity we used pause (1) vs.
+          speech (0). This measure reflects how many unique speech-pause
+          patterns are required to combine in order to reproduce the observed
+          speech-pause signal. The more easily one can reconstruct the data
+          with a set of repeated patterns, the simpler it is, i.e. lower
+          rhythmic complexity, or more predictable, regular rhythm. As a
+          generalization, the more predictable a poet’s rhythmic measures, the
+          more formally they may read, while the less predictable, the more
+          conversationally they may read.
+        </p>
+        <p id="Gentle_Pause_Rate_(pause/sec)">
+          <b>Average Pause Rate</b><br />
+          Average number of pauses greater than 100, 250 and 500 ms,
+          normalized for recording length.
+        </p>
+        <p id="Gentle_Mean_Pause_Duration_(sec)">
+          <b>Average Pause Duration</b><br />
+          Average length of pauses
+        </p>
+        <p id="Gentle_Pause_Count">
+          <b>Pause Count</b><br />
+          The number of pauses between words greater than 100, 500, 1000, and
+          2000 milliseconds, per minute, normalized for recording length. We
+          do not consider pauses less than 100ms because fully continuous
+          speech also naturally has such brief gaps in energy, nor do we
+          consider pauses that exceed 1,999 ms (that is, 2 seconds), because
+          they are quite rare within the reading of a poem.
+        </p>
+        <p id="Intensity_Mean_Abs_Velocity_(decibels/sec)">
+          <b class="m-right-1">Intensity Mean Absolute Velocity</b><span class="platform" title="This feature is only available on the downloadable MAC DMG">DMG</span><br />
+          Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a
+          logarithmic unit of power that correlates with our subjective impression of loudness. Intensity Speed measures
+          how rapidly a talker modulates the volume of her/his voice within each voiced segment (which may include part
+          of a word, one entire word, or several words in close succession). For example an even utterance “hel-lo”
+          would have low Intensity Speed, whereas a sudden stress on the end “hel-LO” or the beginning “HEL-lo” would
+          have high Intensity speed. The unit of measurement is decibels-per-second or dB/s.
+        </p>
+        <p id="Intensity_Mean_Abs_Accel_(decibels/sec^2)">
+          <b class="m-right-1">Intensity Mean Absolute Acceleration</b><span class="platform" title="This feature is only available on the downloadable MAC DMG">DMG</span><br />
+          Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a
+          logarithmic unit of power that correlates with our subjective impression of loudness. Intensity Speed measures
+          how rapidly a talker modulates the volume of her/his voice within each voiced segment (which may include part
+          of a word, one entire word, or several words in close succession). For example an even utterance “hel-lo”
+          would have low Intensity Speed, whereas a sudden stress on the end “hel-LO” or the beginning “HEL-lo” would
+          have high Intensity speed. The unit of measurement is decibels-per-second or dB/s.
+        </p>
+        <p id="Intensity_Segment_Range_95_Percent_(decibels)">
+          <b class="m-right-1">Intensity Segment Range</b><span class="platform" title="This feature is only available on the downloadable MAC DMG">DMG</span><br />
+          Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a
+          logarithmic unit of power that correlates with our subjective impression of loudness. Intensity Speed measures
+          how rapidly a talker modulates the volume of her/his voice within each voiced segment (which may include part
+          of a word, one entire word, or several words in close succession). For example an even utterance “hel-lo”
+          would have low Intensity Speed, whereas a sudden stress on the end “hel-LO” or the beginning “HEL-lo” would
+          have high Intensity speed. The unit of measurement is decibels-per-second or dB/s.
+        </p>
+        <p id="Dynamism">
+          <b class="m-right-1">Dynamism</b><span class="platform" title="This feature is only available on the downloadable MAC DMG">DMG</span><br />
+          This is a composite measure, multiplying average pitch speed by average pitch entropy, and adding the average
+          of syllabic and phrasal rhythmic complexity, with the terms weighted to have equal influence (dynamism =
+          (abs(f0speed) * f0entropy) + (complexitySyllables+complexityPhrases)*.2195. This is a measure-in-progress, an
+          attempt to put on a number on how predictable or repetitive a speaker’s pitch, or intonation, and rhythmic
+          patterns are in combination. We note that a predictable rhythmic pattern may be characteristic of more formal
+          poetry that uses repetition and anaphora when the poet emphasizes those patterns vocally, while pitch and
+          intonation patterns would seem to be more independent of poetic form.
+        </p>
+        <p><i>Note: The graph is scaled in log-based hertz.</i></p>
+
+        <h3 id="full-vs-selection">Full Recording Duration vs. Selection</h3>
+        <p>
+          Drift calculates prosodic measurements for both a selected timeframe
+          and a “full recording duration”. A full recording duration is
+          <b>not</b>
+          defined as the duration of the full audio file, but the duration
+          between when Gentle aligns the first word of the transcript and the
+          last word of the transcript to the audio file. For example, given a
+          long audio clip with a short transcript, “full recording duration”
+          refers only to the period between the first word and the last word
+          of the transcript corresponding to the audio clip. However, you can
+          make a selection outside a transcript duration and Drift will
+          calculate Voxit prosodic measurements for that full selection
+          duration, regardless whether a transcript is found in the selection.
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+
 </html>

@@ -890,10 +890,7 @@ function filter_stats(stats) {
         "f0_Range_95_Percent",
         "f0_Mean_Abs_Velocity",
         "f0_Mean_Abs_Accel",
-        "Intensity_Mean",
-        "Intensity_Mean_Abs_Velocity",
-        "Intensity_Mean_Abs_Accel",
-        "Intensity_Segment_Range_95_Percent",
+        "Intensity_Mean_(decibels)",
         "Complexity_Syllables",
         "Complexity_Phrases",
     ]
@@ -1959,6 +1956,9 @@ function get_descriptions() {
             'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
             'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
             'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
+            'Intensity_Mean_Abs_Velocity_(decibels/sec)': 'Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
+            'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
+            'Intensity_Segment_Range_95_Percent_(decibels)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
             'Dynamism': 'how predictable or repetitive a speaker\'s pitch, or intonation, and rhythmic patterns are in combination.'
         };
 }

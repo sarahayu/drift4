@@ -515,10 +515,10 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     results["Dynamism"] = np.abs(f0MeanAbsVelocity) * f0Entropy + (ComplexitySyllables + ComplexityPhrases) / 2 * 0.439
     # results["Dynamism"] = (f0MeanAbsVelocity/.1167627388 + f0Entropy/.3331034878)/2 + ComplexityAllPauses/.6691896835
 
-    results["Intensity_Mean"] = 10 ** np.mean(logPower[saccvuv] / 10)
-    results["Intensity_Mean_Abs_Velocity"] = np.mean(np.abs(Ivelocity))
-    results["Intensity_Mean_Abs_Accel"] = np.mean(np.abs(Iaccel))
-    results["Intensity_Segment_Range_95_Percent"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
+    results["Intensity_Mean_(decibels)"] = 10 ** np.mean(logPower[saccvuv] / 10)
+    results["Intensity_Mean_Abs_Velocity_(decibels/sec)"] = np.mean(np.abs(Ivelocity))
+    results["Intensity_Mean_Abs_Accel_(decibels/sec^2)"] = np.mean(np.abs(Iaccel))
+    results["Intensity_Segment_Range_95_Percent_(decibels)"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
 
     # Output message
     print(f'SYSTEM: Finished calculating Voxit measurements (took {time.time() - entered:.2f}s)')
