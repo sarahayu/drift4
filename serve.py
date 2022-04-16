@@ -22,6 +22,7 @@ import secureroot
 
 # specifies if we are releasing for MAC DMG
 BUNDLE = hasattr(sys, "frozen")
+DEVELOPMENT = os.environ.get("DEVELOPMENT") != None
 GENTLE_PORT = 8765
 
 # add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
@@ -56,6 +57,9 @@ root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftarg
     else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=driftargs.ssl[0], crt_path=driftargs.ssl[1])
 
 calc_intense = driftargs.calc_intense
+print(f"SYSTEM: CALC_INTENSE is {calc_intense}")
+print(f"SYSTEM: GENTLE_PORT is {GENTLE_PORT}")
+print(f"SYSTEM: DEVELOPMENT is {DEVELOPMENT}")
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
@@ -562,6 +566,18 @@ def gen_mat(cmd):
 
 root.putChild(b"_mat", guts.PostJson(gen_mat, runasync=True))
 
+def _update_settings(cmd):
+    global GENTLE_PORT, calc_intense
+
+    print(f"Settings before: GENTLE {GENTLE_PORT}, CALC_INTENSE {calc_intense}")
+
+    GENTLE_PORT = int(cmd["gentle_port"])
+    calc_intense = cmd["calc_intense"]
+    
+    print(f"After: GENTLE {GENTLE_PORT}, CALC_INTENSE {calc_intense}")
+    
+    return {"success": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
+
 
 def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=False, raw=False):
 
@@ -648,6 +664,9 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
 
 root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
+
+if BUNDLE or DEVELOPMENT:
+    root.putChild(b"_settings", guts.PostJson(_update_settings, runasync=True))
 
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))

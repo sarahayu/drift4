@@ -1,4 +1,4 @@
-numpy
+numpy==1.21
 scipy
 Twisted
 autobahn[twisted,accelerate]
@@ -10,3 +10,4 @@ requests
 pyworld
 librosa
 pyOpenSSL
+PyQt5==5.12.3

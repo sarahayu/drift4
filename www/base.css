@@ -17,12 +17,21 @@
     --neutral-375: #F4F4F4;
     --neutral-400: #E5E5E5;
     --neutral-700: #E3E3E3;
+    
+    --filter-black: brightness(0) saturate(100%);
+    --filter-neutral-400: invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
+    --filter-primary-300: invert(85%) sepia(24%) saturate(2150%) hue-rotate(317deg) brightness(93%) contrast(90%);
 }
 
 ::selection
 {
     color: white;
     background-color: #444;
+}
+
+h1 
+{
+    font-weight: 500;
 }
 
 body
@@ -43,6 +52,7 @@ a
 
 nav
 {
+    --nav-item-spacer: 2em;
     grid-column: 2 / 2;
     align-self: start;
     background-color: white;
@@ -61,11 +71,23 @@ table
     font-size: 0.9rem;
 }
 
+p
+{
+    line-height: 1.4;
+}
+
+.intext-icon
+{
+    height: 1em;
+    display: inline;
+    transform: translateY(0.1em);
+}
+
 .nav-links
 {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 2em;
+    gap: 0 var(--nav-item-spacer);
 }
 
 .nav-links li
@@ -145,7 +167,7 @@ table
 .has-dropdown:hover > :first-child::after,
 .has-dropdown:focus-within > :first-child::after
 {
-    filter: brightness(0) saturate(100%) invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
+    filter: var(--filter-black) var(--filter-neutral-400);
 }
 
 .has-dropdown:hover > ul,

@@ -34,7 +34,11 @@
         </li>
         <li><a href="instructions.html">INSTRUCTIONS</a></li>
         <li><a href="https://github.com/sarahayu/drift4" target="_blank">SOURCE CODE</a></li>
+
       </ul>
+      <button id="settings-btn" title="Local Drift settings" localshow>
+          <img src="settings.svg" alt="Settings">
+      </button>
     </nav>
     <aside id="sidebar">
         <div class="sidetop">
@@ -59,22 +63,23 @@
                     </ul>
                 </button>
             </div>
+            <div class="file-list-notify" webshow>Documents will be deleted after <em>30 days</em></div>
             <ul class="file-list" id="file-list">
             </ul>
         </div>
     </aside>
     <main id="main-content">
-        <div id="gentle-warning">
-            <span><b>Warning:</b> No Gentle found! You may examine existing documents and upload audio files but you will not be able to align any transcripts!</span>
-            <button id="exit-gentle-warning">&times;</button>
+        <div class="accent-card" id="gentle-warning">
+            <p><em>Warning:</em><br>No Gentle found on port <b id="gentle-port-text">8765</b>! You can change this port in <i>Settings</i>&nbsp;(<img src="settings.svg" class="intext-icon" alt="Settings icon">). In the meantime, you may examine existing documents and upload audio files but you will not be able to align any transcripts!</p>
+            <button id="exit-gentle-warning" class="cancel-btn" title="Dismiss warning">&times;</button>
         </div>
         <div class="dashboard-wrapper">
-            <div id="nofiles" class="startcard">
+            <div id="nofiles" class="startcard accent-card">
                 <h2>No Files Uploaded</h2>
                 <p>Upload a file on the top left!</p>
                 <a href="instructions.html">Instructions</a>
             </div>
-            <div id="noneselected" class="startcard">
+            <div id="noneselected" class="startcard accent-card">
                 <h2>No Files Selected</h2>
                 <p>Select files on the left!</p>
             </div>
@@ -83,6 +88,21 @@
         <div id="version" title="Current Drift version">v0.0</div>
     </main>
     <span id="copied-alert">Copied!</span>
+    <dialog class="settings-dialog" id="settings-dialog">
+        <div class="settings-dia-container accent-card">
+            <div class="settings-header">
+                <h3>Local Drift Settings</h3>
+                <button id="exit-settings-dialog" class="cancel-btn">&times;</button>
+            </div>
+            <div class="settings-main">                
+                <label for="gentle-port">Gentle Port</label>
+                <input type="number" name="gentle-port" id="gentle-port" class="text-input">
+                <label for="int-measures">Enable Intensive Measures</label>
+                <input type="checkbox" name="int-measures" id="int-measures">
+            </div>
+            <button id="update-settings" class="basic-btn">update</button>
+        </div>
+    </dialog>
     
     <script src="web-script.js"></script>
     <script src="script.js"></script>

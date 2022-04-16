@@ -46,8 +46,8 @@ var DRIFT_VER = 'v4.0';
 
     document.getElementById("version").textContent = DRIFT_VER;
 
-    register_listeners();
     check_local();
+    register_listeners();
     check_gentle();
     render();
 })()
@@ -119,19 +119,22 @@ function tick() {
 
 function register_listeners() {
     const $uplArea = document.getElementById("upload-area");
+    const $settingsDia = document.getElementById("settings-dialog");
+    const $gentlePortIn = document.getElementById("gentle-port");
+    const $intMeasuresIn = document.getElementById("int-measures");
 
-    $uplArea.ondragover = function (ev) {
+    $uplArea.ondragover = (ev) => {
         ev.stopPropagation();
         ev.preventDefault();
         ev.dataTransfer.dropEffect = "copy";
         ev.currentTarget.children[0].textContent = "RELEASE FILE TO UPLOAD";
     };
-    $uplArea.ondragleave = function (ev) {
+    $uplArea.ondragleave = (ev) => {
         ev.stopPropagation();
         ev.preventDefault();
         ev.currentTarget.children[0].textContent = "UPLOAD FILE";
     };
-    $uplArea.ondrop = function (ev) {
+    $uplArea.ondrop = (ev) => {
         ev.stopPropagation();
         ev.preventDefault();
 
@@ -140,13 +143,54 @@ function register_listeners() {
 
         got_files(ev.dataTransfer.files);
     };
-    $uplArea.onclick = function () {
+    $uplArea.onclick = () => {
         document.getElementById("upload-button").click()
     };
 
-    document.getElementById("upload-button").onchange = function (ev) {
+    document.getElementById("upload-button").onchange = (ev) => {
         got_files(ev.target.files);
     };
+
+    document.getElementById("settings-btn").onclick = () => {
+        $gentlePortIn.value = T.gentlePort;
+        $intMeasuresIn.checked = T.calcIntense;
+        $settingsDia.showModal();
+    }
+    document.getElementById("exit-settings-dialog").onclick = () => {
+        $settingsDia.close();
+    }
+
+    $gentlePortIn.value = T.gentlePort;
+    $intMeasuresIn.checked = T.calcIntense;
+    
+    document.getElementById("update-settings").onclick = () => {
+        console.log(T.gentlePort, parseInt($gentlePortIn.value), T.calcIntense, $intMeasuresIn.checked);
+        $settingsDia.close();
+
+        if (T.gentlePort !== parseInt($gentlePortIn.value) || T.calcIntense !== $intMeasuresIn.checked)
+        {            
+            FARM.post_json("/_settings", {
+                gentle_port: parseInt($gentlePortIn.value),
+                calc_intense: $intMeasuresIn.checked
+            }, (ret) => {
+                let recheckGentle = T.gentlePort !== ret.gentle_port;
+                T.calcIntense = ret.calc_intense;
+                T.gentlePort = ret.gentle_port;
+
+                // do we need to clear url cache if gentle port is the same? I have no clue send help
+                clear_url_cache();
+                if (recheckGentle) check_gentle();
+                little_alert("Settings updated!");
+                console.log(ret);
+
+            });
+        }
+    }
+
+    if (T.localhost)
+        document.querySelectorAll("[localshow]").forEach(e => e.setAttribute("localshow", true));
+    else
+        document.querySelectorAll("[webshow]").forEach(e => e.setAttribute("webshow", true));
 
     ////////// file-list bulk actions (download alls) ///////////
 
@@ -244,11 +288,12 @@ function register_listeners() {
     };
 
     document.getElementById('exit-gentle-warning').onclick = ev => {
-        ev.currentTarget.parentElement.style.display = 'none';
+        ev.currentTarget.parentElement.setAttribute('show', false);
     };
 }
 
 function check_gentle() {
+    document.getElementById('gentle-warning').setAttribute('show', false);
     if (T.localhost)
     {
         fetch(`//localhost:${T.gentlePort}`, { mode: 'no-cors' })
@@ -258,7 +303,8 @@ function check_gentle() {
         })
         .catch(() => {
             T.found_gentle = false;
-            document.getElementById('gentle-warning').style.display = 'flex';
+            document.getElementById('gentle-port-text').textContent = T.gentlePort;
+            document.getElementById('gentle-warning').setAttribute('show', true);
         });
     }
     else
@@ -713,6 +759,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         if (i == 1 || i == 2) {
             tfb.td({ id: uid + '-tfb' + i, classes: ['editable'] }).input({
                 attrs: { value: data, step: 0.1 },
+                classes: [ 'text-input' ],
                 events: {
                     onkeydown: ev => {
                         if (ev.keyCode == 13) {
@@ -771,9 +818,18 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
     if (selStart === undefined || statsFullTSDur === undefined || (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
         if (statsFullTSDur && (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
             console.log("Outdated full_ts found, triggering new full_ts")
-            get_measures_fullTS(doc.id, true)
+            // get_measures_fullTS(doc.id, true)
         }
-        mainTableRoot.div({ text: "Loading... This may take a few minutes the first time you open this document", classes: ["table-loading"] })
+        if (T.localhost) {            
+            let divmsg = mainTableRoot.p({ 
+                text: "Loading... This may take a few minutes the first time you open this document. You can speed this up by disabling intensive measures in ", 
+                classes: ["table-loading"] 
+            });
+            divmsg.i({ text: 'Settings ' })
+            divmsg.img({ classes: ['intext-icon'], attrs: { src: 'settings.svg' } })
+        }
+        else
+            mainTableRoot.div({ text: "Loading... This may take a few minutes the first time you open this document.", classes: ["table-loading"] })
         return
     }
 
@@ -836,9 +892,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
                 $el.select();
                 document.execCommand("copy");
                 document.body.removeChild($el);
-                document.getElementById('copied-alert').classList.add('visible');
-                setTimeout(() =>
-                    document.getElementById('copied-alert').classList.remove('visible'), 2000);
+                little_alert("Copied!");
             }
         }
     });
@@ -959,6 +1013,7 @@ function render_transcript_input(root, doc) {
     let bottomWrapper = root.div({ classes: ["bottom-wrapper"] });
     bottomWrapper.button({
         text: readyForTranscript ? "set transcript" : "uploading...",
+        classes: ['basic-btn'],
         attrs: readyForTranscript && T.found_gentle ? {} : { disabled: false },
         events: { onclick: set_transcript }
     });
@@ -1884,6 +1939,10 @@ function has_data(docid) {
     return meta.pitch && meta.align && meta.rms;
 }
 
+function clear_url_cache() {
+    D.urls = {};
+}
+
 function cached_get_url(url, proc_fn) {
     D.urls = D.urls || {};
     if (D.urls[url + '_status'] != C.STATUS.READY) {
@@ -1978,6 +2037,14 @@ function get_selection(id) {
     }
     
     return T.selections[id]
+}
+
+function little_alert(text) {
+    const $alertDiv = document.getElementById('copied-alert');
+    $alertDiv.textContent = text;
+    $alertDiv.classList.add('visible');
+    setTimeout(() =>
+        $alertDiv.classList.remove('visible'), 2000);
 }
 
 function splitString(str, len, maxlines) {
