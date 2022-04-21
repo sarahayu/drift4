@@ -9,7 +9,7 @@ var C = C || {
     }
 };
 
-var DRIFT_VER = 'v4.0';
+var DRIFT_VER = 'v4.2.0';
 
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
@@ -159,6 +159,10 @@ function register_listeners() {
     document.getElementById("exit-settings-dialog").onclick = () => {
         $settingsDia.close();
     }
+    document.getElementById("upload-warning").innerText = 
+        T.localhost ?
+            "Only upload large files if your machine can handle it!"
+            : "Please be courteous and only upload files less than 45 minutes!";
 
     $gentlePortIn.value = T.gentlePort;
     $intMeasuresIn.checked = T.calcIntense;
@@ -359,14 +363,14 @@ function render_listitem(root, doc) {
         classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
         attrs: { title: doc.title, tabindex: 0 },
         events: { 
-            onclick: open_this_doc,
+            onclick: toggle_open_action,
             onkeydown: ev => {
                 // activate listitem if focused and pressed enter
                 if (ev.target == ev.currentTarget && ev.keyCode == 13)
                 {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    open_this_doc(ev);
+                    toggle_open_action(ev);
                 }
             }
         }
@@ -400,25 +404,9 @@ function render_listitem(root, doc) {
 
     /////////////// begin list item click events //////////////////
 
-    function open_this_doc(ev) {
+    function toggle_open_action(ev) {
         ev.currentTarget.classList.toggle('active');
-        if (T.opened[doc.id]) {
-            delete T.opened[doc.id];
-            T.docs[doc.id].hasunfolded = false;
-            if (T.cur_doc === doc.id) {
-                delete T.cur_doc;
-                if (T.audio) T.audio.pause();
-                delete T.audio;
-            }
-        }
-        else {
-            T.opened[doc.id] = true;
-            if (has_data(doc.id)) {
-                T.active[doc.id] = T.opened[doc.id];
-                set_active_doc(doc);
-            }
-        }
-        render();
+        toggle_open_this_doc(doc);
     }
 
     function start_dragging_listitem(ev) {
@@ -456,6 +444,26 @@ function render_listitem(root, doc) {
     }
 
     /////////////// end list item click events //////////////////
+}
+
+function toggle_open_this_doc(doc) {
+    if (T.opened[doc.id]) {
+        delete T.opened[doc.id];
+        T.docs[doc.id].hasunfolded = false;
+        if (T.cur_doc === doc.id) {
+            delete T.cur_doc;
+            if (T.audio) T.audio.pause();
+            delete T.audio;
+        }
+    }
+    else {
+        T.opened[doc.id] = true;
+        if (has_data(doc.id)) {
+            T.active[doc.id] = T.opened[doc.id];
+            set_active_doc(doc);
+        }
+    }
+    render();
 }
 
 function render_dashboard(root) {
@@ -1733,6 +1741,21 @@ function render_hamburger(root, doc) {
     dlBtn.img({ attrs: { src: "ellipsis.svg" } });
 
     let dlDropdown = dlBtn.ul({ classes: ['dl-dropdown rightedge'] });
+    
+    dlDropdown.li({
+        id: `min-doc-${doc.id}`,
+    }).button({
+        text: "Minimize Document",
+        classes: ['action-btn', 'min-btn'],
+        events: {
+            onclick: ev => {
+                ev.preventDefault();
+                toggle_open_this_doc(doc);
+                // render() in toggle_open_this_doc() will take care of removing active class
+                // document.getElementById(doc.id + '-listwrapper').classList.toggle("active");
+            }
+        }
+    })
 
     let pregen_downloads = ['transcript', 'voxit', 'csv', 'align'];
 

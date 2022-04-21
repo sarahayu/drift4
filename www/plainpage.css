@@ -123,16 +123,8 @@ main ul
 main li
 {
     padding-left: 0.5em;
-}
-
-main ol li
-{
     margin: 0.5em 0;
-}
-
-main ul li
-{
-    margin: 0.2em 0;
+    line-height: 1.5;
 }
 
 ol ol
@@ -177,77 +169,57 @@ ol ol
     margin-top: 1em;
 }
 
-.acc-content
+.long-content
 {
-    background-color: white;
-    height: 0;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr max-content;
+    grid-auto-rows: min-content;
+    gap: 2rem;
 }
 
-.acc-btn
+.long-content-nav
 {
-    display: block;
-    margin: 0;
-}
-
-.acc-btn button
-{
-    padding: 1em 0;
-    width: 100%;
-    text-align: left;
-    position: relative;
-}
-
-.acc-btn button::before,
-.acc-btn button::after
-{
-    content: '';
-    background-color: currentColor;
-    position: absolute;
-    width: 1em;
-    height: 0.25em;
-    top: 50%;
-    right: 0;
-}
-
-.acc-btn button::before
-{
-    transform: translateY(-50%);
-}
-
-.acc-btn button::after
-{
-    transform: translateY(-50%) rotate(90deg);
-}
-
-.acc-btn button.open::after
-{
+    /* --card-pd: 1rem 2rem; */
+    position: sticky;
+    min-height: 0;
+    margin-bottom: auto;
+    top: 1em;
     display: none;
 }
 
-.acc-content + .acc-btn
+.long-content-nav ul
 {
-    border-top: 1px solid #c6c6cc;
+    list-style-type: none;
 }
 
-.acc-content.open,
-.acc-content:focus-within
+.long-content-nav ul, 
+.long-content-nav li
 {
-    height: min-content;
-    padding: 1em;
-    border-top: 1px solid #c6c6cc;
+    margin: 0;
+    padding: 0;
+}
+
+.long-content-nav li + li
+{
+    margin-top: 1em;
+}
+
+.long-content-nav a
+{
+    font-weight: 500;
+    color: var(--dark-400);
 }
 
 .video-tuts
 {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 0 1em;
+    gap: 2em;
+    padding-bottom: 1em;
 }
 
 .video-card
 {
-    padding: 1em;
     text-align: center;
 }
 
@@ -280,7 +252,7 @@ ol ol
     width: 100%;
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 55rem) {
 
     .video-card
     {
@@ -295,5 +267,10 @@ ol ol
     .video-tuts
     {
         grid-template-columns: repeat(2, 1fr);
+    }    
+
+    .long-content-nav
+    {
+        display: block;
     }
 }

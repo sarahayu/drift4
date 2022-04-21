@@ -1,7 +1,7 @@
 html, body, div, span, applet, object, iframe,
 p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, img, ins, input, kbd, q, s, samp,
+a, abbr, acronym, address, big, cite,
+del, img, ins, input, kbd, q, s, samp,
 small, strike, sub, sup, tt, var,
 center,
 dl, dt, dd, ol, ul, li,
@@ -36,6 +36,16 @@ dialog {
 video, img {
 	max-width: 100%;
 	display: block;
+}
+
+code {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 90%;
+	color: inherit;
+	vertical-align: baseline;
+	box-sizing: border-box;
 }
 
 h1, h2, h3, h4, h5, h6, b, u, i, em, strong {

@@ -1,9 +1,5 @@
 :root
 {
-    font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;
-    color: #565656;
-    font-weight: 500;
-    font-size: 90%;
     --primary-50: #f3d2b5;
     --primary-200: #E9AF7C;
     --primary-300: #E39958;
@@ -17,10 +13,16 @@
     --neutral-375: #F4F4F4;
     --neutral-400: #E5E5E5;
     --neutral-700: #E3E3E3;
+    --dark-400: #565656;
     
     --filter-black: brightness(0) saturate(100%);
     --filter-neutral-400: invert(97%) sepia(7%) saturate(161%) hue-rotate(307deg) brightness(114%) contrast(80%);
     --filter-primary-300: invert(85%) sepia(24%) saturate(2150%) hue-rotate(317deg) brightness(93%) contrast(90%);
+
+    font-family: 'futura-pt', 'Helvetica', 'Arial', sans-serif;
+    color: var(--dark-400);
+    font-weight: 500;
+    font-size: 90%;
 }
 
 ::selection
@@ -73,7 +75,7 @@ table
 
 p
 {
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .intext-icon
@@ -176,6 +178,32 @@ p
     z-index: 1;
     visibility: visible;
     transition: visibility 0s 0.2s;
+}
+
+.external-link::after
+{
+    content: '';
+    background-image: url(./external-link.svg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: 0.2em;
+    filter: var(--filter-primary-300);
+    display: inline-block;
+}
+
+.external-link:hover::after,
+.external-link:focus::after
+{
+    filter: var(--filter-neutral-400);
+}
+
+.accent-card
+{
+    background-color: var(--card-bg, white);
+    border: 1px solid var(--primary-400);
+    padding: var(--card-pd, 2em);
 }
 
 .m-right-1

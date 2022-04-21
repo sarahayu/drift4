@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="base.css" />
-    <link rel="stylesheet" href="stage.css?v=4.1.1" />
+    <link rel="stylesheet" href="reset.css?v=4.2.0" />
+    <link rel="stylesheet" href="base.css?v=4.2.0" />
+    <link rel="stylesheet" href="stage.css?v=4.2.0" />
     <script src="farming.js"></script>
     <script src="palilalia.js"></script>
     <script src="attachments.js"></script>
@@ -28,12 +28,12 @@
         <li class="has-dropdown" tabindex="0"><span>ABOUT</span>
             <ul>
                 <li><a href="about.html">ABOUT DRIFT AND VOXIT</a></li>
-                <li><a href="https://lowerquality.com/gentle/" target="_blank">ABOUT GENTLE</a></li>
+                <li><a href="https://lowerquality.com/gentle/" target="_blank" class="external-link">ABOUT GENTLE</a></li>
                 <li><a href="prosodic-measures.html">PROSODIC MEASURES</a></li>
             </ul>
         </li>
         <li><a href="instructions.html">INSTRUCTIONS</a></li>
-        <li><a href="https://github.com/sarahayu/drift4" target="_blank">SOURCE CODE</a></li>
+        <li><a href="https://github.com/sarahayu/drift4" target="_blank" class="external-link">SOURCE CODE</a></li>
 
       </ul>
       <button id="settings-btn" title="Local Drift settings" localshow>
@@ -47,6 +47,7 @@
             <button id="upload-area">
                 <span>UPLOAD AUDIO FILE</span>
                 <img src="upload-icon.svg" alt="upload icon">
+                <span id="upload-warning">Only upload large files if your machine can handle it!</span>
             </button>
             <input id="upload-button" type="file" multiple="true" accept=".mp3,.wav,.flac,.m4a"/>
         </div>
@@ -63,7 +64,7 @@
                     </ul>
                 </button>
             </div>
-            <div class="file-list-notify" webshow>Documents will be deleted after <em>30 days</em></div>
+            <!-- <div class="file-list-notify" localshow>Documents will be deleted after <em>90 days</em></div> -->
             <ul class="file-list" id="file-list">
             </ul>
         </div>

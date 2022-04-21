@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+import argparse
+
+parser = argparse.ArgumentParser(description = "Drift4")
+parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
+parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
+parser.add_argument("-c", "--calc-intense", help="allow for more intensive Voxit calculations, disabled by default. note this value can be changed later through GUI settings", action='store_true')
+
+driftargs = parser.parse_args()
+
 import guts
 from twisted.web.static import File
 import os
@@ -13,7 +22,6 @@ import numpy as np
 import scipy.io as sio
 import sys
 import time
-import argparse
 import pyworld
 import librosa
 
@@ -44,13 +52,6 @@ def get_calc_sbpca():
         return "./sacc/SAcC"
     return "./ext/calc_sbpca/python/SAcC.py"
     # return "./py/py2/sacc_cli.py"
-
-parser = argparse.ArgumentParser(description = "Drift4")
-parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
-parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
-parser.add_argument("-c", "--calc-intense", help="allow for more intensive Voxit calculations; disabled by default", action='store_true')
-
-driftargs = parser.parse_args()
 
 port = driftargs.port
 root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftargs.ssl) \
@@ -686,6 +687,6 @@ if not BUNDLE:
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 
-root.putChild(b"media", File(get_attachpath()))
+root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 
 guts.serve("stage.py", globals(), root=root)
