@@ -29,7 +29,7 @@ table
     margin-left: var(--nav-item-spacer);
 }
 
-#settings-btn:hover img, #settings-btn:focus img
+#settings-btn:hover img, #settings-btn:focus-visible img
 {
     filter: var(--filter-black) var(--filter-primary-300);  
 }
@@ -138,14 +138,14 @@ table
 }
 
 #upload-area:hover,
-#upload-area:focus
+#upload-area:focus-visible
 {
     cursor: pointer;
     background-color: var(--primary-200);
 }
 
 #upload-area:hover #upload-warning,
-#upload-area:focus #upload-warning
+#upload-area:focus-visible #upload-warning
 {
     opacity: 1;
 }
@@ -215,7 +215,7 @@ table
 }
 
 .file-list-header button:hover,
-.file-list-header button:focus
+.file-list-header button:focus-visible
 {
     transition-duration: 0.1s;
     background-color: var(--accent-700);
@@ -249,7 +249,7 @@ table
     width: 1px;
 }
 
-.acsblty-skip:focus
+.acsblty-skip:focus-visible
 {
     height: auto;
     width: auto;
@@ -262,7 +262,7 @@ table
     text-decoration: underline;
 }
 
-.file-list .acsblty-skip:focus
+.file-list .acsblty-skip:focus-visible
 {
     padding: 1em;
 }
@@ -469,7 +469,7 @@ main
 }
 
 .startcard a:hover,
-.startcard a:focus
+.startcard a:focus-visible
 {
     background-color: var(--primary-200);
 }
@@ -634,13 +634,13 @@ main
 }
 
 /* 
-.dl-btn:focus .action-btn
+.dl-btn:focus-visible .action-btn
 {
     display: inline-block;
 } */
 
 .dl-dropdown .action-btn:hover,
-.dl-dropdown .action-btn:focus
+.dl-dropdown .action-btn:focus-visible
 {
     background-color: var(--accent-700);
     color: white;
@@ -867,7 +867,7 @@ main
 }
 
 .dl-graph-btn:hover span,
-.dl-graph-btn:focus span
+.dl-graph-btn:focus-visible span
 {
     width: 17ch;
 }
@@ -953,7 +953,7 @@ main
 }
 
 .play-btn:hover,
-.play-btn:focus
+.play-btn:focus-visible
 {
     background-color: var(--primary-200);
 }
@@ -1016,7 +1016,7 @@ main
 }
 
 .table-section a:hover,
-.table-section a:focus
+.table-section a:focus-visible
 {
     text-decoration: underline;
 }
@@ -1142,7 +1142,7 @@ main
 }
 
 .basic-btn:hover,
-.basic-btn:focus
+.basic-btn:focus-visible
 {
     background-color: var(--primary-200);
 }
@@ -1207,7 +1207,7 @@ main
     }
 
     .list-item:hover,
-    .list-item:focus
+    .list-item:focus-visible
     {
         transition: box-shadow ease 0.1s, background-color 0.1s;
     }

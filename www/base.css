@@ -194,7 +194,7 @@ p
 }
 
 .external-link:hover::after,
-.external-link:focus::after
+.external-link:focus-visible::after
 {
     filter: var(--filter-neutral-400);
 }

@@ -109,7 +109,7 @@ main a
 }
 
 main a:hover,
-main a:focus
+main a:focus-visible
 {
     text-decoration: underline;
 }
@@ -154,7 +154,7 @@ ol ol
 }
 
 .dl-btn:hover,
-.dl-btn:focus
+.dl-btn:focus-visible
 {
     text-decoration: none;
     background-color: var(--accent-400);
