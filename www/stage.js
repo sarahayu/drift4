@@ -20,9 +20,12 @@ var DRIFT_VER = 'v4.2.0';
     T.LPAD = 0;
     T.MAX_A = 15;
     T.DESCRIPTIONS = get_descriptions();
+    T.WINDOWED_PARAMS = get_windowed_params();
 
     // initialize global variables, making sure to only initialize them
     // when the page first loads and not everytime this file is saved
+    // technically the above variables can also be intiialized in a similar manner,
+    // but they're not very computationally expensive so can be init.ed every save #personalpreference
     if (!T.docs) {
         T.docs = {};
         reload_docs();
@@ -361,7 +364,7 @@ function render_listitem(root, doc) {
     let listItem = root.li({
         id: doc.id + '-listwrapper',
         classes: ['list-item', T.opened[doc.id] ? 'active' : '', T.grabbed == doc.id ? 'grabbed' : ''],
-        attrs: { title: doc.title, tabindex: 0 },
+        attrs: { title: doc.title + "\nSize: " + Math.round(doc.size / Math.pow(2, 20) * 100) / 100 + "MB", tabindex: 0 },
         events: { 
             onclick: toggle_open_action,
             onkeydown: ev => {
@@ -830,11 +833,14 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         }
         if (T.localhost) {            
             let divmsg = mainTableRoot.p({ 
-                text: "Loading... This may take a few minutes the first time you open this document. You can speed this up by disabling intensive measures in ", 
+                text: "Loading... This may take a few minutes the first time you open this document." + (T.calcIntense ? "You can speed this up by disabling intensive measures in " : ""),
                 classes: ["table-loading"] 
             });
-            divmsg.i({ text: 'Settings ' })
-            divmsg.img({ classes: ['intext-icon'], attrs: { src: 'settings.svg' } })
+
+            if (T.calcIntense) {
+                divmsg.i({ text: 'Settings ' })
+                divmsg.img({ classes: ['intext-icon'], attrs: { src: 'settings.svg' } })
+            }
         }
         else
             mainTableRoot.div({ text: "Loading... This may take a few minutes the first time you open this document.", classes: ["table-loading"] })
@@ -1766,9 +1772,9 @@ function render_hamburger(root, doc) {
     let displayName = {
         csv: 'Drift Data (.csv)',
         align: 'Gentle Align (.json)',
-        pitch: 'Drift Pitch (.txt)',
         transcript: 'Audio Transcript (.txt)',
-        voxit: 'Voxit Data (.csv)'
+        voxit: 'Voxit Data (.csv)',
+        windowed: 'Windowed Voxit Data (.csv)'
     }
 
     pregen_downloads.forEach(name => {
@@ -1783,6 +1789,23 @@ function render_hamburger(root, doc) {
                     onclick: ev => {
                         ev.preventDefault();
                         download_voxitcsv(doc);
+                    }
+                }
+            })
+
+            return
+        }
+
+        if (name === 'windowed' && doc.align) {
+            dlDropdown.li({
+                id: `ham-windowed-${doc.id}`,
+            }).button({
+                text: "Download - " + displayName[name],
+                classes: ['action-btn'],
+                events: {
+                    onclick: ev => {
+                        ev.preventDefault();
+                        download_windowed(doc);
                     }
                 }
             })
@@ -2222,15 +2245,82 @@ function delete_action(doc) {
     });
 }
 
+function strip_extension(filename) {    
+    filename = filename.split('.');
+    filename = filename.slice(0, filename.length - 1);
+    return filename.join('.');
+}
+
 function download_voxitcsv(doc) {
     let csvContent = voxit_to_tab_separated(doc, filter_stats(get_measures_fullTS(doc.id)));
     csvContent = csvContent.replace(/\t/g, ',')
-    let filename = doc.title.split('.').reverse()
-    filename.shift()
 
-    let out_filename = filename + '-voxitcsv.csv';
+    let out_filename = strip_extension(doc.title) + '-voxitcsv.csv';
 
     saveAs(new Blob([csvContent]), out_filename);
+}
+
+function download_windowed(doc) {
+     
+    FARM.post_json("/_windowed", {
+        id: doc.id, 
+        params: T.WINDOWED_PARAMS 
+    }, ret => {
+        console.log(ret);
+        let maxSegments = -1;
+        let measureJSON = ret["measure"];
+        // console.log(ret, measureJSON)
+        Object.values(measureJSON).forEach(measures => maxSegments = Math.max(maxSegments, measures.length));
+        // console.log(maxSegments);
+
+        let content = '';
+
+        let header = ',window_len';
+        for (let i = 0; i < maxSegments; i++)
+            header += `,seg_${ i + 1 }`;
+
+        content += header;
+        content += '\n';
+
+        // console.log(Object.entries(measureJSON));
+
+        for (let [label, measures] of Object.entries(measureJSON)) {
+            // console.log(label, measures);
+            content += `${ label },${ T.WINDOWED_PARAMS[label] }`;
+            measures.forEach(measure => content += `,${measure}`);
+            for (let i = 0; i < maxSegments - measures.length - 1; i++)
+                content += ','
+            content += '\n';
+        }
+
+        saveAs(new Blob([content]), strip_extension(doc.title) + '-windowed.csv');
+
+    });
+}
+
+function get_windowed_params() {
+    return {
+        'WPM': 15,
+        'Gentle_Pause_Count_>100ms': 15,
+        'Gentle_Pause_Count_>500ms': 15,
+        'Gentle_Pause_Count_>1000ms': 15,
+        'Gentle_Pause_Count_>1500ms': 15,
+        'Gentle_Pause_Count_>2000ms': 15,
+        'Gentle_Pause_Count_>2500ms': 15,
+        'Gentle_Long_Pause_Count_>3000ms': 15,
+        'Gentle_Mean_Pause_Duration_(sec)': 15,
+        'Gentle_Pause_Rate_(pause/sec)': 15,
+        'Gentle_Complexity_All_Pauses': 30,
+        'Drift_f0_Mean_(hz)': 30,
+        'Drift_f0_Range_(octaves)': 30,
+        'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 30,
+        'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 30,
+        'Drift_f0_Entropy': 30,
+        'Intensity_Mean_Abs_Velocity_(decibels/sec)': 30,
+        'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 30,
+        'Intensity_Segment_Range_95_Percent_(decibels)': 30,
+        'Dynamism': 30,
+    }
 }
 
 function fr2x(fr) {

@@ -58,9 +58,9 @@ root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftarg
     else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=driftargs.ssl[0], crt_path=driftargs.ssl[1])
 
 calc_intense = driftargs.calc_intense
-print(f"SYSTEM: CALC_INTENSE is {calc_intense}")
-print(f"SYSTEM: GENTLE_PORT is {GENTLE_PORT}")
-print(f"SYSTEM: DEVELOPMENT is {DEVELOPMENT}")
+print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
+print(f"SYSTEM: GENTLE_PORT is { GENTLE_PORT }")
+print(f"SYSTEM: DEVELOPMENT is { DEVELOPMENT }")
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
@@ -633,7 +633,7 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
     full_data = {
         "measure": {
             "start_time": st,
-            "end_time": end_time if end_time is not None else ((len(pitch) / 100.0) - st)
+            "end_time": end_time if end_time is not None else (len(pitch) / 100.0)
         }
     }
 
@@ -661,6 +661,120 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
         )
 
     return full_data
+
+def _windowed(cmd):
+
+    id = cmd["id"]
+    params = cmd["params"]
+    meta = rec_set.get_meta(id)
+
+    pitch = [
+        [float(Y) for Y in X.split(" ")]
+        for X in open(os.path.join(get_attachpath(), meta["pitch"]))
+    ]
+
+    # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
+    if not meta.get("csv"):
+        gen_csv({ "id": id })
+
+    # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
+    # Generate Harvest if nonexistent
+    if calc_intense and not meta.get("harvest"):
+        harvest({ "id": id })
+
+    # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
+    while not rec_set.get_meta(id).get("csv"):
+        pass
+    
+    while calc_intense and not rec_set.get_meta(id).get("harvest"):
+        pass
+
+    meta = rec_set.get_meta(id)
+    driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
+    gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
+
+    batched_windows = {}
+
+    # batch window parameters so we can calculate multiple windows that have same length
+    for measure in params:
+        window_len = params[measure]
+
+        if window_len not in batched_windows:
+            batched_windows[window_len] = []
+        
+        batched_windows[window_len].append(measure)
+
+
+    batched_measures = {}
+    audio_len = len(pitch) / 100.0
+    
+    full_data = {
+        "measure": {
+        }
+    }
+    
+    if calc_intense:
+        audio_path = os.path.join(get_attachpath(), meta["path"])
+        pitch_file = open(os.path.join(get_attachpath(), meta["pitch"]))
+        harvest_file = open(os.path.join(get_attachpath(), meta["harvest"]))
+
+    for window_len in batched_windows:
+        measure_labels = batched_windows[window_len]
+        
+        for i in range(0, int(audio_len), int(window_len)):
+            win_start = i
+            win_end = min(i + window_len, audio_len)
+            
+            print(f'{win_start} - {win_end}')
+            # restart file streams
+            gentlecsv.seek(0)
+            driftcsv.seek(0)
+            gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, win_start, win_end)
+
+            if calc_intense:
+                # restart file streams
+                pitch_file.seek(0)
+                harvest_file.seek(0)
+                voxit_data = prosodic_measures.measure_voxit(audio_path, 
+                    pitch_file, 
+                    harvest_file, 
+                    win_start, win_end)
+
+            
+            # we'll just update full_data with returned map so that labels end up in the same order as returned by prosodic_measures
+            # this is purely for aesthetic purposes and we'll replace the values the labels are paired with in the end
+            if len(full_data["measure"]) == 0:
+                full_data["measure"].update(gentle_drift_data)
+
+                if calc_intense:
+                    full_data["measure"].update(voxit_data)
+                    
+                for label in full_data["measure"]:
+                    full_data["measure"][label] = []
+
+
+            for label in measure_labels:
+                if label in full_data["measure"]:
+                    if label in gentle_drift_data:
+                        full_data["measure"][label].append(gentle_drift_data[label])
+                    elif label in voxit_data:
+                        full_data["measure"][label].append(voxit_data[label])
+
+
+    # if full_ts:
+    #     with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
+    #         json.dump(full_data, dfh, indent=2)
+
+    #         dfh.close()
+    #     fulltshash = guts.attach(dfh.name, get_attachpath())
+
+    #     guts.bschange(
+    #         rec_set.dbs[id],
+    #         {"type": "set", "id": "meta", "key": "full_ts", "val": fulltshash},
+    #     )
+
+    return full_data
+
 
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
 
