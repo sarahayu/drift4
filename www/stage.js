@@ -1751,7 +1751,7 @@ function render_hamburger(root, doc) {
     dlDropdown.li({
         id: `min-doc-${doc.id}`,
     }).button({
-        text: "Minimize Document",
+        text: "Close Document",
         classes: ['action-btn', 'min-btn'],
         events: {
             onclick: ev => {
