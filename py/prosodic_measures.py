@@ -62,14 +62,14 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
     gentle_length = gentle_end_time - gentle_start_time
 
     if start_time is None or end_time is None:
-        selection_duration = 0
+        selection_duration = gentle_length
     else:
         selection_duration = end_time - start_time
 
     # Speaking rate calculated as words per minute, or WPM.
     # Divided by the length of the recording and normalized if the recording was longer
     # or shorter than one minute to reflect the speaking rate for 60 seconds.
-    if gentle_length == 0:
+    if selection_duration == 0:
         WPM = 0
     else:
         WPM = math.floor(gentle_wordcount / (selection_duration / 60))
@@ -310,7 +310,7 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
         for j in range(ixvoicedbounds[i][0], ixvoicedbounds[i][1] + 1):
             diffocttmp.append(diffoctf0[j])
         # diffocttmpD = sgolayfilt(diffocttmpD,2,7); %smooth f0 to avoid step artifacts, esp in acceleration: span = 7, degree = 2 as per Drift3
-        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = 7)
+        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = min(7, len(diffocttmp)))
         # f0velocity = [f0velocity; diff(diffocttmp)/ts];
         # f0accel = [f0accel; diff(diff(diffocttmp))/ts];
         for d in np.diff(diffocttmp):
@@ -384,6 +384,7 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
         if end_time and float(data[0]) > round(end_time * 10000) / 10000:
             continue
         tsacc.append(float(data[0]))
+        # TODO filter out 60 and 50 Hz
         psacc.append(float(data[1]))
     tsacc = np.array(tsacc)
     psacc = np.array(psacc)
@@ -410,12 +411,12 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     ct_start = time.time()
 
     # this is the bottleneck of voxit calculations, but there's nothing we can do about it (?)
-    sp = pyworld.cheaptrick(x.astype(np.float64), f0, timeaxis, fs)
+    sp = pyworld.cheaptrick(x.astype(np.float64), f0, timeaxis - start_time, fs)
 
     print(f'SYSTEM: Cheaptrick took {time.time() - ct_start:.2f}s')
     
     linPower = np.sum(np.divide(sp, np.max(sp)), axis=1)
-    logPower = 10 * np.log10(linPower)    
+    logPower = 10 * np.log10(linPower)
 
     # interpolate harvest pitch to sacc timeframe since sacc sampling rate is higher, but also filter to only work with voiced time regions (do not interpolate between voiced and non voiced regions)
     # if Dr. Miller is reading this, yes even though this part of the code looks different from the MATLAB version I checked the values/graphs of the resulting vuv and f0 arrays and they match up perfectly
@@ -435,6 +436,7 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     ixdiff = ixallvoicebounds[:,1] - ixallvoicebounds[:,0]
     ixvoicedbounds = ixallvoicebounds[ixdiff > vdurthresh,:]
 
+    print(Imean)
     difflogI = 10 * np.log10(linPower / Imean)
     Ivelocity = []
     IsegmentMeans = []
@@ -459,7 +461,7 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     f0accel = []
     for i in range(np.size(ixvoicedbounds, 0)):
         diffocttmp = diffoctf0[ixvoicedbounds[i,0]:ixvoicedbounds[i,1]]
-        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = 7)
+        diffocttmp = savgol_filter(diffocttmp, polyorder = 2, window_length = min(7, len(diffocttmp)))
         f0velocity.extend(np.diff(diffocttmp) / ts)
         f0accel.extend(np.diff(np.diff(diffocttmp)) / ts)
 
@@ -467,7 +469,7 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
 
     results["f0_Mean"] = f0mean
     results["f0_Entropy"] = f0Entropy
-    results["f0_Range_95_Percent"] = np.quantile(diffoctf0[saccvuv], .975) - np.quantile(diffoctf0[saccvuv], .025)
+    results["f0_Range_95_Percent"] = 0 if len(diffoctf0[saccvuv]) == 0 else np.quantile(diffoctf0[saccvuv], .975) - np.quantile(diffoctf0[saccvuv], .025)
     results["f0_Mean_Abs_Velocity"] = f0MeanAbsVelocity
     results["f0_Mean_Abs_Accel"] = np.mean(np.abs(f0accel))
 
@@ -512,13 +514,14 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     
     results["Complexity_Phrases"] = ComplexityPhrases
 
-    results["Dynamism"] = np.abs(f0MeanAbsVelocity) * f0Entropy + (ComplexitySyllables + ComplexityPhrases) / 2 * 0.439
+    dynamism = np.abs(f0MeanAbsVelocity) * f0Entropy + (ComplexitySyllables + ComplexityPhrases) / 2 * 0.439
+    results["Dynamism"] = 0 if np.isnan(dynamism) else dynamism
     # results["Dynamism"] = (f0MeanAbsVelocity/.1167627388 + f0Entropy/.3331034878)/2 + ComplexityAllPauses/.6691896835
 
     results["Intensity_Mean_(decibels)"] = 10 ** np.mean(logPower[saccvuv] / 10)
-    results["Intensity_Mean_Abs_Velocity_(decibels/sec)"] = np.mean(np.abs(Ivelocity))
-    results["Intensity_Mean_Abs_Accel_(decibels/sec^2)"] = np.mean(np.abs(Iaccel))
-    results["Intensity_Segment_Range_95_Percent_(decibels)"] = np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
+    results["Intensity_Mean_Abs_Velocity_(decibels/sec)"] = 0 if len(Ivelocity) is 0 else np.mean(np.abs(Ivelocity))
+    results["Intensity_Mean_Abs_Accel_(decibels/sec^2)"] = 0 if len(Ivelocity) is 0 else np.mean(np.abs(Iaccel))
+    results["Intensity_Segment_Range_95_Percent_(decibels)"] = 0 if len(IsegmentMeans) is 0 else np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
 
     # Output message
     print(f'SYSTEM: Finished calculating Voxit measurements (took {time.time() - entered:.2f}s)')

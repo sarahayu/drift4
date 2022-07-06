@@ -777,6 +777,7 @@ def _windowed(cmd):
 
 
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
+root.putChild(b"_windowed", guts.PostJson(_windowed, runasync=True))
 
 root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
 

@@ -171,7 +171,7 @@ function register_listeners() {
     $intMeasuresIn.checked = T.calcIntense;
     
     document.getElementById("update-settings").onclick = () => {
-        console.log(T.gentlePort, parseInt($gentlePortIn.value), T.calcIntense, $intMeasuresIn.checked);
+        // console.log(T.gentlePort, parseInt($gentlePortIn.value), T.calcIntense, $intMeasuresIn.checked);
         $settingsDia.close();
 
         if (T.gentlePort !== parseInt($gentlePortIn.value) || T.calcIntense !== $intMeasuresIn.checked)
@@ -826,14 +826,14 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         /////////////// end timeframe item click event //////////////////
     });
     
-    if (selStart === undefined || statsFullTSDur === undefined || (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
+    if (selStart === undefined || statsFullTSDur === undefined || (T.calcIntense && !("Dynamism" in statsFullTSDur)) || !T.docs[doc.id].duration) {
         if (statsFullTSDur && (T.calcIntense && !("Dynamism" in statsFullTSDur))) {
             console.log("Outdated full_ts found, triggering new full_ts")
             // get_measures_fullTS(doc.id, true)
         }
         if (T.localhost) {            
             let divmsg = mainTableRoot.p({ 
-                text: "Loading... This may take a few minutes the first time you open this document." + (T.calcIntense ? "You can speed this up by disabling intensive measures in " : ""),
+                text: "Loading... This may take a few minutes the first time you open this document." + (T.calcIntense ? " You can speed this up by disabling intensive measures in " : ""),
                 classes: ["table-loading"] 
             });
 
@@ -1236,7 +1236,7 @@ function render_overview(root, doc) {
     let { start_time, end_time } = (get_selection(doc.id) || {});
     
     // render selection overlay
-    if (start_time) {        
+    if (start_time !== undefined) {        
 
         svg.rect({
             id: doc.id + '-o-selection-pre',
@@ -1721,7 +1721,7 @@ function download_graph_png(docid) {
 }
 
 function placeholder_on_unready(root, docid) {
-    if (!T.docs[docid] || !get_data(docid)) {
+    if (!T.docs[docid] || !get_data(docid) || !T.docs[docid].duration) {
         root.div({
             classes: ["loading-placement"],
             text: "Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file"
@@ -1763,7 +1763,7 @@ function render_hamburger(root, doc) {
         }
     })
 
-    let pregen_downloads = ['transcript', 'voxit', 'csv', 'align'];
+    let pregen_downloads = ['transcript', 'voxit', 'csv', 'align', 'windowed'];
 
     let filename = doc.title.split('.').reverse()
     filename.shift()
@@ -1774,7 +1774,7 @@ function render_hamburger(root, doc) {
         align: 'Gentle Align (.json)',
         transcript: 'Audio Transcript (.txt)',
         voxit: 'Voxit Data (.csv)',
-        windowed: 'Windowed Voxit Data (.csv)'
+        windowed: 'Windowed Voxit Data (.csv)',
     }
 
     pregen_downloads.forEach(name => {
@@ -1806,6 +1806,7 @@ function render_hamburger(root, doc) {
                     onclick: ev => {
                         ev.preventDefault();
                         download_windowed(doc);
+                        little_alert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
                     }
                 }
             })
@@ -2085,12 +2086,12 @@ function get_selection(id) {
     return T.selections[id]
 }
 
-function little_alert(text) {
+function little_alert(text, appear) {
     const $alertDiv = document.getElementById('copied-alert');
     $alertDiv.textContent = text;
     $alertDiv.classList.add('visible');
     setTimeout(() =>
-        $alertDiv.classList.remove('visible'), 2000);
+        $alertDiv.classList.remove('visible'), appear || 2000);
 }
 
 function splitString(str, len, maxlines) {
@@ -2275,7 +2276,7 @@ function download_windowed(doc) {
 
         let content = '';
 
-        let header = ',window_len';
+        let header = 'measure_label,window_len,full_transcript';
         for (let i = 0; i < maxSegments; i++)
             header += `,seg_${ i + 1 }`;
 
@@ -2284,42 +2285,46 @@ function download_windowed(doc) {
 
         // console.log(Object.entries(measureJSON));
 
-        for (let [label, measures] of Object.entries(measureJSON)) {
-            // console.log(label, measures);
-            content += `${ label },${ T.WINDOWED_PARAMS[label] }`;
+        let tsMeasures = get_measures_fullTS(doc.id);
+        let filteredKeys = filter_stats(tsMeasures);
+
+        filteredKeys.forEach(label => {
+            let measures = measureJSON[label];
+            content += `${ label },${ T.WINDOWED_PARAMS[label] },${ tsMeasures[label] }`;
             measures.forEach(measure => content += `,${measure}`);
             for (let i = 0; i < maxSegments - measures.length - 1; i++)
                 content += ','
             content += '\n';
-        }
+        })
 
         saveAs(new Blob([content]), strip_extension(doc.title) + '-windowed.csv');
 
     });
 }
 
+// these are all the same but we may want to fine tune it later (?)
 function get_windowed_params() {
     return {
-        'WPM': 15,
-        'Gentle_Pause_Count_>100ms': 15,
-        'Gentle_Pause_Count_>500ms': 15,
-        'Gentle_Pause_Count_>1000ms': 15,
-        'Gentle_Pause_Count_>1500ms': 15,
-        'Gentle_Pause_Count_>2000ms': 15,
-        'Gentle_Pause_Count_>2500ms': 15,
-        'Gentle_Long_Pause_Count_>3000ms': 15,
-        'Gentle_Mean_Pause_Duration_(sec)': 15,
-        'Gentle_Pause_Rate_(pause/sec)': 15,
-        'Gentle_Complexity_All_Pauses': 30,
-        'Drift_f0_Mean_(hz)': 30,
-        'Drift_f0_Range_(octaves)': 30,
-        'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 30,
-        'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 30,
-        'Drift_f0_Entropy': 30,
-        'Intensity_Mean_Abs_Velocity_(decibels/sec)': 30,
-        'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 30,
-        'Intensity_Segment_Range_95_Percent_(decibels)': 30,
-        'Dynamism': 30,
+        'WPM': 20,
+        'Gentle_Pause_Count_>100ms': 20,
+        'Gentle_Pause_Count_>500ms': 20,
+        'Gentle_Pause_Count_>1000ms': 20,
+        'Gentle_Pause_Count_>1500ms': 20,
+        'Gentle_Pause_Count_>2000ms': 20,
+        'Gentle_Pause_Count_>2500ms': 20,
+        'Gentle_Long_Pause_Count_>3000ms': 20,
+        'Gentle_Mean_Pause_Duration_(sec)': 20,
+        'Gentle_Pause_Rate_(pause/sec)': 20,
+        'Gentle_Complexity_All_Pauses': 20,
+        'Drift_f0_Mean_(hz)': 20,
+        'Drift_f0_Range_(octaves)': 20,
+        'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 20,
+        'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 20,
+        'Drift_f0_Entropy': 20,
+        'Intensity_Mean_Abs_Velocity_(decibels/sec)': 20,
+        'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 20,
+        'Intensity_Segment_Range_95_Percent_(decibels)': 20,
+        'Dynamism': 20,
     }
 }
 

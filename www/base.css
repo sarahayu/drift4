@@ -210,3 +210,8 @@ p
 {
     margin-right: 1em;
 }
+
+.g-span-2
+{
+    grid-column: 1 / span 2;
+}

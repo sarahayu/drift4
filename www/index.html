@@ -19,6 +19,7 @@
       rel="stylesheet"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Drift was prototyped in 2016 by Robert Ochshorn and Max Hawkins with support from Marit MacArthur’s ACLS Digital Innovations Fellowship. It is a highly accurate pitch-tracker that also incorporates the forced alignment features of Gentle, visualizing a pitch trace over time and aligning it with a transcript. ">
     <title>Drift4</title>
   </head>
 
@@ -96,10 +97,11 @@
                 <button id="exit-settings-dialog" class="cancel-btn">&times;</button>
             </div>
             <div class="settings-main">                
-                <label for="gentle-port">Gentle Port</label>
-                <input type="number" name="gentle-port" id="gentle-port" class="text-input">
                 <label for="int-measures">Enable Intensive Measures</label>
                 <input type="checkbox" name="int-measures" id="int-measures">
+                <label for="gentle-port">Gentle Port*</label>
+                <input type="number" name="gentle-port" id="gentle-port" class="text-input">
+                <i class="g-span-2">*Unless you're running Windows and Docker, Gentle port shouldn't be changed</i>
             </div>
             <button id="update-settings" class="basic-btn">update</button>
         </div>
