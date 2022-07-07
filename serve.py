@@ -4,8 +4,9 @@ import argparse
 
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
-parser.add_argument("-s", "--ssl", help="specify ssl certificates to use to allow secure websockets", nargs=2, metavar=('privateKeyFileName', 'certificateFileName'))
-parser.add_argument("-c", "--calc-intense", help="allow for more intensive Voxit calculations, disabled by default. note this value can be changed later through GUI settings", action='store_true')
+parser.add_argument("-g", "--gentle_port", help="specify port Drift should find Gentle on", type=int, default=8765)
+parser.add_argument("-c", "--calc_intense", help="allow for more intensive Voxit calculations, disabled by default. note this value can be changed later through GUI settings", action='store_true')
+parser.add_argument("-w", "--web", help="enable if hosting Drift as a website. This option disables changing of settings through web interface", action='store_true')
 
 driftargs = parser.parse_args()
 
@@ -27,11 +28,15 @@ import librosa
 
 from py import prosodic_measures
 import secureroot
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # specifies if we are releasing for MAC DMG
 BUNDLE = hasattr(sys, "frozen")
-DEVELOPMENT = os.environ.get("DEVELOPMENT") != None
-GENTLE_PORT = 8765
+
+WEBSERVE = driftargs.web
+GENTLE_PORT = driftargs.gentle_port
 
 # add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
 # I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
@@ -54,13 +59,13 @@ def get_calc_sbpca():
     # return "./py/py2/sacc_cli.py"
 
 port = driftargs.port
-root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (driftargs.ssl) \
-    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=driftargs.ssl[0], crt_path=driftargs.ssl[1])
+root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
+    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
 
 calc_intense = driftargs.calc_intense
 print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
 print(f"SYSTEM: GENTLE_PORT is { GENTLE_PORT }")
-print(f"SYSTEM: DEVELOPMENT is { DEVELOPMENT }")
+print(f"SYSTEM: WEBSERVE is { WEBSERVE }")
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
@@ -567,17 +572,21 @@ def gen_mat(cmd):
 
 root.putChild(b"_mat", guts.PostJson(gen_mat, runasync=True))
 
-def _update_settings(cmd):
-    global GENTLE_PORT, calc_intense
+def _settings(cmd):
+    global GENTLE_PORT, calc_intense, WEBSERVE
 
-    print(f"Settings before: GENTLE {GENTLE_PORT}, CALC_INTENSE {calc_intense}")
+    # if we're only querying settings and not changing them. idk if we can stack get+post requests in guts and i'm too lazy to check
+    if "get_settings" in cmd or WEBSERVE:
+        return { "changed": False, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
+    
+    print(f"Settings before: GENTLE { GENTLE_PORT }, CALC_INTENSE { calc_intense }")
 
     GENTLE_PORT = int(cmd["gentle_port"])
     calc_intense = cmd["calc_intense"]
     
-    print(f"After: GENTLE {GENTLE_PORT}, CALC_INTENSE {calc_intense}")
+    print(f"After: GENTLE { GENTLE_PORT }, CALC_INTENSE { calc_intense }")
     
-    return {"success": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
+    return { "changed": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
 
 
 def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=False, raw=False):
@@ -781,24 +790,10 @@ root.putChild(b"_windowed", guts.PostJson(_windowed, runasync=True))
 
 root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
 
-if BUNDLE or DEVELOPMENT:
-    root.putChild(b"_settings", guts.PostJson(_update_settings, runasync=True))
+root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
 
 root.putChild(b"_db", db)
-root.putChild(b"_attach", guts.Attachments(get_attachpath()))
-
-# PORTVAR has not been necessary anymore since a port number was not needed to access endpoints
-# but I'll keep it in in case one needs the functionality (see also script.js:0)
-# but keep CALC_INTENSE and GENTLE_PORT for now
-if not BUNDLE:
-    with open("www/web-script.js", mode="w") as final_script_js, \
-        open("www-template/web-script.template.js", mode="r") as template_script_js:
-        final_script_js.write(template_script_js.read()
-            .replace("$PORTVAR", str(port))
-            .replace("$CALC_INTENSE", str(calc_intense).lower())
-            .replace("$GENTLE_PORT", str(GENTLE_PORT))
-        )
-        
+root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
     
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 

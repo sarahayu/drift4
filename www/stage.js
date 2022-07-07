@@ -9,11 +9,11 @@ var C = C || {
     }
 };
 
-var DRIFT_VER = 'v4.2.0';
+var DRIFT_VER = 'v4.2.1';
 
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
-(function main() {
+(async function main() {
 
     T.XSCALE = 300;
     T.PITCH_H = 250;
@@ -50,6 +50,7 @@ var DRIFT_VER = 'v4.2.0';
     document.getElementById("version").textContent = DRIFT_VER;
 
     check_local();
+    await check_drift_settings();
     register_listeners();
     check_gentle();
     render();
@@ -180,16 +181,18 @@ function register_listeners() {
                 gentle_port: parseInt($gentlePortIn.value),
                 calc_intense: $intMeasuresIn.checked
             }, (ret) => {
-                let recheckGentle = T.gentlePort !== ret.gentle_port;
-                T.calcIntense = ret.calc_intense;
-                T.gentlePort = ret.gentle_port;
-
-                // do we need to clear url cache if gentle port is the same? I have no clue send help
-                clear_url_cache();
-                if (recheckGentle) check_gentle();
-                little_alert("Settings updated!");
-                console.log(ret);
-
+                if (ret.changed) {
+                    let recheckGentle = T.gentlePort !== ret.gentle_port;
+                    T.calcIntense = ret.calc_intense;
+                    T.gentlePort = ret.gentle_port;
+    
+                    // do we need to clear url cache if gentle port is the same? I have no clue send help
+                    clear_url_cache();
+                    if (recheckGentle) check_gentle();
+                    little_alert("Settings updated!");
+                }
+                else
+                    little_alert("Settings failed to update");
             });
         }
     }
@@ -323,16 +326,18 @@ function check_local() {
         T.localhost = true;
     else
         T.localhost = false;
+}
 
-    if (typeof calcIntense !== 'undefined')
-        T.calcIntense = calcIntense;
-    else
-        T.calcIntense = true;
-
-    if (typeof gentlePort !== 'undefined')
-        T.gentlePort = gentlePort;
-    else
-        T.gentlePort = 8765;
+async function check_drift_settings() {    
+    let response = await fetch('/_settings', {
+        method: 'POST',
+        body: JSON.stringify({
+            get_settings: true,
+        }),
+    });
+    let responseJSON = await response.json();
+    T.calcIntense = responseJSON.calc_intense;
+    T.gentlePort = responseJSON.gentle_port;
 }
 
 function render() {

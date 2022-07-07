@@ -11,3 +11,4 @@ pyworld
 librosa
 pyOpenSSL
 PyQt5==5.12.3
+python-dotenv
