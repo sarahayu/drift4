@@ -58,7 +58,7 @@ def serve(port):
     global S_PROC
     S_PROC = subprocess.Popen(
         ["./serve", str(port), "-c"],
-        # cwd=os.path.join(get_cwd(), "serve-dist"),
+        cwd=os.path.join(get_cwd(), "serve-dist"),
         stdout=devnull,
         stderr=devnull,
     )
