@@ -4,7 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
-parser.add_argument("-g", "--gentle_port", help="specify port Drift should find Gentle on", type=int, default=8765)
+parser.add_argument("-g", "--gentle_port", help="specify port Drift should find Gentle on. default: 8765", type=int, default=8765)
 parser.add_argument("-c", "--calc_intense", help="allow for more intensive Voxit calculations, disabled by default. note this value can be changed later through GUI settings", action='store_true')
 parser.add_argument("-w", "--web", help="enable if hosting Drift as a website. This option disables changing of settings through web interface", action='store_true')
 
@@ -59,8 +59,8 @@ def get_calc_sbpca():
     # return "./py/py2/sacc_cli.py"
 
 port = driftargs.port
-root = guts.Root(port=port, interface="0.0.0.0", dirpath="www") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
-    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
+root = secureroot.FolderlessRoot(port=port, interface="0.0.0.0", dirpath="build") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
+    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="build", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
 
 calc_intense = driftargs.calc_intense
 print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
@@ -795,7 +795,7 @@ root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
     
-root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
+root.putChild(b"_stage", guts.Codestage(wwwdir="build"))
 
 root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 

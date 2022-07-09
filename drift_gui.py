@@ -12,6 +12,7 @@ import sys
 
 __version__ = "4.0"
 
+BUNDLE = hasattr(sys, "frozen")
 
 def get_open_port(desired=0):
     import socket
@@ -31,7 +32,7 @@ PORT = get_open_port(9899)
 
 
 def get_binary(name):
-    if hasattr(sys, "frozen"):
+    if BUNDLE:
         return os.path.abspath(
             os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "Resources", name)
         )
@@ -40,12 +41,12 @@ def get_binary(name):
 
 
 def get_cwd():
-    if hasattr(sys, "frozen"):
+    if BUNDLE:
         return os.path.abspath(
-            os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "Resources")
+            os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "Resources", "serve-dist")
         )
 
-    return ""
+    return os.path.abspath("")
 
 
 S_PROC = None
@@ -58,7 +59,7 @@ def serve(port):
     global S_PROC
     S_PROC = subprocess.Popen(
         ["./serve", str(port), "-c"],
-        cwd=os.path.join(get_cwd(), "serve-dist"),
+        cwd=os.path.join(get_cwd()),
         stdout=devnull,
         stderr=devnull,
     )

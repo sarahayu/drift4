@@ -1,23 +1,36 @@
 {
-  "name": "electron-webpack-quick-start",
-  "version": "0.0.0",
-  "license": "MIT",
+  "name": "drift4",
+  "version": "1.0.0",
+  "description": "Drift is a highly accurate pitch-tracker that also incorporates the forced alignment features of Gentle, visualizing a pitch trace over time and aligning it with a transcript",
   "scripts": {
-    "dev": "electron-webpack dev",
-    "compile": "electron-webpack",
-    "dist": "yarn compile && electron-builder",
-    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarahayu/drift4.git"
+  },
+  "author": "sarahayu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sarahayu/drift4/issues"
   },
   "dependencies": {
-    "source-map-support": "^0.5.9"
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
   },
-  "devDependencies": {
-      "electron": ">=2.0.8",
-    "electron-builder": "^20.28.1",
-    "electron-webpack": "^2.1.2",
-    "webpack": "^4.16.5"
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
-  "resolutions": {
-    "upath": "^1.0.5"
-  }
+  "homepage": "https://drift4.spokenweb.ca/"
 }
