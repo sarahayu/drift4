@@ -13,7 +13,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
       ```shell
       brew install libsndfile
       ```
-      On a Linux or WSL, use `sudo`:
+      On a Linux or WSL, use `apt-get`:
       ```shell
       sudo apt-get install libsndfile1
       sudo apt-get install libsndfile-dev
