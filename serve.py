@@ -589,28 +589,12 @@ def _settings(cmd):
     return { "changed": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
 
 
-def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=False, raw=False):
-
-    if start_time is not None:
-        start_time = float(start_time)
-    if end_time is not None:
-        end_time = float(end_time)
+# note: not passing start_time and end_time defaults to sending transcript duration
+def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
 
     meta = rec_set.get_meta(id)
 
-    # full transcription duration should be the same for any given document,
-    # prosodic measures for these are cached so we can bulk download them.
-    if full_ts and not force_gen and meta.get("full_ts"):
-        cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
-
-        # if dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
-        if 'Dynamism' in cached or not calc_intense:
-            return cached
-
-    pitch = [
-        [float(Y) for Y in X.split(" ")]
-        for X in open(os.path.join(get_attachpath(), meta["pitch"]))
-    ]
+    ## check we have all needed data
 
     # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
     if not meta.get("csv"):
@@ -633,16 +617,61 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
     
     while calc_intense and not rec_set.get_meta(id).get("harvest"):
         pass
-
+    
+    # update meta with new meta that has all needed data
     meta = rec_set.get_meta(id)
-    driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
-    gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
 
-    st = start_time if start_time is not None else 0
+    ## end check we have all needed data
+
+    gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
+    driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))    
+
+    # set start/end to transcript start/end if they're None
+    if start_time is None or end_time is None:
+        start_time, end_time = prosodic_measures.get_transcript_start_end(gentlecsv)
+        gentlecsv.seek(0)
+        full_ts = True
+    else:
+        start_time = float(start_time)
+        end_time = float(end_time)
+        full_ts = False
+        
+    if force_gen is not None:
+        force_gen = force_gen.lower() == 'true'
+    if raw is not None:
+        raw = raw.lower() == 'true'
+
+    # full transcription duration should be the same for any given document,
+    # prosodic measures for these are cached so we can bulk download them.
+    if full_ts and not force_gen and meta.get("full_ts"):
+        cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
+
+        # if dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
+        if 'Dynamism' in cached['measure'] or not calc_intense:
+
+            # remove intense measures if we're on not calc_intense mode
+            if not calc_intense:
+                dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
+                gentlecsv.seek(0)
+                driftcsv.seek(0)
+
+                for measure_name in list(cached['measure'].keys()):
+                    if measure_name != "start_time" \
+                        and measure_name != "end_time"\
+                        and measure_name not in dummy_measures:
+                        del cached['measure'][measure_name]
+
+            return cached
+
+    pitch = [
+        [float(Y) for Y in X.split(" ")]
+        for X in open(os.path.join(get_attachpath(), meta["pitch"]))
+    ]
+    
     full_data = {
         "measure": {
-            "start_time": st,
-            "end_time": end_time if end_time is not None else (len(pitch) / 100.0)
+            "start_time": start_time,
+            "end_time": end_time
         }
     }
 
@@ -657,6 +686,7 @@ def _measure(id=None, start_time=None, end_time=None, full_ts=False, force_gen=F
             start_time, end_time)
         full_data["measure"].update(voxit_data)
 
+    # cache full transcript measures
     if full_ts:
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
             json.dump(full_data, dfh, indent=2)
