@@ -27,8 +27,6 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
     gentle_start = []
     gentle_end = []
     gentle_wordcount = 0
-    gentle_start_time = None
-    gentle_end_time = None
     # Read the Gentle align csv file
     gentle = csv.reader(gentlecsv, delimiter=' ')
     for row in gentle:
@@ -50,21 +48,8 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
             gentle_wordcount += 1
             gentle_start.append(round(float(measures[2]) * 10000)/10000)
             gentle_end.append(round(float(measures[3]) * 10000)/10000)
-            if gentle_start_time is None:
-                gentle_start_time = round(float(measures[2]) * 10000)/10000
-            gentle_end_time = float(measures[3]) * 10000/10000 # save the last length
-
-    if gentle_end_time is None:
-        gentle_end_time = 0
-    if gentle_start_time is None:
-        gentle_start_time = 0
     
-    gentle_length = gentle_end_time - gentle_start_time
-
-    if start_time is None or end_time is None:
-        selection_duration = gentle_length
-    else:
-        selection_duration = end_time - start_time
+    selection_duration = end_time - start_time
 
     # Speaking rate calculated as words per minute, or WPM.
     # Divided by the length of the recording and normalized if the recording was longer
@@ -120,8 +105,8 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
         if tmp >= 0.1 and tmp <= 3:
             pause_count += 1
 
-    if gentle_length != 0:
-        APR = decimal.Decimal(pause_count / gentle_length)
+    if selection_duration != 0:
+        APR = decimal.Decimal(pause_count / selection_duration)
     else:
         APR = 0
     results["Gentle_Pause_Rate_(pause/sec)"] = float(round(APR, 3))
@@ -359,11 +344,8 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
 def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
 
     entered = time.time()
-
-    if start_time is None:
-        start_time = 0.0
     
-    if start_time and end_time and end_time > start_time:
+    if end_time > start_time:
         duration = end_time - start_time
     else:
         duration = None
@@ -527,6 +509,32 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     print(f'SYSTEM: Finished calculating Voxit measurements (took {time.time() - entered:.2f}s)')
 
     return results
+
+def get_transcript_start_end(gentlecsv):
+    gentle_start_time = None
+    gentle_end_time = None
+    # Read the Gentle align csv file
+    gentle = csv.reader(gentlecsv, delimiter=' ')
+    for row in gentle:
+        # Save measurements as list elements
+        measures = row[0].split(',')
+        # for some reason, rows might be empty. Faulty csv file perhaps?
+        if len(measures) != 4:
+            continue
+        # Ignore noise
+        if measures[0] != '[noise]':
+            if not (measures[1] or measures[2] or measures[3]): # ignore rows with empty cells
+                continue
+            if gentle_start_time is None:
+                gentle_start_time = round(float(measures[2]) * 10000)/10000
+            gentle_end_time = float(measures[3]) * 10000/10000 # save the last length
+
+    if gentle_end_time is None:
+        gentle_end_time = 0
+    if gentle_start_time is None:
+        gentle_start_time = 0
+
+    return gentle_start_time, gentle_end_time
 
 def contiguous(A, varargin):
     num = varargin
