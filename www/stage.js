@@ -166,7 +166,7 @@ function register_listeners() {
     document.getElementById("upload-warning").innerText = 
         T.localhost ?
             "Only upload large files if your machine can handle it!"
-            : "Please be courteous and only upload files less than 45 minutes!";
+            : "Please be courteous and only upload files less than 10 minutes!";
 
     $gentlePortIn.value = T.gentlePort;
     $intMeasuresIn.checked = T.calcIntense;
@@ -247,39 +247,27 @@ function register_listeners() {
         })
     }
 
-    document.getElementById('dl-all-voxitcsv').onclick = () => {
+    document.getElementById('dl-all-voxitcsv').onclick = async () => {
+
+        let cocatenated = '';
+        let keys;
         
-        let ranges = {}
+        let response = await fetch('/_measure_all');
+        let all_docs = await response.json();
+        let first = true;
 
-        Promise.all(get_docs().filter(doc => doc.align).map(doc =>
-            fetch('/media/' + doc.align)
-                .then(align => align.json())
-                .then(align => {
-                    let [ start, end ] = ranges[doc.id] = get_transcript_range(doc.id, align)
-                    return fetch(`/_measure?id=${doc.id}&start_time=${start}&end_time=${end}&full_ts=true`)
-                })
-                .then(response => response.json())
-                .then(resjson => ({ stats: resjson.measure, docid: doc.id }))
-        )).then(measuredocs => { 
+        for (let { title, measure } of Object.values(all_docs)) {
+            if (first) {
+                keys = filter_stats(measure, true);
+                cocatenated = ['audio_document',...keys].join(',') + '\n';
+                first = false;
+            }
 
-            let cocatenated = '';
-            let keys;
-
-            measuredocs.forEach(({ docid, stats }, i) => {
-                let [ fulStart, fulEnd ] = ranges[docid]
-
-                if (i === 0) {
-                    keys = filter_stats(stats);
-                    cocatenated = ['audio_document',...keys, 'start_time', 'end_time'].join(',') + '\n';
-                }
-
-                let doc = T.docs[docid];
-                cocatenated += `"${doc.title}"` + ',';
-                cocatenated += [...keys.map(key => stats[key]), fulStart, fulEnd].join(',') + '\n';
-            })
-
-            saveAs(new Blob([cocatenated]), 'voxitcsvfiles.csv');
-        })
+            cocatenated += `"${ title }"` + ',';
+            cocatenated += keys.map(key => measure[key]).join(',') + '\n';
+        }
+        
+        saveAs(new Blob([cocatenated]), 'voxitcsvfiles.csv');
     }
 
     document.getElementById('delete-all-audio').onclick = () => get_docs().forEach(delete_action);
@@ -902,7 +890,7 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
         classes: ['copy-btn'],
         events: {
             onclick: () => {
-                let cliptxt = voxit_to_tab_separated(doc, keys, statsFullTSDur, curSelStats, fulStart, fulEnd, selStart, selEnd);
+                let cliptxt = voxit_to_tab_separated(doc);
 
                 // Create, select, copy, and remove a textarea.
                 let $el = document.createElement('textarea');
@@ -928,26 +916,24 @@ function get_transcript_range(docid, align) {
 }
 
 function get_measures_fullTS(docid, force_gen) {
-    let [ start, end ] = get_transcript_range(docid) || []; 
-
-    if (start === undefined)
-        return;
-
     if (force_gen === undefined)
         force_gen = false
 
-    return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}&full_ts=true&force_gen=${force_gen}`, JSON.parse).measure;
+    // note: not passing start_time and end_time defaults to sending transcript duration
+    return cached_get_url(`/_measure?id=${docid}&force_gen=${force_gen}`, JSON.parse).measure;
 }
 
 function get_measures(docid, start, end, ) {
         return cached_get_url(`/_measure?id=${docid}&start_time=${start}&end_time=${end}`, JSON.parse).measure;
 }
 
-function filter_stats(stats) {
-    // take out start_time and end_time and pause counts that are not 100, 500, 1000, or 2000
-    let keys = Object.keys(stats).slice(2).filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
+function filter_stats(stats, keep_start_ends) {
+    // take out pause counts that are not 100, 500, 1000, or 2000 and maybe start_time and end_time
+    let keys = Object.keys(stats), start_ends = keys.splice(0, 2);
+
+    keys = keys.filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
     
-    // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures
+    // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures (and maybe start/end times)
     let pauseCounts = keys.splice(
         keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
         keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
@@ -955,6 +941,9 @@ function filter_stats(stats) {
     let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
     keys.splice(1, 0, ...drifts);
     keys.push(...pauseCounts);
+
+    if (keep_start_ends)
+        keys.push(...start_ends);
 
     // finally, remove these unneeded Voxit values
     let unneeded = [
@@ -973,38 +962,25 @@ function filter_stats(stats) {
     return keys;
 }
 
-// I add these extra arguments so we don't have to recalculate a bunch of stuff IF we already have them on hand
-function voxit_to_tab_separated(doc, keys, stats, curSelStats, fulStart, fulEnd, selStart, selEnd) {  
+function voxit_to_tab_separated(doc) {  
     
-    if (stats === undefined) {
-        stats = get_measures_fullTS(doc.id);
-        curSelStats = T.docs[doc.id].curSelStats;
-
-        let segments = (get_cur_align(doc.id) || {}).segments;
-        fulStart = segments[0].start;
-        fulEnd = segments[segments.length - 1].end;
-
-        let { start_time, end_time } = T.selections[doc.id];
-        selStart = start_time;
-        selEnd = end_time;
-    }
+    let stats = get_measures_fullTS(doc.id);
+    let { curSelStats } = T.docs[doc.id];
+    let keys = filter_stats(stats, true);
 
     let cliptxt = '\t';
     keys.forEach((key) => {
         cliptxt += key + '\t';
     });
-    cliptxt += "start_time\tend_time\t"
     cliptxt += '\nfull clip\t';
     keys.forEach((key) => {
         cliptxt += stats[key] + '\t';
     });
 
-    cliptxt += fulStart + '\t' + fulEnd + '\t';
     cliptxt += '\nselection\t';
     keys.forEach((key) => {
         cliptxt += curSelStats[key] + '\t';
     });
-    cliptxt += selStart + '\t' + selEnd + '\t';
     cliptxt += '\n';
 
     return cliptxt;
@@ -2258,7 +2234,7 @@ function strip_extension(filename) {
 }
 
 function download_voxitcsv(doc) {
-    let csvContent = voxit_to_tab_separated(doc, filter_stats(get_measures_fullTS(doc.id)));
+    let csvContent = voxit_to_tab_separated(doc);
     csvContent = csvContent.replace(/\t/g, ',')
 
     let out_filename = strip_extension(doc.title) + '-voxitcsv.csv';

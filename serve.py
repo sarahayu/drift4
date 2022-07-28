@@ -118,7 +118,10 @@ def pitch(cmd):
 
 root.putChild(b"_pitch", guts.PostJson(pitch, runasync=True))
 
-def harvest(cmd):
+def _harvest(cmd):
+    if not calc_intense:
+        return { }
+    
     docid = cmd["id"]
 
     meta = rec_set.get_meta(docid)
@@ -145,9 +148,6 @@ def harvest(cmd):
     )
 
     return {"harvest": harvesthash}
-
-if calc_intense:
-    root.putChild(b"_harvest", guts.PostJson(harvest, runasync=True))
 
 def save_audio_info(cmd):
     docid = cmd["id"]
@@ -588,13 +588,11 @@ def _settings(cmd):
     
     return { "changed": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
 
-
-# note: not passing start_time and end_time defaults to sending transcript duration
-def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
+def measure(id, start_time, end_time, force_gen, raw):
 
     meta = rec_set.get_meta(id)
 
-    ## check we have all needed data
+    ## --- check we have all needed data
 
     # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
     if not meta.get("csv"):
@@ -606,7 +604,7 @@ def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
     # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
     # Generate Harvest if nonexistent
     if calc_intense and not meta.get("harvest"):
-        harvest({ "id": id })
+        _harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
@@ -621,7 +619,7 @@ def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
     # update meta with new meta that has all needed data
     meta = rec_set.get_meta(id)
 
-    ## end check we have all needed data
+    ## --- end check we have all needed data
 
     gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
     driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))    
@@ -632,14 +630,7 @@ def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
         gentlecsv.seek(0)
         full_ts = True
     else:
-        start_time = float(start_time)
-        end_time = float(end_time)
         full_ts = False
-        
-    if force_gen is not None:
-        force_gen = force_gen.lower() == 'true'
-    if raw is not None:
-        raw = raw.lower() == 'true'
 
     # full transcription duration should be the same for any given document,
     # prosodic measures for these are cached so we can bulk download them.
@@ -701,6 +692,39 @@ def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
 
     return full_data
 
+def cast_not_none(var, to_cast):
+    if var is not None and type(var) is not to_cast:
+        return to_cast(var)
+    return var
+    
+def bool_not_none(var):
+    if var is not None and type(var) is str:
+        return var.lower() == 'true'
+    return bool(var) if not None else None
+
+# note: not passing start_time and end_time defaults to sending transcript duration
+def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
+
+    start_time = cast_not_none(start_time, float)
+    end_time = cast_not_none(end_time, float)
+    force_gen = bool_not_none(force_gen)
+    raw = bool_not_none(raw)
+
+    return measure(id, start_time, end_time, force_gen, raw)
+
+def _measure_all():    
+    all_measures = {}
+    all_docs = rec_set.get_infos()
+    for doc in all_docs:
+        if rec_set.get_meta(doc["id"]).get("align"):
+            all_measures[doc["id"]] = _measure(id=doc["id"])
+            all_measures[doc["id"]]["title"] = doc["title"]
+            # guts.bschange(
+            #     rec_set.dbs[doc["id"]],
+            #     {"type": "set", "id": "meta", "key": "align_px", "val": cur_status})
+            # time.sleep(1)
+    return all_measures
+
 def _windowed(cmd):
 
     id = cmd["id"]
@@ -719,7 +743,7 @@ def _windowed(cmd):
     # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
     # Generate Harvest if nonexistent
     if calc_intense and not meta.get("harvest"):
-        harvest({ "id": id })
+        _harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
@@ -815,7 +839,9 @@ def _windowed(cmd):
     return full_data
 
 
+root.putChild(b"_harvest", guts.PostJson(_harvest, runasync=True))
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
+root.putChild(b"_measure_all", guts.GetArgs(_measure_all, runasync=True))
 root.putChild(b"_windowed", guts.PostJson(_windowed, runasync=True))
 
 root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
@@ -828,5 +854,12 @@ root.putChild(b"_attach", guts.Attachments(get_attachpath()))
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 
 root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
+
+# for doc in rec_set.get_infos():
+#     if rec_set.get_meta(doc["id"]).get("harvest"):
+#         guts.bschange(
+#             rec_set.dbs[doc["id"]],
+#             {"type": "remove", "id": "meta", "key": "harvest"},
+#         )
 
 guts.serve("stage.py", globals(), root=root)
