@@ -50,7 +50,6 @@ def get_cwd():
 
 
 S_PROC = None
-G_PROC = None
 
 devnull = None  # open(os.devnull, 'w')
 
@@ -59,7 +58,7 @@ def serve(port):
     global S_PROC
     S_PROC = subprocess.Popen(
         ["./serve", str(port)],
-        cwd=os.path.join(get_cwd(), "serve-dist"),
+        cwd=os.path.join(get_cwd()),
         stdout=devnull,
         stderr=devnull,
     )

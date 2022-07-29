@@ -5,6 +5,21 @@ from twisted.web import server, static, resource
 from twisted.internet import reactor, ssl
 
 class FolderlessFile(static.File):
+    def render(self, req):
+        req.setHeader('Access-Control-Allow-Origin', '*')
+        req.setHeader('Access-Control-Allow-Methods', 'GET')
+        req.setHeader('Access-Control-Allow-Headers', 'x-prototype-version,x-requested-with')
+        req.setHeader('Access-Control-Max-Age', '2520') # 42 hours
+        
+        return super().render(req)
+    # def getChild(self, path, req):
+    #     req.setHeader('Access-Control-Allow-Origin', '*')
+    #     req.setHeader('Access-Control-Allow-Methods', 'GET')
+    #     req.setHeader('Access-Control-Allow-Headers', 'x-prototype-version,x-requested-with')
+    #     req.setHeader('Access-Control-Max-Age', '2520') # 42 hours
+
+    #     return super().getChild(path, req)
+
     def directoryListing(self):
         return resource.NoResource()
 

@@ -1,5 +1,9 @@
-# remove web-script.js file (if it exists) when bundling so index.html calls correct default script.js
-rm www/web-script.js
+# remove folders made from previous execution of make_dmg.sh
+rm -rf build dist
+
+# build react files, rename to 'www' so it won't conflict with make_dmg output folders
+npm run build
+mv build www
 
 python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all librosa --collect-all sklearn
 

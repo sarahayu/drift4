@@ -15,6 +15,17 @@ var DRIFT_VER = 'v4.2.1';
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
 (async function main() {
 
+    if (!T.once_setup) {
+        let oldfetch = fetch;
+        fetch = function (...a) {
+            if (!a[0].startsWith("//"))
+                a[0] = `${ window.location.protocol }//${ window.location.hostname }:${ 9899 }${ a[0] }`;
+            return oldfetch(...a);
+        }
+
+        T.once_setup = true;
+    }
+
     T.XSCALE = 300;
     T.PITCH_H = 250;
     T.LPAD = 0;

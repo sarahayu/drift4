@@ -59,8 +59,8 @@ def get_calc_sbpca():
     # return "./py/py2/sacc_cli.py"
 
 port = driftargs.port
-root = secureroot.FolderlessRoot(port=port, interface="0.0.0.0", dirpath="build") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
-    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="build", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
+root = secureroot.FolderlessRoot(port=port, interface="0.0.0.0", dirpath="www") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
+    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
 
 calc_intense = driftargs.calc_intense
 print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
@@ -851,7 +851,7 @@ root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
     
-root.putChild(b"_stage", guts.Codestage(wwwdir="build"))
+root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 
 root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 

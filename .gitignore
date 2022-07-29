@@ -1,7 +1,7 @@
 .DS_Store
 dist/
 node_modules/
-build/*
+www/*
 thumbs.db
 calc_sbpca
 __pycache__/

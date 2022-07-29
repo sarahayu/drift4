@@ -1,6 +1,6 @@
 {
   "name": "drift4",
-  "version": "1.0.0",
+  "version": "4.3.0",
   "description": "Drift is a highly accurate pitch-tracker that also incorporates the forced alignment features of Gentle, visualizing a pitch trace over time and aligning it with a transcript",
   "scripts": {
     "start": "react-scripts start",
@@ -8,6 +8,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "proxy": "http://localhost:9899/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sarahayu/drift4.git"
@@ -32,5 +33,17 @@
       "react-app/jest"
     ]
   },
-  "homepage": "https://drift4.spokenweb.ca/"
+  "homepage": "https://drift4.spokenweb.ca/",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
