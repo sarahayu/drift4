@@ -87,7 +87,7 @@ app = QtWidgets.QApplication(sys.argv)
 
 w = QtWidgets.QWidget()
 w.resize(250, 150)
-w.setWindowTitle("drift4")
+w.setWindowTitle("Drift4")
 
 
 def quit_server():

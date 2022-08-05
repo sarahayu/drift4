@@ -2,16 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="reset.css?v=4.2.1" />
-    <link rel="stylesheet" href="base.css?v=4.2.1" />
-    <link rel="stylesheet" href="stage.css?v=4.2.1" />
-    <script src="farming.js"></script>
-    <script src="palilalia.js"></script>
+    <link rel="stylesheet" href="reset.css?v=4.3.0" />
+    <link rel="stylesheet" href="base.css?v=4.3.0" />
+    <link rel="stylesheet" href="stage.css?v=4.3.0" />
     <script src="attachments.js"></script>
     <script src="babysteps.js"></script>
-    <script src="palilalia-plus.js"></script>
     <script src="jszip.min.js"></script>
     <script src="FileSaver.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
     <link
@@ -21,6 +19,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Drift was prototyped in 2016 by Robert Ochshorn and Max Hawkins with support from Marit MacArthur’s ACLS Digital Innovations Fellowship. It is a highly accurate pitch-tracker that also incorporates the forced alignment features of Gentle, visualizing a pitch trace over time and aligning it with a transcript. ">
     <title>Drift4</title>
+
+    <!-- some global vanilla stuff I'm too lazy to implement in React... -->
+    <script>
+        function little_alert(text, appear) {
+            const $alertDiv = document.getElementById('copied-alert');
+            $alertDiv.textContent = text;
+            $alertDiv.classList.add('visible');
+
+            if (this.alertTimeout) clearTimeout(this.alertTimeout);
+            this.alertTimeout = setTimeout(() =>
+                $alertDiv.classList.remove('visible'), appear || 2000);
+        }
+    </script>
   </head>
 
   <body>
@@ -48,7 +59,7 @@
             <button id="upload-area">
                 <span>UPLOAD AUDIO FILE</span>
                 <img src="upload-icon.svg" alt="upload icon">
-                <span id="upload-warning">Only upload large files if your machine can handle it!</span>
+                <span id="upload-warning"></span>
             </button>
             <input id="upload-button" type="file" multiple="true" accept=".mp3,.wav,.flac,.m4a"/>
         </div>
@@ -71,10 +82,7 @@
         </div>
     </aside>
     <main id="main-content">
-        <div class="accent-card" id="gentle-warning">
-            <p><em>Warning:</em><br>No Gentle found on port <b id="gentle-port-text">8765</b>! You can change this port in <i>Settings</i>&nbsp;(<img src="settings.svg" class="intext-icon" alt="Settings icon">). In the meantime, you may examine existing documents and upload audio files but you will not be able to align any transcripts!</p>
-            <button id="exit-gentle-warning" class="cancel-btn" title="Dismiss warning">&times;</button>
-        </div>
+        <div class="accent-card" id="gentle-warning"></div>
         <div class="dashboard-wrapper">
             <div id="nofiles" class="startcard accent-card">
                 <h2>No Files Uploaded</h2>
@@ -91,22 +99,13 @@
     </main>
     <span id="copied-alert">Copied!</span>
     <dialog class="settings-dialog" id="settings-dialog">
-        <div class="settings-dia-container accent-card">
-            <div class="settings-header">
-                <h3>Local Drift Settings</h3>
-                <button id="exit-settings-dialog" class="cancel-btn">&times;</button>
-            </div>
-            <div class="settings-main">                
-                <label for="int-measures">Enable Intensive Measures</label>
-                <input type="checkbox" name="int-measures" id="int-measures">
-                <label for="gentle-port">Gentle Port*</label>
-                <input type="number" name="gentle-port" id="gentle-port" class="text-input">
-                <i class="g-span-2">*Unless you're running Windows and Docker, Gentle port shouldn't be changed</i>
-            </div>
-            <button id="update-settings" class="basic-btn">update</button>
-        </div>
     </dialog>
-    
-    <script src="script.js"></script>
+    <script>
+        // these were from before I ported over to React, but I'll keep these here because they're useful for simple elements and I'm too lazy to refactor these
+        if (location.hostname == 'localhost')
+            document.querySelectorAll("[webshow]").forEach(e => e.remove());
+        else
+            document.querySelectorAll("[localshow]").forEach(e => e.remove());
+    </script>
   </body>
 </html>

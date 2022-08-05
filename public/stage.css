@@ -7,16 +7,6 @@ body
     grid-template-rows: min-content 1fr;
 }
 
-[webshow], [localshow]
-{
-    display: none;
-}
-
-[webshow=true], [localshow=true]
-{
-    display: block;
-}
-
 table
 {
     font-size: 0.9rem;
@@ -363,7 +353,7 @@ main
     justify-content: center;
 }
 
-#gentle-warning:not([show=true])
+#gentle-warning:empty
 {
     display: none;
 }
