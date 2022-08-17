@@ -1,7 +1,6 @@
 # remove any compiled react stuff so I don't shoot myself in the foot accidentally accessing Drift on 9899 during development
 rm -r www/*
 
-# if you change this port variable to something other than 9899, make sure to change the corresponding port in the "proxy" option in package.json
 # fyi 9899 is the default port Drift runs on (see serve.py)
 DRIFT_PORT=9899
 

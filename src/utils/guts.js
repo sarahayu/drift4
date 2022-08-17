@@ -3,6 +3,7 @@ export default function loadGuts() {
 
     let db, attach;
 
+    // gotta do this because since DB and Attachments are plain js functions (NOT reactjs) the proxy middlewares won't work in dev mode here
     if (process.env.NODE_ENV === 'development') {
         console.log(`running dev on port ${ process.env.REACT_APP_DRIFT_PORT } (this message might run twice on dev mode due to strict mode. it will not run twice on prod mode [https://reactjs.org/docs/strict-mode.html])`);
         

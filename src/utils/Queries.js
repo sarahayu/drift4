@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parsePitch } from './MathUtils';
 
 const getInfos = async ({ since }) => {
     const res = await axios.get(`/_rec/_infos.json?since=${ since }`);
@@ -19,4 +20,28 @@ const getGentle = ({ gentlePort }) => {
     return axios.get(`//localhost:${ gentlePort }`);
 }
 
-export { getSettings, getInfos, postSettings, getGentle }
+const getPitch = async pitchURL => {
+    const res = await fetch(`/media/${ pitchURL }`);
+    const tex = await res.text();
+    return Promise.resolve(parsePitch(tex));
+}
+
+const getAlign = async alignURL => {
+    const res = await axios.get(`/media/${ alignURL }`);
+    return res.data;
+}
+
+const getRMS = async rmsURL => {
+    const res = await axios.get(`/media/${ rmsURL }`);
+    return res.data;
+}
+
+export { 
+    getSettings,
+    getInfos,
+    postSettings,
+    getGentle,
+    getPitch,
+    getAlign,
+    getRMS,
+}

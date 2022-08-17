@@ -7,8 +7,8 @@ import DocArea from './DocArea';
 import MiscPortals from './MiscPortals'
 import { GutsContext } from './GutsContext';
 import { useQuery } from '@tanstack/react-query';
-import loadGuts from './utils/guts';
-import { RESOLVING } from './utils/utils';
+import loadGuts from './utils/Guts';
+import { RESOLVING } from './utils/Utils';
 import { getGentle, getInfos, getSettings } from './utils/Queries';
 
 const FilelistPortal = () => createPortal(
@@ -30,28 +30,31 @@ function App(props) {
     const [ calcIntense, setCalcIntense ] = useState(RESOLVING);
     const [ gentlePort, setGentlePort ] = useState(RESOLVING);
     const [ foundGentle, setFoundGentle ] = useState(RESOLVING);
-
-    // get settings from server so we know some basic drift settings
-    getSettings().then(({ calc_intense, gentle_port }) => {
-        setCalcIntense(calc_intense);
-        setGentlePort(gentle_port);
-    })
+    const [ focusedDocID, setFocusedDocID ] = useState(null);
 
     // --- START init const functions
+
+    const initSettings = () => {
+        // get settings from server so we know some basic drift settings
+        getSettings().then(({ calc_intense, gentle_port }) => {
+            setCalcIntense(calc_intense);
+            setGentlePort(gentle_port);
+        })
+    }
 
     const pushNewDocs = data => {        
         infosLatestModified.current = Math.max(infosLatestModified.current, ...data.map(doc => doc.modified_time));
 
-        setDocs(oldDocs => {
-            for (let doc of data) {
-                if (oldDocs[doc.id])
-                    Object.assign(oldDocs[doc.id], doc);
-                else
-                    oldDocs[doc.id] = doc;
-            }
+        let newDocs = { ...docs };
 
-            return oldDocs;
-        })
+        for (let doc of data) {
+            if (newDocs[doc.id])
+                Object.assign(newDocs[doc.id], doc);
+            else
+                newDocs[doc.id] = Object.assign(doc, { grabbed: false, opened: false });
+        }
+        
+        setDocs(newDocs);
     };
 
     const findGentle = () => {
@@ -78,10 +81,35 @@ function App(props) {
         console.log('from docs', docs);
     };
 
+    const updateDoc = (docid, updatedAttrs) => {
+        if (typeof updatedAttrs === 'function')
+            setDocs(oldDocs => ({
+                ...oldDocs,
+                [docid]: {
+                    ...oldDocs[docid],
+                    ...updatedAttrs(oldDocs[docid]),
+                }
+            }));
+        else
+            setDocs(oldDocs => ({
+                ...oldDocs,
+                [docid]: {
+                    ...oldDocs[docid],
+                    ...updatedAttrs,
+                }
+            }));
+    };
+
+    const deleteDoc = docid => {
+        console.log("TODO Appjs delete doc")
+    };
+
     // --- END init const functions
 
     // --- START hooks
     
+    useEffect(initSettings, []);
+
     // whenever gentlePort changes (e.g. through settings), we need to recheck if gentle is running on said port
     useEffect(findGentle, [gentlePort]);
 
@@ -100,6 +128,8 @@ function App(props) {
         <GutsContext.Provider value={{
             localhost,
             docs, 
+            setDocs,
+            updateDoc,
             guts,
             calcIntense,
             setCalcIntense,
@@ -107,6 +137,8 @@ function App(props) {
             setGentlePort,
             foundGentle,
             setFoundGentle,
+            focusedDocID,
+            setFocusedDocID,
         }}>
             <FilelistPortal />
             <DocAreaPortal />

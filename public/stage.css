@@ -948,6 +948,12 @@ main
     background-color: var(--primary-200);
 }
 
+.play-btn:disabled
+{
+    pointer-events: none;
+    background-color: #C2C0C0;
+}
+
 .play-btn span
 {
     margin-top: 0.75em;

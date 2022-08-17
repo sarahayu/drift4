@@ -3,22 +3,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GutsContext } from '../GutsContext';
 import { postSettings } from '../utils/Queries';
-import { RESOLVING } from '../utils/utils';
-
-function SettingsForm(props) {
-    return  (
-        (props.formCalcIntense === RESOLVING || props.formGentlePort === RESOLVING) ? "Loading..." :
-        <div className="settings-main">   
-            <label htmlFor="int-measures">Enable Intensive Measures</label>
-            <input type="checkbox" name="int-measures" id="int-measures" checked={ props.formCalcIntense }
-                onChange={ ev => props.setFormCalcIntense(ev.target.checked) } />
-            <label htmlFor="gentle-port">Gentle Port*</label>
-            <input type="number" name="gentle-port" id="gentle-port" className="text-input" value={ props.formGentlePort }
-                onChange={ ev => props.setFormGentlePort(ev.target.value) } />
-            <i className="g-span-2">*Unless you're running Windows and Docker, Gentle port shouldn't be changed</i>
-        </div>
-    );
-}
+import { RESOLVING } from '../utils/Utils';
 
 function SettingsDialog(props) {
 
@@ -40,7 +25,7 @@ function SettingsDialog(props) {
             setGlobalCalcIntense(calc_intense);
             setGlobalGentlePort(gentle_port);
 
-            // TODO clear various query caches (align, measure, etc etc...)
+            // TODO clear various query caches (align, measure, etc etc...) PROBABLY IN APP.JS???
             
             // eslint-disable-next-line no-undef
             little_alert("Settings updated!");
@@ -92,6 +77,21 @@ function SettingsDialog(props) {
             <button id="update-settings" className="basic-btn" onClick={ submitDialog }>update</button>
         </div>,
         document.getElementById('settings-dialog')
+    );
+}
+
+function SettingsForm(props) {
+    return  (
+        (props.formCalcIntense === RESOLVING || props.formGentlePort === RESOLVING) ? "Loading..." :
+        <div className="settings-main">   
+            <label htmlFor="int-measures">Enable Intensive Measures</label>
+            <input type="checkbox" name="int-measures" id="int-measures" checked={ props.formCalcIntense }
+                onChange={ ev => props.setFormCalcIntense(ev.target.checked) } />
+            <label htmlFor="gentle-port">Gentle Port*</label>
+            <input type="number" name="gentle-port" id="gentle-port" className="text-input" value={ props.formGentlePort }
+                onChange={ ev => props.setFormGentlePort(ev.target.value) } />
+            <i className="g-span-2">*Unless you're running Windows and Docker, Gentle port shouldn't be changed</i>
+        </div>
     );
 }
 

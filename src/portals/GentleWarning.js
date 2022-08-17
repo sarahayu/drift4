@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GutsContext } from '../GutsContext';
-import { RESOLVING } from '../utils/utils';
+import { RESOLVING } from '../utils/Utils';
 
 function GentleWarning(props) {
     const { foundGentle, gentlePort } = useContext(GutsContext);

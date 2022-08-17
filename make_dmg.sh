@@ -3,7 +3,7 @@ rm -rf build dist
 
 # build react files, rename to 'www' so it won't conflict with make_dmg output folders
 npm run build
-mv build www
+mv build -T www
 
 python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all librosa --collect-all sklearn
 
