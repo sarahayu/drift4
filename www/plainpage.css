@@ -240,6 +240,7 @@ ol ol
     margin: 0;
     margin-bottom: 1em;
     display: inline-block;
+    font-style: normal;
 }
 
 .platform + .platform
