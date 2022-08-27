@@ -952,6 +952,11 @@ main
     font-weight: 300;
 }
 
+.unaligned
+{
+    font-style: italic;
+}
+
 .play-btn
 {
     font-size: 1.1em;

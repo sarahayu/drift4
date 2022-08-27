@@ -9,7 +9,7 @@ var C = C || {
     }
 };
 
-var DRIFT_VER = 'v4.2.1';
+var DRIFT_VER = 'v4.3.0';
 
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
@@ -1037,14 +1037,15 @@ function render_transcript_input(root, doc) {
         ev.preventDefault();
         ev.stopPropagation();
 
-        // prevent dual-submission...
-        this.disabled = true;
-        this.textContent = "aligning transcript...";
-
-        document.getElementById('tscript-' + doc.id).disabled = true;
-
         var txt = document.getElementById('tscript-' + doc.id).value;
         if (txt) {
+
+            // prevent dual-submission...
+            this.disabled = true;
+            this.textContent = "aligning transcript...";
+    
+            document.getElementById('tscript-' + doc.id).disabled = true;
+
             var blob = new Blob([txt]);
             blob.name = "_paste.txt";
             attach.put_file(blob, function (ret) {
@@ -1073,6 +1074,9 @@ function render_transcript_input(root, doc) {
 
                 });
             });
+        }
+        else {
+            little_alert("ERROR: transcript is empty or null!")
         }
     }
 
@@ -1546,7 +1550,7 @@ function render_graph(root, doc) {
                     class: wd.type == 'unaligned' ? 'unaligned' : 'word',
                     x: t2x(wd.start - start_time),
                     //y: pitch2y((wd_stats&&wd_stats.pitch_mean) || seq_stats.pitch_mean) - 2,
-                    y: Math.max(30, pitch2y((wd_stats && wd_stats.pitch_percentile_91) || seq_stats.pitch_mean) - 2),
+                    y: Math.max(30, pitch2y((wd_stats && wd_stats.pitch_percentile_91) || (seq_stats || {}).pitch_mean || 0) - 2),
                     fill: '#3B5161',
                 }
             })
@@ -2306,6 +2310,7 @@ function download_windowed(doc) {
             header += `,seg_${ i + 1 }`;
 
         content += header;
+        content += ",INFO: For the prosodic measure data the default window or audio sample length is 20 seconds. Rigorous testing showed that a window/audio sample of 20 seconds is ideal for its consistency in matching the prosodic measures of the entire audio length."
         content += '\n';
 
         // console.log(Object.entries(measureJSON));
@@ -2382,3 +2387,16 @@ function pitch2y(p, p_h) {
 }
 
 ///////////////// end Math utility functions /////////////////////
+
+function count_by_name(doc_name) {
+    let founds = Object.values(T.docs).filter(doc => doc.title.includes(doc_name));
+    console.log('Found ' + founds.length + ' documents including name ' + doc_name);
+    let output = "";
+    founds.forEach((doc, i) => {
+        if (i != 0) output += "\n";
+
+        output += doc.title + ", " + new Date(doc.date * 1000).toLocaleString().replace(",", " ");
+    });
+
+    console.log(output);
+}
