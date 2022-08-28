@@ -9,7 +9,7 @@ var C = C || {
     }
 };
 
-var DRIFT_VER = 'v4.3.0';
+var DRIFT_VER = 'v4.3.1';
 
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded

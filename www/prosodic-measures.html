@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="reset.css?v=4.3.0" />
-  <link rel="stylesheet" href="base.css?v=4.3.0" />
-  <link rel="stylesheet" href="plainpage.css?v=4.3.0" />
+  <link rel="stylesheet" href="reset.css?v=4.3.1" />
+  <link rel="stylesheet" href="base.css?v=4.3.1" />
+  <link rel="stylesheet" href="plainpage.css?v=4.3.1" />
   <link rel="preconnect" href="https://fonts.gstatic.com" />
   <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
@@ -46,6 +46,12 @@
           What do the Voxit prosodic measures quantify?
         </h3>
 
+        <p>
+          *These measures work best for 20 second windows of audio. Rigorous testing shows that a window/audio sample of
+          20 seconds is ideal for its consistency in matching the prosodic measures of the entire audio length, thus
+          downloading <a href="#windowed-voxit-data" class="discreet-link">windowed data</a> will also default to
+          20-second window lengths.
+        </p>
         <p id="WPM">
           <b>Words Per Minute</b><br />
           The average number of words per minute. The transcript of the
@@ -219,7 +225,7 @@
           their timings.
         </p>
         <p>
-          <b>Windowed Voxit Data</b><br />
+          <b id="windowed-voxit-data">Windowed Voxit Data</b><br />
           Prosodic measures taken for consecutive 20-second slices of the audio file. For the prosodic measure data, the
           default window or audio sample length is 20 seconds. Rigorous testing showed that a window/audio sample of 20
           seconds is ideal for its consistency in matching the prosodic measures of the entire audio length.

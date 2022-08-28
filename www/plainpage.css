@@ -114,6 +114,19 @@ main a:focus-visible
     text-decoration: underline;
 }
 
+main a.discreet-link
+{
+    color: inherit;
+    font-weight: normal;
+    text-decoration: underline;
+}
+
+main a.discreet-link:hover,
+main a.discreet-link:focus-visible
+{
+    text-decoration: none;
+}
+
 main ol,
 main ul
 {
