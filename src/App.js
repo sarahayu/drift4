@@ -42,6 +42,12 @@ function App(props) {
         })
     }
 
+    const init = () => {
+        initSettings();
+
+        document.getElementById("version").textContent = 'v' + process.env.REACT_APP_VERSION;
+    }
+
     const pushNewDocs = data => {        
         infosLatestModified.current = Math.max(infosLatestModified.current, ...data.map(doc => doc.modified_time));
 
@@ -108,7 +114,7 @@ function App(props) {
 
     // --- START hooks
     
-    useEffect(initSettings, []);
+    useEffect(init, []);
 
     // whenever gentlePort changes (e.g. through settings), we need to recheck if gentle is running on said port
     useEffect(findGentle, [gentlePort]);

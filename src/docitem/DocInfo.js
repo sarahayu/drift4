@@ -11,7 +11,7 @@ function DocInfo({ id, align: alignURL, pitch: pitchURL, path: audioURL, docObje
     const [ autoscroll, setAutoScroll ] = useState(false);
     const [ audioLoaded, setAudioLoaded ] = useState(false);
     const [ selection, setSelection ] = useState({ start_time: null, end_time: null })
-    const { current: audio } = useRef(new Audio('/media/' + audioURL));
+    const [ audio ] = useState(new Audio('/media/' + audioURL));
 
     useQuery(['align', id], () => getAlign(alignURL), { 
         enabled: !!alignURL ,
@@ -44,11 +44,15 @@ function DocInfo({ id, align: alignURL, pitch: pitchURL, path: audioURL, docObje
 
     useEffect(() => {
         audio.oncanplaythrough = () => setAudioLoaded(true);
-        audio.onpause = checkDonePlaying;
+        audio.onended = () => {
+            setRazorTime(null);
+            setPlaying(false);
+        }
     }, []);
 
     useEffect(() => {
         if (playing) {
+            console.log("playing")
             audio.play();
             updateRazor();
         }

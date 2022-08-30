@@ -1,11 +1,11 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from './GutsContext';
+import useDragger from "./utils/Dragger";
 import { bytesToMB, ENTER_KEY, prevDefStopProp, prevDefStopPropCb, rearrangeObjectProps } from "./utils/Utils";
 
 function Filelist(props) {
     const { docs, setDocs, updateDoc } = useContext(GutsContext);
-    const [ draggedItem, setDraggedItem ] = useState(null);
-    const lastDraggedItem = useRef(null);
+    const { onDragStart, onDragEnter, onDragEnd } = useDragger({ setDocs, updateDoc });
 
     const toggleOpenDoc = docid => {
         updateDoc(docid, doc => ({
@@ -13,43 +13,6 @@ function Filelist(props) {
             hasUnfolded: false,
         }));
     }
-
-    const onDragEnd = () => {
-        setDraggedItem(null);
-        window.onmouseup = null;
-    }
-    const onDragStart = docid => {
-        setDraggedItem(docid);
-        window.onmouseup = onDragEnd;
-    }
-    const onDragEnter = docid => {
-        if (draggedItem && draggedItem != docid) {
-            setDocs(oldDocs => {
-                let newDocsKeys = Object.keys(oldDocs);
-    
-                let draggedIndex = newDocsKeys.indexOf(draggedItem);
-                let movingDownwards = newDocsKeys.indexOf(docid) >= draggedIndex;
-    
-                newDocsKeys.splice(draggedIndex, 1);
-    
-                let draggedOverIndex = newDocsKeys.indexOf(docid);
-    
-                newDocsKeys.splice(draggedOverIndex + movingDownwards, 0, draggedItem);
-
-                return rearrangeObjectProps(oldDocs, newDocsKeys);
-            })
-        }
-    }
-
-    useEffect(() => {
-        if (draggedItem == null) {
-            if (lastDraggedItem.current != null)
-                updateDoc(lastDraggedItem.current, { grabbed: false });
-        }
-        else
-            updateDoc(draggedItem, { grabbed: true });
-        lastDraggedItem.current = draggedItem;
-    }, [draggedItem]);
 
     return (
         <>
