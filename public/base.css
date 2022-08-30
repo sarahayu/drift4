@@ -215,3 +215,8 @@ p
 {
     grid-column: 1 / span 2;
 }
+
+.hover-no-underline:hover
+{
+    text-decoration: none !important;
+}

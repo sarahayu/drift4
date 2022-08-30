@@ -584,6 +584,7 @@ main
     z-index: 1;
     box-shadow: 0px 3px 7px -3px rgba(0, 0, 0, 0.25);
     list-style: none;
+    cursor: default;
 }
 
 .dl-dropdown.leftedge
@@ -613,12 +614,28 @@ main
     padding-right: 2em;
 }
 
+.dl-dropdown .addt-info-btn
+{
+    text-transform: none;
+    color: var(--primary-400);
+    text-decoration: underline;
+    font-weight: 400;
+    display: inline-block;
+    margin: 1em auto;
+    font-size: 0.9rem;
+}
+
 .min-btn
 {
     border-bottom: 1px solid #eee;
 }
 
 .dl-dropdown li:last-child .action-btn
+{
+    border-top: 1px solid #eee;
+}
+
+.sep-before
 {
     border-top: 1px solid #eee;
 }
@@ -925,6 +942,11 @@ main
     font-weight: 300;
 }
 
+.unaligned
+{
+    font-style: italic;
+}
+
 .play-btn
 {
     font-size: 1.1em;
@@ -1149,7 +1171,7 @@ main
     background-color: #C2C0C0;
 }
 
-#copied-alert
+#snackbar-alert
 {
     position: fixed;
     top: 100vh;
@@ -1164,11 +1186,12 @@ main
     font-weight: 300;
     font-style: italic;
     opacity: 0;
+    text-align: center;
     transition: all ease 0.2s;
     box-shadow: 0px 0px 6px 0px #00000040;
 }
 
-#copied-alert.visible
+#snackbar-alert.visible
 {
     opacity: 1;
     transform: translate(-50%, calc(-100% - 1em));
@@ -1181,7 +1204,7 @@ main
         animation: none !important;
     }
 
-    #copied-alert
+    #snackbar-alert
     {
         transform: translate(-50%, calc(-100% - 1em));
         transition-property: opacity;

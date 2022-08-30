@@ -9,7 +9,7 @@ var C = C || {
     }
 };
 
-var DRIFT_VER = 'v4.2.1';
+var DRIFT_VER = 'v4.3.1';
 
 // "main" method
 // this function (along with the rest of this file) is run each time stage.js is saved / when the webpage is first loaded
@@ -30,7 +30,6 @@ var DRIFT_VER = 'v4.2.1';
     T.PITCH_H = 250;
     T.LPAD = 0;
     T.MAX_A = 15;
-    T.DESCRIPTIONS = get_descriptions();
     T.WINDOWED_PARAMS = get_windowed_params();
 
     // initialize global variables, making sure to only initialize them
@@ -726,7 +725,7 @@ function render_table_section(root, doc, tftable) {
         text: '*vocal duration that corresponds to the transcript',
         attrs: {
             title: 'Click for more information',
-            href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape('Full Recording Duration vs. Selection') : 'prosodic-measures.html#full-vs-selection',
+            href: link_fragment('prosodic-measures.html', 'Full Recording Duration vs. Selection', 'full-vs-selection'),
             target: '_blank'
         },
     });
@@ -735,7 +734,7 @@ function render_table_section(root, doc, tftable) {
         text: 'Prosodic measures are calculated using Voxit',
         attrs: {
             title: 'Click for more information about Voxit',
-            href: 'fragmentDirective' in document ? 'about.html#:~:text=' + escape('About Voxit: Vocal Analysis Tools') : 'about.html#about-voxit',
+            href: link_fragment('about.html', 'About Voxit: Vocal Analysis Tools', 'about-voxit'),
             target: '_blank'
         },
     });
@@ -865,15 +864,13 @@ function render_stats(mainTableRoot, timeframeRoot, doc) {
             id: dataLabel + '-h'
         }).a({
             text: dataLabel.replace(/_/g, ' '),
-            attrs: T.DESCRIPTIONS[dataLabel] ? {
-                href: 'fragmentDirective' in document ? 'prosodic-measures.html#:~:text=' + escape(T.DESCRIPTIONS[dataLabel]).replaceAll('-', '%2D') 
-                    : 'prosodic-measures.html#' + (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel),
+            attrs: LABEL_DESCRIPTIONS[dataLabel] ? {
+                href: link_fragment('prosodic-measures.html', LABEL_HEADERS[dataLabel], (dataLabel.includes('Pause_Count') ? 'Gentle_Pause_Count' : dataLabel)),
                 target: '_blank',
-                title: splitString(T.DESCRIPTIONS[dataLabel], 40, 4) + '\n(Click label for more information)',
+                title: splitString(LABEL_DESCRIPTIONS[dataLabel], 40, 4) + '\n(Click label for more information)',
             } : {},
             events: {
                 onmousedown: ev => {
-                    console.log(escape(T.DESCRIPTIONS[dataLabel]).replaceAll('-', '%2D'))
                     ev.preventDefault()
                 }
             }
@@ -1051,14 +1048,15 @@ function render_transcript_input(root, doc) {
         ev.preventDefault();
         ev.stopPropagation();
 
-        // prevent dual-submission...
-        this.disabled = true;
-        this.textContent = "aligning transcript...";
-
-        document.getElementById('tscript-' + doc.id).disabled = true;
-
         var txt = document.getElementById('tscript-' + doc.id).value;
         if (txt) {
+
+            // prevent dual-submission...
+            this.disabled = true;
+            this.textContent = "aligning transcript...";
+    
+            document.getElementById('tscript-' + doc.id).disabled = true;
+
             var blob = new Blob([txt]);
             blob.name = "_paste.txt";
             attach.put_file(blob, function (ret) {
@@ -1087,6 +1085,9 @@ function render_transcript_input(root, doc) {
 
                 });
             });
+        }
+        else {
+            little_alert("ERROR: transcript is empty or null!")
         }
     }
 
@@ -1560,7 +1561,7 @@ function render_graph(root, doc) {
                     class: wd.type == 'unaligned' ? 'unaligned' : 'word',
                     x: t2x(wd.start - start_time),
                     //y: pitch2y((wd_stats&&wd_stats.pitch_mean) || seq_stats.pitch_mean) - 2,
-                    y: Math.max(30, pitch2y((wd_stats && wd_stats.pitch_percentile_91) || seq_stats.pitch_mean) - 2),
+                    y: Math.max(30, pitch2y((wd_stats && wd_stats.pitch_percentile_91) || (seq_stats || {}).pitch_mean || 0) - 2),
                     fill: '#3B5161',
                 }
             })
@@ -1769,6 +1770,8 @@ function render_hamburger(root, doc) {
         windowed: 'Windowed Voxit Data (.csv)',
     }
 
+    let anyDownloads = false
+
     pregen_downloads.forEach(name => {
 
         if (name === 'voxit' && doc.align) {
@@ -1784,6 +1787,7 @@ function render_hamburger(root, doc) {
                     }
                 }
             })
+            anyDownloads = true
 
             return
         }
@@ -1802,6 +1806,7 @@ function render_hamburger(root, doc) {
                     }
                 }
             })
+            anyDownloads = true
 
             return
         }
@@ -1809,6 +1814,8 @@ function render_hamburger(root, doc) {
         if (!doc[name]) {
             return
         }
+
+        anyDownloads = true
 
         let out_filename = filename + '-' + name + '.' + doc[name].split('.').reverse()[0];
 
@@ -1819,11 +1826,29 @@ function render_hamburger(root, doc) {
             classes: ['action-btn'],
             attrs: {
                 href: '/media/' + doc[name],
-                _target: '_blank',
+                target: '_blank',
                 download: out_filename
             }
         })
     })
+
+    if (anyDownloads)
+        dlDropdown.li({
+            id: `ham-do-${doc.id}`,
+        }).a({
+            text: "What do these mean?",
+            classes: ['addt-info-btn', 'hover-no-underline'],
+            attrs: {
+                href: link_fragment('prosodic-measures.html', 'Downloadable Data', 'downloadable-data'),
+                target: '_blank',
+            }
+            // events: {
+            //     onclick: ev => {
+            //         ev.preventDefault();
+            //         delete_action(doc);
+            //     }
+            // }
+        });
 
     dlDropdown.li({
         id: `ham-del-${doc.id}`,
@@ -2034,31 +2059,54 @@ function get_data(docid) {
     return { pitch, align, rms }
 }
 
-function get_descriptions() {
-    
-        // TODO better way to do this?
-        return {
-            'WPM': 'The average number of words per minute. The transcript of the recording created by Gentle, corrected when necessary, produced the number of words read, which was divided by the length of the recording and normalized, if the recording was longer or shorter than one minute, to reflect the speaking rate for 60 seconds.',
-            'Gentle_Pause_Count_>100ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Pause_Count_>500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Pause_Count_>1000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Pause_Count_>1500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Pause_Count_>2000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Pause_Count_>2500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Long_Pause_Count_>3000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
-            'Gentle_Mean_Pause_Duration_(sec)': 'Average length of pauses',
-            'Gentle_Pause_Rate_(pause/sec)': 'Average number of pauses greater than 100, 250 and 500 ms, normalized for recording length.',
-            'Gentle_Complexity_All_Pauses': 'This measure is unitless, calculated using the Lempel-Ziv algorithm to estimate Kolomogorov complexity, also used for compression, as with gif or zip files. A higher value indicates less predictable & less repetitive pauses, normalized for audio length.',
-            'Drift_f0_Mean_(hz)': 'Average Pitch. Mean f0, or the fundamental frequency, of a voice is sampled every 10 milliseconds, measured in Hertz (cycles per second), excluding outliers. This actually measures the number of times the vocal cords vibrate per second.',
-            'Drift_f0_Range_(octaves)': 'Range of pitches measured in octaves, excluding outliers.',
-            'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
-            'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
-            'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
-            'Intensity_Mean_Abs_Velocity_(decibels/sec)': 'Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
-            'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
-            'Intensity_Segment_Range_95_Percent_(decibels)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
-            'Dynamism': 'how predictable or repetitive a speaker\'s pitch, or intonation, and rhythmic patterns are in combination.'
-        };
+var LABEL_DESCRIPTIONS = {
+    'WPM': 'The average number of words per minute. The transcript of the recording created by Gentle, corrected when necessary, produced the number of words read, which was divided by the length of the recording and normalized, if the recording was longer or shorter than one minute, to reflect the speaking rate for 60 seconds.',
+    'Gentle_Pause_Count_>100ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Pause_Count_>500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Pause_Count_>1000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Pause_Count_>1500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Pause_Count_>2000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Pause_Count_>2500ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Long_Pause_Count_>3000ms': 'The number of pauses between words greater than 100, 500, 1000, and 2000 milliseconds, per minute, normalized for recording length. We do not consider pauses less than 100ms because fully continuous speech also naturally has such brief gaps in energy, nor do we consider pauses that exceed 1,999 ms (that is, 2 seconds), because they are quite rare within the reading of a poem.',
+    'Gentle_Mean_Pause_Duration_(sec)': 'Average length of pauses',
+    'Gentle_Pause_Rate_(pause/sec)': 'Average number of pauses greater than 100, 250 and 500 ms, normalized for recording length.',
+    'Gentle_Complexity_All_Pauses': 'This measure is unitless, calculated using the Lempel-Ziv algorithm to estimate Kolomogorov complexity, also used for compression, as with gif or zip files. A higher value indicates less predictable & less repetitive pauses, normalized for audio length.',
+    'Drift_f0_Mean_(hz)': 'Average Pitch. Mean f0, or the fundamental frequency, of a voice is sampled every 10 milliseconds, measured in Hertz (cycles per second), excluding outliers. This actually measures the number of times the vocal cords vibrate per second.',
+    'Drift_f0_Range_(octaves)': 'Range of pitches measured in octaves, excluding outliers.',
+    'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'Speed of f0 in octaves per second. This is simply a measure of how fast pitch is changing.',
+    'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'Acceleration of f0 in octaves per second squared. Acceleration is the rate of change of pitch velocity, that is how rapidly the changes in pitch change, which we perceive as the lilt of a voice.',
+    'Drift_f0_Entropy': 'or entropy for f0, indicating the predictability of pitch patterns. Entropy is an information theoretic measure of predictability',
+    'Intensity_Mean_Abs_Velocity_(decibels/sec)': 'Average speed of change of intensity/volume. Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
+    'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
+    'Intensity_Segment_Range_95_Percent_(decibels)': 'Sound intensity or volume is measured in decibels (dB), a logarithmic unit of power that correlates with our subjective impression of loudness.',
+    'Dynamism': 'how predictable or repetitive a speaker\'s pitch, or intonation, and rhythmic patterns are in combination.'
+}
+
+var LABEL_HEADERS = {
+    'WPM': 'Words Per Minute',
+    'Gentle_Pause_Count_>100ms': 'Pause Count',
+    'Gentle_Pause_Count_>500ms': 'Pause Count',
+    'Gentle_Pause_Count_>1000ms': 'Pause Count',
+    'Gentle_Pause_Count_>1500ms': 'Pause Count',
+    'Gentle_Pause_Count_>2000ms': 'Pause Count',
+    'Gentle_Pause_Count_>2500ms': 'Pause Count',
+    'Gentle_Long_Pause_Count_>3000ms': 'Pause Count',
+    'Gentle_Mean_Pause_Duration_(sec)': 'Average Pause Duration',
+    'Gentle_Pause_Rate_(pause/sec)': 'Average Pause Rate',
+    'Gentle_Complexity_All_Pauses': 'Rhythmic Complexity All Pauses',
+    'Drift_f0_Mean_(hz)': 'f0 Mean',
+    'Drift_f0_Range_(octaves)': 'f0 Range',
+    'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 'f0 Mean Absolute Velocity',
+    'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 'f0 Mean Absolute Acceleration',
+    'Drift_f0_Entropy': 'f0 Entropy',
+    'Intensity_Mean_Abs_Velocity_(decibels/sec)': 'Intensity Mean Absolute Velocity',
+    'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 'Intensity Mean Absolute Acceleration',
+    'Intensity_Segment_Range_95_Percent_(decibels)': 'Intensity Segment Range',
+    'Dynamism': 'Dynamism'
+}
+
+function link_fragment(url, text, id_alt) {
+    return 'fragmentDirective' in document ? url + '#:~:text=' + escape(text).replaceAll('-', '%2D') : url + '#' + id_alt
 }
 
 function get_selection(id) {
@@ -2079,7 +2127,7 @@ function get_selection(id) {
 }
 
 function little_alert(text, appear) {
-    const $alertDiv = document.getElementById('copied-alert');
+    const $alertDiv = document.getElementById('snackbar-alert');
     $alertDiv.textContent = text;
     $alertDiv.classList.add('visible');
     setTimeout(() =>
@@ -2273,6 +2321,7 @@ function download_windowed(doc) {
             header += `,seg_${ i + 1 }`;
 
         content += header;
+        content += ",INFO: For the prosodic measure data the default window or audio sample length is 20 seconds. Rigorous testing showed that a window/audio sample of 20 seconds is ideal for its consistency in matching the prosodic measures of the entire audio length."
         content += '\n';
 
         // console.log(Object.entries(measureJSON));
@@ -2349,3 +2398,16 @@ function pitch2y(p, p_h) {
 }
 
 ///////////////// end Math utility functions /////////////////////
+
+function count_by_name(doc_name) {
+    let founds = Object.values(T.docs).filter(doc => doc.title.includes(doc_name));
+    console.log('Found ' + founds.length + ' documents including name ' + doc_name);
+    let output = "";
+    founds.forEach((doc, i) => {
+        if (i != 0) output += "\n";
+
+        output += doc.title + ", " + new Date(doc.date * 1000).toLocaleString().replace(",", " ");
+    });
+
+    console.log(output);
+}
