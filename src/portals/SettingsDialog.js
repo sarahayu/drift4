@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GutsContext } from '../GutsContext';
 import { postSettings } from '../utils/Queries';
-import { RESOLVING } from '../utils/Utils';
+import { displaySnackbarAlert, RESOLVING } from '../utils/Utils';
 
 function SettingsDialog(props) {
 
@@ -27,8 +27,7 @@ function SettingsDialog(props) {
 
             // TODO clear various query caches (align, measure, etc etc...) PROBABLY IN APP.JS???
             
-            // eslint-disable-next-line no-undef
-            little_alert("Settings updated!");
+            displaySnackbarAlert("Settings updated!");
         }
         // it is possible settings did not get changed, maybe because /_settings endpoint isn't actually enabled to change settings (e.g. web version)
         else {
@@ -46,7 +45,9 @@ function SettingsDialog(props) {
 
     const hideDialog = () => settingsDialogElem.current.close();
     const submitDialog = () => {
-        submitNewSettings();
+        if (globalCalcIntense != formCalcIntense
+                || globalGentlePort != formGentlePort)
+            submitNewSettings();
         hideDialog();
     }
 

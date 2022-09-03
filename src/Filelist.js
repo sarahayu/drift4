@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from './GutsContext';
-import useDragger from "./utils/Dragger";
+import useDragger from "./utils/useDragger";
 import { bytesToMB, ENTER_KEY, prevDefStopProp, prevDefStopPropCb, rearrangeObjectProps } from "./utils/Utils";
 
 function Filelist(props) {

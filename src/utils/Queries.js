@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { parsePitch } from './MathUtils';
+import { parsePitch, pitchStats } from './MathUtils';
 
 const getInfos = async ({ since }) => {
     const res = await axios.get(`/_rec/_infos.json?since=${ since }`);
@@ -23,7 +23,12 @@ const getGentle = ({ gentlePort }) => {
 const getPitch = async pitchURL => {
     const res = await fetch(`/media/${ pitchURL }`);
     const tex = await res.text();
-    return Promise.resolve(parsePitch(tex));
+
+    let pitchArr = parsePitch(tex);
+    return Promise.resolve(Object.assign(pitchArr, { 
+        duration: pitchArr.length / 100 ,
+        pitchStats: pitchStats(pitchArr),
+    }));
 }
 
 const getAlign = async alignURL => {
@@ -36,7 +41,7 @@ const getRMS = async rmsURL => {
     return res.data;
 }
 
-export { 
+export {
     getSettings,
     getInfos,
     postSettings,
@@ -44,4 +49,4 @@ export {
     getPitch,
     getAlign,
     getRMS,
-}
+};

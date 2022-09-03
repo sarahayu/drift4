@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import DocItem from "./docitem/DocItem";
+import DocCard from "./docitem/DocCard";
 import { GutsContext } from './GutsContext';
-import useDragger from "./utils/Dragger";
+import useDragger from "./utils/useDragger";
 import { elemClassAdd, elemClassRemove } from "./utils/Utils";
 
 function DocArea(props) {
@@ -35,7 +35,7 @@ function DocArea(props) {
         <>
         {
             Object.values(docs).filter(doc => doc.opened).map(doc => 
-                <DocItem key={ doc.id } { ...{ doc, onDragStart, onDragEnter } }/>
+                <DocCard key={ doc.id } { ...{ doc, onDragStart, onDragEnter } }/>
             )
         }
         </>

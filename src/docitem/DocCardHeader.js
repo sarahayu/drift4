@@ -1,20 +1,19 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from '../GutsContext';
-import { elemClassAdd, elemClassRemove, getExt, rearrangeObjectProps, stripExt } from "../utils/Utils"
+import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, prevDefCb, rearrangeObjectProps, stripExt } from "../utils/Utils"
 
-function Topbar({ doc, onDragStart }) {
-
+function DocCardHeader({ doc, onDragStart }) {
     return (
         <div className="docbar">
             <img src="tictactoe.svg" alt="drag indicator" title="Drag to change order of document" 
                 onMouseDown={ () => onDragStart(doc.id) } draggable={ false } />
             <div className="doc-name">{ doc.title }</div>
-            <Hamburger { ...doc } />
+            <DocOpts { ...doc } />
         </div>
     )
 }
 
-function Hamburger({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink }) {
+function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink }) {
 
     const { docs, setDocs, updateDoc, deleteDoc } = useContext(GutsContext);
     const filenameBase = useRef(stripExt(title));
@@ -22,8 +21,7 @@ function Hamburger({ id, title, transcript: transcriptLink, csv: csvLink, align:
     const downloadVoxitCSV = () => console.log("TODO hamburger download voxit csv");
     const downloadWindowedData = () => {
         console.log("TODO hamburger download windowed data");
-        // eslint-disable-next-line no-undef
-        little_alert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
+        displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
     }
 
     const options = () => ([
@@ -66,9 +64,7 @@ function Hamburger({ id, title, transcript: transcriptLink, csv: csvLink, align:
             <img src="ellipsis.svg" alt="options indicator" />
             <ul className="dl-dropdown rightedge">
                 {
-                    options().map(option => (
-                        <Option key={ option.label } { ...option } />
-                    ))
+                    options().map(option => <Option key={ option.label } { ...option } />)
                 }
             </ul>
         </button>
@@ -76,23 +72,15 @@ function Hamburger({ id, title, transcript: transcriptLink, csv: csvLink, align:
 }
 
 function Option({ label, action, link, filename, addtClasses }) {
-
-    const toCb = _action => {
-        return ev => {
-            ev.preventDefault();
-            _action();
-        }
-    }
-
     return (
         <li>
             {
                 action ?
-                <button className={ `action-btn ${ addtClasses || '' }` } onClick={ toCb(action) }>{ label }</button> :
+                <button className={ `action-btn ${ addtClasses || '' }` } onClick={ prevDefCb(action) }>{ label }</button> :
                 <a className={ `action-btn ${ addtClasses || '' }` } href={ link } target="_blank" download={ filename }>{ label }</a>
             }
         </li>
     )
 }
 
-export default Topbar;
+export default DocCardHeader;

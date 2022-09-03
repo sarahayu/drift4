@@ -120,7 +120,56 @@ const pitchStats = (seq) => {
         pitch_distr, accel_distr);
 }
 
-const durationFromPitch = pitch => pitch.length / 100;
+const XSCALE = 300;
+const LPAD = 0;
+const MAX_A = 15;
+const PITCH_H = 250;
+
+function fr2x(fr) {
+    return t2x(fr / 100.0);
+}
+function t2x(t) {
+    return LPAD + t2w(t);
+}
+function x2t(x) {
+    return (x - LPAD) / XSCALE;
+}
+function t2w(t) {
+    return t * XSCALE;
+}
+
+function pitch2y(p, p_h) {
+    if (p == 0) {
+        return p;
+    }
+
+    // -- Linear
+    //return PITCH_H - p;
+
+    // -- Logscale
+    // This is the piano number formula
+    // (https://en.wikipedia.org/wiki/Piano_key_frequencies)
+    // n = 12 log2(f/440hz) + 49
+    return (-60 * Math.log2(p / 440));
+}
+
+const getTranscriptInfoFromAlign = ({ segments }) => ([ segments[0].start, segments[segments.length - 1].end ]);
+
+// like python's range()
+const range = (start, end, step) => {
+    if (end == undefined) {
+        end = start;
+        start = 0;
+        step = 1;
+    }
+
+    let arr = [];
+
+    for (let i = start; i < end; i += step)
+        arr.push(i);
+
+    return arr;
+}
 
 export {
     parsePitch,
@@ -129,5 +178,12 @@ export {
     getDistribution,
     timeStats,
     pitchStats,
-    durationFromPitch,
+    fr2x,
+    t2x,
+    x2t,
+    t2w,
+    pitch2y,
+    getTranscriptInfoFromAlign,
+    range,
+    PITCH_H,
 };

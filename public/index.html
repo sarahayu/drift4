@@ -25,14 +25,22 @@
 
     <!-- some global vanilla stuff I'm too lazy to implement in React... -->
     <script>
-        function little_alert(text, appear) {
-            const $alertDiv = document.getElementById('copied-alert');
+        function showLittleAlert(text, appear) {
+            const $alertDiv = document.getElementById('snackbar-alert');
             $alertDiv.textContent = text;
             $alertDiv.classList.add('visible');
 
             if (this.alertTimeout) clearTimeout(this.alertTimeout);
             this.alertTimeout = setTimeout(() =>
                 $alertDiv.classList.remove('visible'), appear || 2000);
+        }
+
+        var audios = {};
+
+        function loadAudio(key, url) {
+            if (!audios.hasOwnProperty(key))
+                audios[key] = new Audio(url);
+            return audios[key];
         }
     </script>
   </head>

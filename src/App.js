@@ -57,7 +57,13 @@ function App(props) {
             if (newDocs[doc.id])
                 Object.assign(newDocs[doc.id], doc);
             else
-                newDocs[doc.id] = Object.assign(doc, { grabbed: false, opened: false });
+                newDocs[doc.id] = Object.assign(doc, { 
+                    grabbed: false, 
+                    opened: false,
+                    selection: { start_time: null, end_time: null },
+                    autoscroll: false,
+                    razorTime: null,
+                });
         }
         
         setDocs(newDocs);

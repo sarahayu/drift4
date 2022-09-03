@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { getDurationFromPitchData } from "./MathUtils";
 import { getAlign, getPitch, getRMS } from "./Queries";
 
 const RESOLVING = null;
@@ -54,6 +56,44 @@ const pitchQuery = (id, path) => ([ ['pitch', id], () => getPitch(path), { enabl
 const alignQuery = (id, path) => ([ ['align', id], () => getAlign(path), { enabled: !!path } ]);
 const rmsQuery = (id, path) => ([ ['rms', id], () => getRMS(path), { enabled: !!path } ]);
 
+// we do this because React's Audio code is SLOW on multiple play/pauses; loadAudio is plain JS code using plain JS Audio
+const useAudio = (id, url) => {
+    // eslint-disable-next-line no-undef
+    return useRef(loadAudio(id, url)).current;
+}
+
+const displaySnackbarAlert = (message, milliseconds) => {
+    // eslint-disable-next-line no-undef
+    showLittleAlert(message, milliseconds);
+}
+
+// helps us access updated state values in cleanup functions in hooks
+const useRefState = initVal => {
+    
+    const [ state, setState ] = useState(initVal);
+    const ref = useRef(state);
+
+    useEffect(() => { ref.current = state }, [ state ]);
+
+    return [ state, setState, ref ];
+}
+
+const useProsodicData = ({ id, pitch, align, rms }) => {
+    
+    const { isSuccess: pitchReady, data: pitchData } = useQuery(['pitch', id], () => getPitch(pitch), { enabled: !!pitch });
+    const { isSuccess: alignReady, data: alignData } = useQuery(['align', id], () => getAlign(align), { enabled: !!align });
+    const { isSuccess: rmsReady, data: rmsData } = useQuery(['rms', id], () => getRMS(rms), { enabled: !!rms });
+
+    return {
+        pitchReady,
+        pitchData,
+        alignReady,
+        alignData,
+        rmsReady,
+        rmsData,
+    }
+}
+
 export { RESOLVING, 
     ENTER_KEY, 
     bytesToMB, 
@@ -72,4 +112,8 @@ export { RESOLVING,
     pitchQuery,
     alignQuery,
     rmsQuery,
+    useAudio,
+    displaySnackbarAlert,
+    useRefState,
+    useProsodicData,
 };
