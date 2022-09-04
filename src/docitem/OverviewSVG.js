@@ -1,12 +1,12 @@
 import { range } from "../utils/MathUtils";
 import { useProsodicData } from "../utils/Utils";
-import { Razor, SelectionOverlay, SimplifedPitchTrace, WordGaps } from "./OverviewSVGParts";
+import { OverviewRazor, SelectionOverlay, SimplifedPitchTrace, WordGaps } from "./OverviewSVGParts";
 
 function OverviewSVG(props) {
 
     let { 
         razorTime,
-        curSelection,
+        inProgressSelection,
         docObject } = props;
 
     const { alignData, pitchData } = useProsodicData(docObject);
@@ -21,8 +21,8 @@ function OverviewSVG(props) {
 
             <WordGaps { ...{ width, duration, height, alignData } }/>
             <SimplifedPitchTrace { ...{ pitchData, alignData, width, duration } }/>
-            <SelectionOverlay { ...{ width, height, duration, curSelection } } />
-            <Razor { ...{ razorTime, width, height, duration } } />
+            <SelectionOverlay { ...{ width, height, duration, inProgressSelection } } />
+            <OverviewRazor { ...{ razorTime, width, height, duration } } />
 
             { 
                 /* print seconds */

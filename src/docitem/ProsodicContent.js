@@ -17,7 +17,7 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
     const [razorTime, setRazorTime, refRazorTime] = useRefState(docs[id].razorTime);
     const [autoscroll, setAutoScroll, refAutoscroll] = useRefState(docs[id].autoscroll);
     const [selection, setSelection, refSelection] = useRefState(docs[id].selection)
-    const [ curSelection, setCurSelection ] = useState(selection);
+    const [ inProgressSelection, setInProgressSelection ] = useState(selection);
     const audio = useAudio(id, '/media/' + audioURL);
 
     const seekAudioTime = time => setRazorTime(audio.currentTime = time);
@@ -70,7 +70,7 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
     }, []);
 
     useEffect(() => {
-        setCurSelection(selection);
+        setInProgressSelection(selection);
     }, [ selection ]);
 
     useEffect(() => {
@@ -99,8 +99,8 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
                 audioLoaded,
                 selection,
                 setSelection,
-                curSelection,
-                setCurSelection,
+                inProgressSelection,
+                setInProgressSelection,
             }} />
             <GraphSection {...{
                 ...includeDocInSelf(docObject),
@@ -115,8 +115,8 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
                 audioLoaded,
                 selection,
                 setSelection,
-                curSelection,
-                setCurSelection,
+                inProgressSelection,
+                setInProgressSelection,
             }} />
             <TableSection />
         </>

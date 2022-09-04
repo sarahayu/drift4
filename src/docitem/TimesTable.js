@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { getTranscriptInfoFromAlign } from "../utils/MathUtils";
 import { useProsodicData } from "../utils/Utils";
+import TimesTableCell from "./TimesTableCell";
 
-function TimesTable({ docObject, selection, setSelection, setRazorTime, resetRazor, audioLoaded }) {
+function TimesTable({ docObject, selection, setSelection, inProgressSelection, resetRazor, audioLoaded }) {
 
     const {
         pitchReady,
@@ -21,8 +21,8 @@ function TimesTable({ docObject, selection, setSelection, setRazorTime, resetRaz
 
     let [tsStart, tsEnd] = getTranscriptInfoFromAlign(alignData),
         tsDuration = tsEnd - tsStart,
-        selStart = selection.start_time,
-        selEnd = selection.end_time;
+        selStart = inProgressSelection.start_time,
+        selEnd = inProgressSelection.end_time;
 
     let columns = {
         'full recording duration*': Math.round(tsDuration * 10) / 10 + 's',
@@ -92,7 +92,7 @@ function TimesTable({ docObject, selection, setSelection, setRazorTime, resetRaz
                 <tr>
                     {
                         Object.values(columns).map((val, ind) =>
-                            <TimesCell 
+                            <TimesTableCell 
                                 key={ ind }
                                 editable={ inputAreas.includes(ind) } 
                                 value={ val }
@@ -114,58 +114,6 @@ function UnloadedTimesTable({ columns }) {
             </table>
         </div>
     )
-}
-
-function TimesCell({ editable, value, callback }) {
-
-    const [ curValue, setCurValue ] = useState(value);
-    const [ curInputType, setCurInputType ] = useState("text");
-
-    useEffect(() => {
-        setCurValue(value);
-    }, [ value ])
-    
-    if (!editable)
-        return (
-            <td>{ value }</td>
-        )
-
-    const handleFocus = ev => {
-        if (curValue.slice(-1) === 's')
-            setCurValue(curValue.slice(0, -1));
-        setCurInputType("number");
-    }
-
-    const handleExit = ev => {
-        const { inputVal, inputType } = callback(ev);
-
-        setCurValue(inputVal);
-        setCurInputType(inputType);
-    }
-
-    const handleValChange = ev => setCurValue(ev.currentTarget.value);
-
-    const handleEnter = ev => {
-        if (ev.keyCode == 13) {
-            ev.preventDefault();
-            ev.currentTarget.blur();
-        }
-    }
-
-    return (
-        <td className='editable'>
-            <input 
-                className='text-input'
-                value={ curValue }
-                type={ curInputType }
-                step={ 0.1 }
-                onFocus={ handleFocus }
-                onBlur={ handleExit }
-                onChange={ handleValChange }
-                onKeyDown={ handleEnter }></input>
-        </td>
-    )
-
 }
 
 export default TimesTable;

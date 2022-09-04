@@ -10,8 +10,8 @@ function OverviewSVGInteractor(props) {
         resetRazor,
         seekAudioTime,
         setSelection,
-        curSelection,
-        setCurSelection,
+        inProgressSelection,
+        setInProgressSelection,
         docObject } = props;
 
     const { pitchData } = useProsodicData(docObject);
@@ -39,7 +39,7 @@ function OverviewSVGInteractor(props) {
             // Limit to 30secs
             end = Math.min(start + 30, end);
 
-            setCurSelection({
+            setInProgressSelection({
                 start_time: start,
                 end_time: end
             });
@@ -53,11 +53,11 @@ function OverviewSVGInteractor(props) {
             seekAudioTime(t2.current);
         }
         else {
-            setSelection(curSelection);
+            setSelection(inProgressSelection);
             resetRazor();
             
             if (wasPlaying.current)
-                seekAudioTime(curSelection.start_time);
+                seekAudioTime(inProgressSelection.start_time);
         }
 
         if (wasPlaying.current)

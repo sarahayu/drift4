@@ -88,7 +88,7 @@ function WordGaps({ alignData, width, duration, height }) {
     )
 }
 
-function Razor({ razorTime, width, height, duration }) {
+function OverviewRazor({ razorTime, width, height, duration }) {
     if (razorTime == null) return;
 
     return (
@@ -100,25 +100,25 @@ function Razor({ razorTime, width, height, duration }) {
     );
 }
 
-function SelectionOverlay({ width, height, duration, curSelection }) {
+function SelectionOverlay({ width, height, duration, inProgressSelection }) {
     return (
         <>
             <rect key={ "selection-pre" }
                 x={ 0 }
                 y={ 0 }
-                width={ width * (curSelection.start_time / duration) }
+                width={ width * (inProgressSelection.start_time / duration) }
                 height={ height }
                 fill='rgba(218,218,218,0.4)'></rect> 
             <rect key={ "selection-post" }
-                x={ width * (curSelection.start_time / duration) + width * ((curSelection.end_time - curSelection.start_time) / duration) }
+                x={ width * (inProgressSelection.start_time / duration) + width * ((inProgressSelection.end_time - inProgressSelection.start_time) / duration) }
                 y={ 0 }
-                width={ width - (width * (curSelection.start_time / duration) + width * ((curSelection.end_time - curSelection.start_time) / duration)) }
+                width={ width - (width * (inProgressSelection.start_time / duration) + width * ((inProgressSelection.end_time - inProgressSelection.start_time) / duration)) }
                 height={ height }
                 fill='rgba(218,218,218,0.4)'></rect> 
             <rect key={ "selection-border" }
-                x={ width * (curSelection.start_time / duration) }
+                x={ width * (inProgressSelection.start_time / duration) }
                 y={ 1 }
-                width={ width * ((curSelection.end_time - curSelection.start_time) / duration) }
+                width={ width * ((inProgressSelection.end_time - inProgressSelection.start_time) / duration) }
                 height={ height - 2 }
                 stroke={ 'rgba(128, 55, 43, 1)' }
                 strokeWidth={ 1 }
@@ -131,6 +131,6 @@ function SelectionOverlay({ width, height, duration, curSelection }) {
 export {
     WordGaps,
     SimplifedPitchTrace,
-    Razor,
+    OverviewRazor,
     SelectionOverlay,
 };
