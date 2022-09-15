@@ -6,6 +6,7 @@ module.exports = function(app) {
         "/_db",
         "/_attach",
         "/_settings",
+        "/_measure",
         "/_rec/**",
         "/media/**",
     ].forEach(path => app.use(createProxyMiddleware(path, { 

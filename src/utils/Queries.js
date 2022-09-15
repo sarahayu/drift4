@@ -41,6 +41,18 @@ const getRMS = async rmsURL => {
     return res.data;
 }
 
+const getMeasureSelection = async (docid, startTime, endTime) => {
+    const res = await axios.get(`/_measure?id=${docid}&start_time=${startTime}&end_time=${endTime}`);
+    return res.data.measure;
+}
+
+const getMeasureFullTS = async (docid, forceGen) => {
+    if (forceGen === undefined)
+        forceGen = false;
+    const res = await axios.get(`/_measure?id=${docid}&force_gen=${forceGen}`);
+    return res.data.measure;
+}
+
 export {
     getSettings,
     getInfos,
@@ -49,4 +61,6 @@ export {
     getPitch,
     getAlign,
     getRMS,
+    getMeasureSelection,
+    getMeasureFullTS,
 };

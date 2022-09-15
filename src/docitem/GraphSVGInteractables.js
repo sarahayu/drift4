@@ -6,6 +6,7 @@ function GraphRazors({ razorTime, hoveringPos, start_time }) {
         {
             // current time razor
             razorTime && <rect 
+                className="graph-razor"
                 x={ t2x(razorTime - start_time) }
                 y={ 0 }
                 width={ 2 }

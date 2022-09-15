@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { fr2x, getTranscriptInfoFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "../utils/MathUtils";
 
 function Gaps({ alignData, inProgressSelection }) {
@@ -100,87 +100,93 @@ function Grid({ start_time, end_time }) {
 
 function DetailedPitchTrace({ pitchData, alignData, inProgressSelection }) {
 
-    let { start_time, end_time } = inProgressSelection;
-    let [ tsStart, tsEnd ] = getTranscriptInfoFromAlign(alignData);
-
-    // once we slice pitchData, pitch indices are gonna be relative to selection start/ends
-    tsStart -= start_time;
-    tsEnd -= start_time;
-
-    let ps = {
-        outsideTS: '',
-        duringTS: '',
-    };
-    let opacities = [ '30%', '60%' ];
-    let started = false, lastPath = '';
-
-    let seq = pitchData.pitchStats.smoothed.slice(Math.round(start_time * 100),
-        Math.round(end_time * 100));
-
-    // we've selected an audio window with no pitch data (e.g. silence, noise)
-    if (!seq) return;
+    const pitchTrace = useMemo(() => {
+        let { start_time, end_time } = inProgressSelection;
+        let [ tsStart, tsEnd ] = getTranscriptInfoFromAlign(alignData);
     
-    seq.forEach((p, p_idx) => {
-        let curPath = p_idx / 100 < tsEnd && p_idx > tsStart ? 'duringTS' : 'outsideTS';
-
-        if (lastPath != curPath) {
-            started = false;
-            lastPath = curPath;
-        }
-
-        if (p > 0) {
-            if (!started) {
-                ps[curPath] += 'M ';
+        // once we slice pitchData, pitch indices are gonna be relative to selection start/ends
+        tsStart -= start_time;
+        tsEnd -= start_time;
+    
+        let ps = {
+            outsideTS: '',
+            duringTS: '',
+        };
+        let opacities = [ '30%', '60%' ];
+        let started = false, lastPath = '';
+    
+        let seq = pitchData.pitchStats.smoothed.slice(Math.round(start_time * 100),
+            Math.round(end_time * 100));
+    
+        // we've selected an audio window with no pitch data (e.g. silence, noise)
+        if (!seq) return;
+        
+        seq.forEach((p, p_idx) => {
+            let curPath = p_idx / 100 < tsEnd && p_idx > tsStart ? 'duringTS' : 'outsideTS';
+    
+            if (lastPath != curPath) {
+                started = false;
+                lastPath = curPath;
             }
-            ps[curPath] += '' + fr2x(p_idx) + ',' + (pitch2y(p)) + ' ';
-            started = true;
-        }
-        else {
-            started = false;
-        }
-    })
+    
+            if (p > 0) {
+                if (!started) {
+                    ps[curPath] += 'M ';
+                }
+                ps[curPath] += '' + fr2x(p_idx) + ',' + (pitch2y(p)) + ' ';
+                started = true;
+            }
+            else {
+                started = false;
+            }
+        })
+
+        return Object.values(ps).map((d, ind) => <path 
+            key={ ind }
+            d={ d }
+            strokeWidth={ 3 }
+            fill={ 'none' }
+            strokeLinecap={ 'round' }
+            stroke={ '#D58139' }
+            opacity={ opacities[ind] }
+        />)
+
+    }, [ pitchData, alignData, inProgressSelection ])
+
 
     return (
-        <>
-        {
-            Object.values(ps).map((d, ind) => <path 
-                key={ ind }
-                d={ d }
-                strokeWidth={ 3 }
-                fill={ 'none' }
-                strokeLinecap={ 'round' }
-                stroke={ '#D58139' }
-                opacity={ opacities[ind] }
-            />)
-        }
-        </>
-
-        
+        <>{ pitchTrace }</>
     )
 }
 
 
 function Amplitude({ rmsData, inProgressSelection }) {
 
-    let { start_time, end_time } = inProgressSelection;
+    const ampPath = useMemo(() => {
 
-    let ps = '';
+        let { start_time, end_time } = inProgressSelection;
+    
+        let ps = '';
+    
+        rmsData.slice(Math.round(start_time * 100), Math.round(end_time * 100))
+            .forEach((r, r_idx) => {
+                let h = r * PITCH_H / 5;
+                let cy = 9.25 / 10 * PITCH_H;
+    
+                ps += `M ${fr2x(r_idx)},${cy - (h / 2)} ${fr2x(r_idx)},${cy + (h / 2)} `
+            })
 
-    rmsData.slice(Math.round(start_time * 100), Math.round(end_time * 100))
-        .forEach((r, r_idx) => {
-            let h = r * PITCH_H / 5;
-            let cy = 9.25 / 10 * PITCH_H;
-
-            ps += `M ${fr2x(r_idx)},${cy - (h / 2)} ${fr2x(r_idx)},${cy + (h / 2)} `
-        })
-
-    return (
-        <path 
+        return <path 
             d={ ps }
             fill={ 'none' }
             stroke='#646464'
             strokeWidth={ 2 }
         />
+
+    }, [ rmsData, inProgressSelection ])
+
+    return (
+        <>{ ampPath }</>
     );
 }
 
@@ -225,11 +231,30 @@ function Words({ alignData, pitchData, inProgressSelection }) {
     );
 }
 
+function Infotag({ hoveringPos, start_time, pitchData }) {
+    return (
+        <div className="infotag" 
+            style={{ left: `${ t2x(hoveringPos - start_time) + 10 }px`, top: `${ PITCH_H / 2 }px` }}>
+            <div>
+                <div>
+                    <span>time</span>
+                    <span>{ Math.round(hoveringPos * 100) / 100 }</span>
+                </div>
+                <div>
+                    <span>pitch</span>
+                    <span>{ pitchData[Math.round(hoveringPos * 100)] || 'N/A' }</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export {
     Gaps,
     Grid,
     DetailedPitchTrace,
     Amplitude,
     Words,
+    Infotag,
     COLORS,
 };

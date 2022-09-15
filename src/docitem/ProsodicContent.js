@@ -1,22 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
-import { getAlign } from "../utils/Queries";
-import { includeDocInSelf, useAudio, useRefState } from "../utils/Utils";
+import { getAlign, getMeasureFullTS } from "../utils/Queries";
+import { includeDocInSelf, linkFragment, useAudio, useProsodicMeasures, useRefState } from "../utils/Utils";
 import { GutsContext } from './../GutsContext';
 import Overview from "./Overview";
 import TimesTable from "./TimesTable";
 import { useProsodicData } from "../utils/Utils";
-import { range, pitch2y, t2x } from "../utils/MathUtils"
 import { Graph, GraphEdge } from "./Graph";
+import GraphDownloadButton from "./GraphDownloadButton";
+import MeasuresTable from "./MeasuresTable";
 
-function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL, docObject }) {
+function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: savedRazorTime, autoscroll: savedAutoscroll, selection: savedSelection, docObject }) {
 
-    const { docs, updateDoc } = useContext(GutsContext);
-    const [playing, setPlaying, refPlaying] = useRefState(false);
-    const [audioLoaded, setAudioLoaded] = useState(false);
-    const [razorTime, setRazorTime, refRazorTime] = useRefState(docs[id].razorTime);
-    const [autoscroll, setAutoScroll, refAutoscroll] = useRefState(docs[id].autoscroll);
-    const [selection, setSelection, refSelection] = useRefState(docs[id].selection)
+    const { updateDoc } = useContext(GutsContext);
+    const [ playing, setPlaying, refPlaying ] = useRefState(false);
+    const [ audioLoaded, setAudioLoaded ] = useState(false);
+    const [ razorTime, setRazorTime, refRazorTime ] = useRefState(savedRazorTime);
+    const [ autoscroll, setAutoScroll, refAutoscroll ] = useRefState(savedAutoscroll);
+    const [ selection, setSelection, refSelection ] = useRefState(savedSelection)
     const [ inProgressSelection, setInProgressSelection ] = useState(selection);
     const audio = useAudio(id, '/media/' + audioURL);
 
@@ -33,6 +34,7 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
         audio.currentTime = 0;
     }
 
+    // do I have to do this before useProsodicData to ensure onSuccess calls? I'm not sure
     useQuery(['align', id], () => getAlign(alignURL), {
         enabled: !!alignURL,
         onSuccess: ({ segments }) => {
@@ -42,6 +44,12 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
             });
         },
     });
+
+    const {
+        pitchReady,
+        alignReady,
+        rmsReady,
+    } = useProsodicData(docObject);
 
     useEffect(() => {
         // audio has been loaded before, so just set loaded to true rather than hooking an event handler
@@ -84,48 +92,36 @@ function ProsodicContent({ id, align: alignURL, pitch: pitchURL, path: audioURL,
             audio.pause();
     }, [ playing ]);
 
+    let allProps = {
+        ...includeDocInSelf(docObject),
+        playing,
+        setPlaying,
+        autoscroll,
+        setAutoScroll,
+        razorTime,
+        setRazorTime,
+        resetRazor,
+        seekAudioTime,
+        audioLoaded,
+        selection,
+        setSelection,
+        inProgressSelection,
+        setInProgressSelection,
+        docReady: pitchReady && alignReady && rmsReady && audioLoaded
+    }
+
     return (
         <>
-            <TopSection {...{
-                ...includeDocInSelf(docObject),
-                playing,
-                setPlaying,
-                autoscroll,
-                setAutoScroll,
-                razorTime,
-                setRazorTime,
-                resetRazor,
-                seekAudioTime,
-                audioLoaded,
-                selection,
-                setSelection,
-                inProgressSelection,
-                setInProgressSelection,
-            }} />
-            <GraphSection {...{
-                ...includeDocInSelf(docObject),
-                playing,
-                setPlaying,
-                autoscroll,
-                setAutoScroll,
-                razorTime,
-                setRazorTime,
-                resetRazor,
-                seekAudioTime,
-                audioLoaded,
-                selection,
-                setSelection,
-                inProgressSelection,
-                setInProgressSelection,
-            }} />
-            <TableSection />
+            <TopSection { ...allProps } />
+            <GraphSection { ...allProps } />
+            <TableSection { ...allProps } />
         </>
     );
 }
 
 function TopSection(props) {
 
-    let { setPlaying, audioLoaded, playing } = props;
+    let { setPlaying, playing, docReady } = props;
 
     const togglePlayPause = () => {
         setPlaying(oldPlaying => !oldPlaying);
@@ -133,7 +129,7 @@ function TopSection(props) {
 
     return (
         <section className="top-section">
-            <button className="play-btn" onClick={ togglePlayPause } disabled={ !audioLoaded }>
+            <button className="play-btn" onClick={ togglePlayPause } disabled={ !docReady }>
                 <img src={ playing ? 'pause-icon.svg' : 'play-icon.svg' } alt="Play/Pause icon" />
                 <span>{ playing ? 'pause' : 'play' }</span>
             </button>
@@ -146,22 +142,17 @@ function TopSection(props) {
 function GraphSection(props) {
 
     let {
-        audioLoaded,
-        docObject,
+        id,
+        title,
+        selection,
+        docReady,
     } = props;
-
-    const {
-        pitchReady,
-        alignReady,
-    } = useProsodicData(docObject);
-
-    let loaded = pitchReady && alignReady && audioLoaded;
 
     return (
         <section className="graph-section">
-            <div className={ "detail " + (loaded ? "loaded" : "") }>
+            <div id={ id + '-detdiv' } className={ "detail " + (docReady ? "loaded" : "") }>
                 {
-                    loaded
+                    docReady
                         ? <>
                             <GraphEdge/>
                             <div className="main-graph-wrapper">
@@ -171,14 +162,28 @@ function GraphSection(props) {
                         : <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
 
                 }
+                { docReady && <GraphDownloadButton id={ id } title={ title } selection={ selection } /> }
             </div>
         </section>
     );
 }
 
-function TableSection() {
+function TableSection(props) {
+
     return (
-        <div className="table-section"></div>
+        <section className="table-section">
+            <MeasuresTable { ...props } />
+            <span><a 
+                href={ linkFragment('prosodic-measures.html', 'Full Recording Duration vs. Selection', 'full-vs-selection') }
+                title="Click for more information"
+                target="_blank"
+                >*vocal duration that corresponds to the transcript</a></span>
+            <span><a 
+                href={ linkFragment('about.html', 'About Voxit: Vocal Analysis Tools', 'about-voxit') }
+                title="Click for more information about Voxit"
+                target="_blank"
+                >Prosodic measures are calculated using Voxit</a></span>
+        </section>
     );
 }
 
