@@ -17,7 +17,7 @@ const postSettings = async ({ calcIntense, gentlePort }) => {
 };
 
 const getGentle = ({ gentlePort }) => {
-    return axios.get(`//localhost:${ gentlePort }`);
+    return fetch(`//localhost:${ gentlePort }`, { mode: 'no-cors' });
 }
 
 const getPitch = async pitchURL => {
@@ -53,6 +53,54 @@ const getMeasureFullTS = async (docid, forceGen) => {
     return res.data.measure;
 }
 
+const postDeleteDoc = async docid => {
+    const res = await axios.post(`/_rec/_remove`, { id: docid });
+    return res.data;
+}
+
+const postCreateDoc = async ({ title, size, date }) => {
+    const res = await axios.post(`/_rec/_create`, { title, size, date });
+    return res.data;
+}
+
+// use for path, transcript
+const postUpdateDoc = async docObject => {
+    const res = await axios.post(`/_rec/_update`, docObject);
+    return res.data;
+}
+
+// TODO move these serverside?
+
+const postTriggerPitchCreation = async docid => {
+    const res = await axios.post(`/_pitch`, { id: docid });
+    return res.data;
+}
+
+const postTriggerRMSCreation = async docid => {
+    const res = await axios.post(`/_rms`, { id: docid });
+    return res.data;
+}
+
+const postTriggerHarvestCreation = async docid => {
+    const res = await axios.post(`/_harvest`, { id: docid });
+    return res.data;
+}
+
+const postTriggerAlignCreation = async docid => {
+    const res = await axios.post(`/_align`, { id: docid });
+    return res.data;
+}
+
+const postTriggerCSVCreation = async docid => {
+    const res = await axios.post(`/_csv`, { id: docid });
+    return res.data;
+}
+
+const postTriggerMatCreation = async docid => {
+    const res = await axios.post(`/_mat`, { id: docid });
+    return res.data;
+}
+
 export {
     getSettings,
     getInfos,
@@ -63,4 +111,13 @@ export {
     getRMS,
     getMeasureSelection,
     getMeasureFullTS,
+    postDeleteDoc,
+    postCreateDoc,
+    postUpdateDoc,
+    postTriggerPitchCreation,
+    postTriggerRMSCreation,
+    postTriggerHarvestCreation,
+    postTriggerAlignCreation,
+    postTriggerCSVCreation,
+    postTriggerMatCreation,
 };

@@ -7,23 +7,17 @@ function Overview(props) {
 
     let { 
         id,
-        audioLoaded,
         autoscroll,
         setAutoScroll,
-        docObject 
+        docReady,
     } = props;
-
-    const {
-        pitchReady,
-        alignReady,
-    } = useProsodicData(docObject);
 
     return (
         <div className="overview">
             <OverviewHeader { ...{ id, autoscroll, setAutoScroll } }/>
             <div className="overview-wrapper">
                 {
-                    pitchReady && alignReady && audioLoaded
+                    docReady
                         ? <OverviewSVGInteractor { ...props }>
                             <OverviewSVG { ...props } />
                         </OverviewSVGInteractor>

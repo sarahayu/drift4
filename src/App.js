@@ -8,8 +8,8 @@ import MiscPortals from './MiscPortals'
 import { GutsContext } from './GutsContext';
 import { useQuery } from '@tanstack/react-query';
 import loadGuts from './utils/Guts';
-import { RESOLVING } from './utils/Utils';
-import { getGentle, getInfos, getSettings } from './utils/Queries';
+import { rearrangeObjectProps, RESOLVING } from './utils/Utils';
+import { getGentle, getInfos, getSettings, postDeleteDoc } from './utils/Queries';
 
 const FilelistPortal = () => createPortal(
     <Filelist />,
@@ -69,6 +69,20 @@ function App(props) {
         setDocs(newDocs);
     };
 
+    const pushNewDoc = (doc, attrs) => {
+        setDocs(oldDocs => {
+            oldDocs[doc.id] = Object.assign(doc, { 
+                grabbed: false, 
+                opened: false,
+                selection: { start_time: null, end_time: null },
+                autoscroll: false,
+                razorTime: null,
+            }, attrs);
+
+            return rearrangeObjectProps(oldDocs, [ doc.id, ...Object.keys(oldDocs) ]);
+        })
+    }
+
     const findGentle = () => {
         if (gentlePort === RESOLVING)
             return;
@@ -112,9 +126,21 @@ function App(props) {
             }));
     };
 
-    const deleteDoc = docid => {
-        console.log("TODO Appjs delete doc")
+    const deleteDoc = async docid => {
+        const { remove: removedID } = await postDeleteDoc(docid);
+        setDocs(oldDocs => {
+            delete oldDocs[removedID]
+            return { ...oldDocs };
+        })
     };
+
+    const attachPutFile = async (file, progressCB) => {
+        return new Promise(resolve => {
+            guts.attach.put_file(file, x => {
+                resolve(x);
+            }, progressCB)
+        })
+    }
 
     // --- END init const functions
 
@@ -151,6 +177,9 @@ function App(props) {
             setFoundGentle,
             focusedDocID,
             setFocusedDocID,
+            attachPutFile,
+            pushNewDoc,
+            deleteDoc,
         }}>
             <FilelistPortal />
             <DocAreaPortal />

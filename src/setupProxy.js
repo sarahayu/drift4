@@ -9,6 +9,12 @@ module.exports = function(app) {
         "/_measure",
         "/_rec/**",
         "/media/**",
+        "/_pitch",
+        "/_rms",
+        "/_harvest",
+        "/_align",
+        "/_csv",
+        "/_mat",
     ].forEach(path => app.use(createProxyMiddleware(path, { 
         target: `http://localhost:${ process.env.REACT_APP_DRIFT_PORT }` 
     })));

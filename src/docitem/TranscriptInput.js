@@ -1,22 +1,69 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from "../GutsContext";
-import { stopProp } from "../utils/Utils";
+import { postTriggerAlignCreation, postTriggerCSVCreation, postTriggerMatCreation, postUpdateDoc } from "../utils/Queries";
+import { displaySnackbarAlert, stopProp, useRefState } from "../utils/Utils";
 
-function TranscriptInput({ path, docObject }) {
+function TranscriptInput({ id, path, docObject }) {
 
-    const { foundGentle } = useContext(GutsContext);
-    const readyForTranscript = () => path != undefined;
+    const { foundGentle, attachPutFile, updateDoc } = useContext(GutsContext);
+    const [ aligningInProgress, setAligningInProgress ] = useState(false);
+    const transcriptValue = useRef("");
+    const readyForTranscript = path != undefined;
 
-    const setTranscript = () => {
-        console.log("TODO transcriptinput.js set transcript");
+    const setTranscript = async ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        var txt = transcriptValue.current;
+        if (txt) {
+
+            setAligningInProgress(true);
+
+            var blob = new Blob([txt]);
+            blob.name = "_paste.txt";
+
+            let putResponse = await attachPutFile(blob);
+
+            let updateResponse = await postUpdateDoc({ 
+                id: id, 
+                transcript: putResponse.path 
+            });
+
+            updateDoc(id, updateResponse.update);
+
+            // TODO do trigger stuff serverside?
+            await postTriggerAlignCreation(id);
+            console.log("align returned");
+
+            // TODO set active doc?
+            
+            postTriggerCSVCreation(id)
+                .then(() => console.log("csv returned"));
+            postTriggerMatCreation(id)
+                .then(() => console.log("mat returned"));
+        }
+        else {
+            displaySnackbarAlert("ERROR: transcript is empty or null!")
+        }
     }
+
+    let buttonText;
+
+    if (readyForTranscript) {
+        if (aligningInProgress)
+            buttonText = "aligning transcript...";
+        else
+            buttonText = "set transcript";
+    }
+    else
+        buttonText = "uploading...";
 
     return (
         <>
-            <TranscriptTextArea { ...docObject } />
+            <TranscriptTextArea { ...{ ...docObject, transcriptValue, aligningInProgress } } />
             <div className="bottom-wrapper">
-                <button className="basic-btn" disabled={ !readyForTranscript() || !foundGentle } onClick={ setTranscript }>
-                    { readyForTranscript() ? "set transcript" : "uploading..." }
+                <button className="basic-btn" disabled={ aligningInProgress || !readyForTranscript || !foundGentle } onClick={ setTranscript }>
+                    { buttonText }
                 </button>
                 <ProgressBar { ...docObject } />
             </div>
@@ -24,10 +71,26 @@ function TranscriptInput({ path, docObject }) {
     );
 }
 
-function TranscriptTextArea({ path }) {
+function TranscriptTextArea({ path, transcriptValue, aligningInProgress }) {
+
+    const [ textareaStr, setTextareaStr ] = useState(transcriptValue.current);
+
+    useEffect(() => {
+        transcriptValue.current = textareaStr;
+    }, [ textareaStr ]);
+
     return (
         <>
-        { path != undefined && <textarea className="ptext" placeholder="Enter Gentle Transcript here..." rows="5" onClick={ stopProp }></textarea> }
+        { 
+            path != undefined 
+                && <textarea 
+                    value={ textareaStr } 
+                    onChange={ ev => setTextareaStr(ev.target.value) }
+                    className="ptext" 
+                    placeholder="Enter Gentle Transcript here..." 
+                    disabled={ aligningInProgress }
+                    rows="5" onClick={ stopProp }></textarea>
+        }
         </>
     );
 }
@@ -35,8 +98,8 @@ function TranscriptTextArea({ path }) {
 function ProgressBar({ upload_status, path, align_px, align }) {
     return (
         <>
-            { upload_status != undefined && path == undefined && <progress max="100" value={ "" + Math.floor(100 * upload_status) }/> }
-            { align_px != undefined && align == undefined && <progress max="100" value={ "" + Math.floor(100 * align_px) }/> }
+            { upload_status !== undefined && path == undefined && <progress max="100" value={ "" + Math.floor(100 * upload_status) }/> }
+            { align_px !== undefined && align == undefined && <progress max="100" value={ "" + Math.floor(100 * align_px) }/> }
         </>
     )
 }

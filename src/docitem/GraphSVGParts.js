@@ -13,7 +13,7 @@ function Gaps({ alignData, inProgressSelection }) {
                 {
                     seg.wdlist
                         .filter(wd => 
-                            wd.start >= start_time && wd.end <= end_time && wd.type == 'gap')
+                            wd.start < end_time && wd.end > start_time && wd.type == 'gap')
                         .map((wd, wd_idx) => <rect
                             key={ seg_idx + '' + wd_idx + 'gap' }
                             x={ t2x(wd.start - start_time) }
@@ -204,7 +204,7 @@ function Words({ alignData, pitchData, inProgressSelection }) {
                 {
                     seg.wdlist
                         .filter(wd => 
-                            wd.start >= start_time && wd.end <= end_time && wd.type != 'gap')
+                            wd.start < end_time && wd.end > start_time && wd.type == 'gap')
                         .map((wd, wd_idx) => {
 
                             let wordPitch = pitchStats(pitchData.slice(Math.round(wd.start * 100),

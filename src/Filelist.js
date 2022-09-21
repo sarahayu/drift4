@@ -28,6 +28,8 @@ function Filelist(props) {
 
 function FileListItem({ id, opened, grabbed, title, size, toggleOpenDoc, onDragStart, onDragEnter, onDragEnd }) {
 
+    const { deleteDoc } = useContext(GutsContext);
+
     const getClasses = () => `list-item ${ opened ? 'active' : '' } ${ grabbed ? 'grabbed' : '' }`;
     const getTooltip = () => `${ title }\nSize: ${ bytesToMB(size) }MB`;
 
@@ -39,9 +41,9 @@ function FileListItem({ id, opened, grabbed, title, size, toggleOpenDoc, onDragS
         }
     }
 
-    const deleteDoc = ev => {
+    const handleDeleteDoc = ev => {
         ev.stopPropagation();
-        console.log("TODO delete doc");
+        deleteDoc(id);
     }
 
     return (
@@ -51,7 +53,7 @@ function FileListItem({ id, opened, grabbed, title, size, toggleOpenDoc, onDragS
             <img onMouseDown={ prevDefStopPropCb(() => onDragStart(id)) } onClick={ prevDefStopProp } 
                 src="hamburger.svg" alt="drag indicator" draggable={ false } title="Drag to change order of document" />
             <span>{ title }</span>
-            <button className="deleter" onClick={ deleteDoc }>
+            <button className="deleter" onClick={ handleDeleteDoc }>
                 <img src="delete.svg" alt="delete icon" draggable={ false }/>
             </button>
         </li>
