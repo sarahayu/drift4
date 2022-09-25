@@ -1,21 +1,20 @@
 import { useRef } from "react";
+import { getTranscriptBoundsFromAlign } from "../utils/MathUtils";
 import { prevDef, useProsodicData } from "../utils/Utils";
 import OverviewSVG from "./OverviewSVG";
 import OverviewSVGInteractor from "./OverviewSVGInteractor";
 
 function Overview(props) {
 
-    let { 
+    let {
         id,
-        autoscroll,
-        setAutoScroll,
         docReady,
     } = props;
 
     return (
         <div className="overview">
-            <OverviewHeader { ...{ id, autoscroll, setAutoScroll } }/>
-            <div className="overview-wrapper">
+            { docReady && <OverviewHeader { ...props }/> }
+            <div id={ id + "-ov-wrapper" } className="overview-wrapper">
                 {
                     docReady
                         ? <OverviewSVGInteractor { ...props }>
@@ -29,10 +28,33 @@ function Overview(props) {
     );
 }
 
-function OverviewHeader({ id, autoscroll, setAutoScroll }) {
+function OverviewHeader(props) {
+
+    let { 
+        id,
+        playing,
+        seekAudioTime,
+        resetRazor,
+        autoscroll,
+        setAutoScroll,
+        setSelection,
+        docObject,
+    } = props;
+
+    const { alignData } = useProsodicData(docObject);
+
+    const [ transcriptStart, transcriptEnd ] = getTranscriptBoundsFromAlign(alignData);
 
     const goToBegOfTranscript = () => {
-        console.log("TODO ProsodicContent.js go to beg of transcript");
+        setSelection({
+            start_time: transcriptStart,
+            end_time: Math.min(transcriptStart + 20, transcriptEnd),
+        })
+
+        if (playing)
+            seekAudioTime(transcriptStart);
+        else
+            resetRazor();
     }
 
     const onContScrollToggle = () => setAutoScroll(oldAutoScroll => !oldAutoScroll);

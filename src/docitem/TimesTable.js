@@ -1,4 +1,4 @@
-import { getTranscriptInfoFromAlign } from "../utils/MathUtils";
+import { getTranscriptBoundsFromAlign } from "../utils/MathUtils";
 import { useProsodicData } from "../utils/Utils";
 import TimesTableCell from "./TimesTableCell";
 
@@ -19,7 +19,7 @@ function TimesTable({ docObject, selection, setSelection, inProgressSelection, r
             'selection length': 'N/A',
         }}/>
 
-    let [tsStart, tsEnd] = getTranscriptInfoFromAlign(alignData),
+    let [tsStart, tsEnd] = getTranscriptBoundsFromAlign(alignData),
         tsDuration = tsEnd - tsStart,
         selStart = inProgressSelection.start_time,
         selEnd = inProgressSelection.end_time;
@@ -66,7 +66,6 @@ function TimesTable({ docObject, selection, setSelection, inProgressSelection, r
                     start_time: selection.start_time,
                     end_time: inputVal,
                 });
-            resetRazor();
         }
         else if (error) {
             inputVal = selection[thisTime];

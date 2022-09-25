@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { getTranscriptInfoFromAlign, pitch2y, pitchStats } from "../utils/MathUtils";
+import { getTranscriptBoundsFromAlign, pitch2y, pitchStats } from "../utils/MathUtils";
 
 function SimplifedPitchTrace({ pitchData, alignData, width, duration }) {
 
@@ -8,7 +8,7 @@ function SimplifedPitchTrace({ pitchData, alignData, width, duration }) {
         let pitch_step = 0.01;      // each index of array `smoothed` is 10 ms
         let voiceStart;
 
-        let [firstword, lastword] = getTranscriptInfoFromAlign(alignData);
+        let [firstword, lastword] = getTranscriptBoundsFromAlign(alignData);
         return pitchData.pitchStats.smoothed.map((pitch, p_idx) => {
             if (pitch > 0 && !voiceStart) {
                 voiceStart = p_idx;
@@ -89,8 +89,6 @@ function WordGaps({ alignData, width, duration, height }) {
 }
 
 function OverviewRazor({ razorTime, width, height, duration }) {
-    if (razorTime == null) return;
-
     return (
         <rect key="razor" x={ width * (razorTime / duration) }
                 y={ 0 }

@@ -3,7 +3,7 @@ import { GutsContext } from './GutsContext';
 import useDragger from "./utils/useDragger";
 import { bytesToMB, ENTER_KEY, prevDefStopProp, prevDefStopPropCb, rearrangeObjectProps } from "./utils/Utils";
 
-function Filelist(props) {
+function Filelist() {
     const { docs, setDocs, updateDoc } = useContext(GutsContext);
     const { onDragStart, onDragEnter, onDragEnd } = useDragger({ setDocs, updateDoc });
 
@@ -18,7 +18,7 @@ function Filelist(props) {
         <>
         <a className="acsblty-skip" href="#main-content">Skip file list</a>
         {
-            Object.entries(docs).map(([ind, doc]) => 
+            Object.values(docs).map((doc) => 
                <FileListItem {...{ ...doc, toggleOpenDoc, onDragStart, onDragEnter, onDragEnd }} key={ doc.id } />
             )
         }

@@ -22,7 +22,7 @@ function OverviewSVG(props) {
             <WordGaps { ...{ width, duration, height, alignData } }/>
             <SimplifedPitchTrace { ...{ pitchData, alignData, width, duration } }/>
             <SelectionOverlay { ...{ width, height, duration, inProgressSelection } } />
-            <OverviewRazor { ...{ razorTime, width, height, duration } } />
+            { razorTime && <OverviewRazor { ...{ razorTime, width, height, duration } } /> }
 
             { 
                 /* print seconds */

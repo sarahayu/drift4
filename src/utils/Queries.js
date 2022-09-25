@@ -69,7 +69,7 @@ const postUpdateDoc = async docObject => {
     return res.data;
 }
 
-// TODO move these serverside?
+// TODO do all this trigger stuff serverside?
 
 const postTriggerPitchCreation = async docid => {
     const res = await axios.post(`/_pitch`, { id: docid });

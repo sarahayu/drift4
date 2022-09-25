@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { fr2x, getTranscriptInfoFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "../utils/MathUtils";
+import { fr2x, getTranscriptBoundsFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "../utils/MathUtils";
 
 function Gaps({ alignData, inProgressSelection }) {
 
@@ -102,7 +102,7 @@ function DetailedPitchTrace({ pitchData, alignData, inProgressSelection }) {
 
     const pitchTrace = useMemo(() => {
         let { start_time, end_time } = inProgressSelection;
-        let [ tsStart, tsEnd ] = getTranscriptInfoFromAlign(alignData);
+        let [ tsStart, tsEnd ] = getTranscriptBoundsFromAlign(alignData);
     
         // once we slice pitchData, pitch indices are gonna be relative to selection start/ends
         tsStart -= start_time;

@@ -1,37 +1,64 @@
 import { useQuery } from "@tanstack/react-query";
-import { useContext, useEffect, useState } from "react";
-import { getAlign, getMeasureFullTS } from "../utils/Queries";
-import { includeDocInSelf, linkFragment, useAudio, useProsodicMeasures, useRefState } from "../utils/Utils";
+import { useContext, useEffect, useRef, useState } from "react";
+import { getAlign } from "../utils/Queries";
+import { includeDocInSelf, linkFragment, useAudio, useProsodicData, useRefState } from "../utils/Utils";
 import { GutsContext } from './../GutsContext';
-import Overview from "./Overview";
-import TimesTable from "./TimesTable";
-import { useProsodicData } from "../utils/Utils";
 import { Graph, GraphEdge } from "./Graph";
 import GraphDownloadButton from "./GraphDownloadButton";
 import MeasuresTable from "./MeasuresTable";
+import Overview from "./Overview";
+import TimesTable from "./TimesTable";
 
 function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: savedRazorTime, autoscroll: savedAutoscroll, selection: savedSelection, docObject }) {
 
     const { updateDoc } = useContext(GutsContext);
     const [ playing, setPlaying, refPlaying ] = useRefState(false);
     const [ audioLoaded, setAudioLoaded ] = useState(false);
+    // refs abound! because race conditions suck!
     const [ razorTime, setRazorTime, refRazorTime ] = useRefState(savedRazorTime);
     const [ autoscroll, setAutoScroll, refAutoscroll ] = useRefState(savedAutoscroll);
     const [ selection, setSelection, refSelection ] = useRefState(savedSelection)
     const [ inProgressSelection, setInProgressSelection ] = useState(selection);
     const audio = useAudio(id, '/media/' + audioURL);
+    const razorSoughtManually = useRef(false);
 
-    const seekAudioTime = time => setRazorTime(audio.currentTime = time);
+    const seekAudioTime = time => {
+        setRazorTime(audio.currentTime = time);
+        razorSoughtManually.current = true;
+    }
 
     const updateRazor = () => {
-        setRazorTime(audio.currentTime);
-        if (refPlaying.current)
+        // check for refPlaying rather than playing because ref will be more up to date in the case it is
+        // set to false in audio.onended
+        if (refPlaying.current) {
+            // ugh floating point errors are annoying
+            // also closure (sometimes)
+            if (audio.currentTime < refSelection.current.start_time - 0.01 || audio.currentTime > refSelection.current.end_time + 0.01) {
+
+                // use refAutoscroll instead of autoscroll to account for edge edge edge case
+                // that user changes autoscroll option mid-play
+                if (!refAutoscroll.current && !razorSoughtManually.current) {
+                    setPlaying(false);
+                    resetRazor();
+                    return;
+                }
+                
+                // set refSelection manually because race conditions are fun
+                // (sometimes when clicking outside selection region it won't get updated in time)
+                setSelection(refSelection.current = {
+                    start_time: audio.currentTime,
+                    end_time: Math.min(audio.currentTime + 20, audio.duration),
+                })
+            }
+            
+            razorSoughtManually.current = false;
+            setRazorTime(audio.currentTime);
             window.requestAnimationFrame(updateRazor);
+        }
     }
 
     const resetRazor = () => {
         setRazorTime(null);
-        audio.currentTime = 0;
     }
 
     // do I have to do this before useProsodicData to ensure onSuccess calls? I'm not sure
@@ -64,6 +91,12 @@ function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: saved
         audio.onended = () => {
             setRazorTime(null);
             setPlaying(false);
+
+            // set refPlaying to false manually, cuz for some reason
+            // useEffect might not detect change in playing state by the time
+            // updateRazor calls, thus refPlaying.current will not actually be updated
+            // with playing state value >:(
+            refPlaying.current = false;
         }
 
         return function saveTimingInformation() {
@@ -155,9 +188,7 @@ function GraphSection(props) {
                     docReady
                         ? <>
                             <GraphEdge/>
-                            <div className="main-graph-wrapper">
-                                <Graph { ...props }/>
-                            </div>
+                            <Graph { ...props }/>
                         </>
                         : <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
 

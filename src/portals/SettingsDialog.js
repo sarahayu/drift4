@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GutsContext } from '../GutsContext';
@@ -14,6 +14,8 @@ function SettingsDialog(props) {
         setGentlePort: setGlobalGentlePort,
     } = useContext(GutsContext);
 
+    const queryClient = useQueryClient();
+
     const settingsDialogElem = useRef();
 
     // these are only for keeping track of form values, NOT global calcIntense and gentlePort
@@ -25,13 +27,15 @@ function SettingsDialog(props) {
             setGlobalCalcIntense(calc_intense);
             setGlobalGentlePort(gentle_port);
 
-            // TODO clear various query caches (align, measure, etc etc...) PROBABLY IN APP.JS???
+            // reload prosodic data, i.e. delete dynamism and others if changing 
+            // from intense calc to non-intense, add them if vice versa
+            queryClient.invalidateQueries(["prosodicData"]);
             
             displaySnackbarAlert("Settings updated!");
         }
         // it is possible settings did not get changed, maybe because /_settings endpoint isn't actually enabled to change settings (e.g. web version)
         else {
-            console.log("Settings not updated!")
+            console.log("ERROR: Settings not updated!")
         }
     };
 

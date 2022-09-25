@@ -31,11 +31,9 @@ function TranscriptInput({ id, path, docObject }) {
 
             updateDoc(id, updateResponse.update);
 
-            // TODO do trigger stuff serverside?
+            // TODO do all this trigger stuff serverside?
             await postTriggerAlignCreation(id);
             console.log("align returned");
-
-            // TODO set active doc?
             
             postTriggerCSVCreation(id)
                 .then(() => console.log("csv returned"));

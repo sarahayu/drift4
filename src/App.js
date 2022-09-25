@@ -21,7 +21,7 @@ const DocAreaPortal = () => createPortal(
     document.getElementById('dashboard')
 );
 
-function App(props) {
+function App() {
     const infosLatestModified = useRef(0);
     
     const [ localhost ] = useState(location.hostname === 'localhost');    // eslint-disable-line no-restricted-globals
@@ -79,6 +79,7 @@ function App(props) {
                 razorTime: null,
             }, attrs);
 
+            // place new doc as the first element of docs map
             return rearrangeObjectProps(oldDocs, [ doc.id, ...Object.keys(oldDocs) ]);
         })
     }

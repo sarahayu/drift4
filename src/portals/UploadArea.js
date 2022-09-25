@@ -38,7 +38,7 @@ function UploadArea(props) {
 
                     updateDoc(createResponse.id, updateResponse.update);
 
-                    // TODO do all these serverside?
+                    // TODO do all this trigger stuff serverside?
                     postTriggerPitchCreation(createResponse.id)
                         .then(res => console.log("pitch returned", res));
                     postTriggerRMSCreation(createResponse.id)

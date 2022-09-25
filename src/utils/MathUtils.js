@@ -153,7 +153,7 @@ function pitch2y(p, p_h) {
     return (-60 * Math.log2(p / 440));
 }
 
-const getTranscriptInfoFromAlign = ({ segments }) => ([ segments[0].start, segments[segments.length - 1].end ]);
+const getTranscriptBoundsFromAlign = ({ segments }) => ([ segments[0].start, segments[segments.length - 1].end ]);
 
 // like python's range()
 const range = (start, end, step) => {
@@ -183,7 +183,7 @@ export {
     x2t,
     t2w,
     pitch2y,
-    getTranscriptInfoFromAlign,
+    getTranscriptBoundsFromAlign,
     range,
     PITCH_H,
 };

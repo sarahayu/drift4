@@ -7,6 +7,7 @@ import { Amplitude, COLORS, DetailedPitchTrace, Gaps, Grid, Infotag, Words } fro
 function Graph(props) {
 
     let {
+        id,
         razorTime,
         inProgressSelection,
         seekAudioTime,
@@ -25,7 +26,7 @@ function Graph(props) {
     let selectionWidth = t2x(end_time - start_time);
 
     return (
-        <>
+        <div id={ id + "-main-graph-wrapper" } className="main-graph-wrapper">
             <svg
                 width={ selectionWidth }
                 height={ PITCH_H + 35 }>
@@ -40,7 +41,7 @@ function Graph(props) {
                 <GraphInteractArea width={ selectionWidth } start_time={ start_time } setHoveringPos={ setHoveringPos } seekAudioTime={ seekAudioTime } />
             </svg>
             { hoveringPos && <Infotag start_time={ start_time } hoveringPos={ hoveringPos } pitchData={ pitchData } /> }
-        </>
+        </div>
     )
 }
 

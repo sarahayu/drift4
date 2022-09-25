@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { prevDef, useProsodicData } from "../utils/Utils";
 import OverviewSVG from "./OverviewSVG";
 
@@ -48,13 +48,14 @@ function OverviewSVGInteractor(props) {
 
     const handleMouseDone = ev => {
         if (!dragging.current) return;
+
+        resetRazor();
         
         if (Math.abs(t2.current - t1.current) < 0.2) {
             seekAudioTime(t2.current);
         }
         else {
             setSelection(inProgressSelection);
-            resetRazor();
             
             if (wasPlaying.current)
                 seekAudioTime(inProgressSelection.start_time);

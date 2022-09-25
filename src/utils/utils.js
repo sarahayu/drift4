@@ -96,19 +96,23 @@ const useProsodicData = ({ id, pitch, align, rms }) => {
 
 const useProsodicMeasures = ({ id, selection, docReady }) => {
     const { 
-        isSuccess: fullTSProsDataReady, 
+        isSuccess: fullTSProsDataSuccess, 
+        isFetching: fullTSProsDataFetching, 
         data: fullTSProsData 
     } = useQuery(['prosodicData', 'fullTranscript', id], () => getMeasureFullTS(id), { enabled: docReady });
 
     const { 
-        isSuccess: selectionProsDataReady, 
+        isSuccess: selectionProsDataSuccess, 
+        isFetching: selectionProsDataFetching, 
         data: selectionProsData 
     } = useQuery(['prosodicData', selection, id], () => getMeasureSelection(id, selection.start_time, selection.end_time), { enabled: docReady && !!selection.start_time });
 
+    // check for fetching so data table isn't using stale data to populate table 
+    // (even if it is valid, e.g. turning on intensive measures and adding addt. Dynamism measures)
     return {
-        fullTSProsDataReady,
+        fullTSProsDataReady: fullTSProsDataSuccess && !fullTSProsDataFetching,
         fullTSProsData,
-        selectionProsDataReady,
+        selectionProsDataReady: selectionProsDataSuccess && !selectionProsDataFetching,
         selectionProsData,
     }
 }

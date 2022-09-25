@@ -14,7 +14,8 @@ function MeasuresTable(props) {
     );
 
     if (invalidData) {
-        console.log("Outdated full_ts found, TODO triggering new full_ts")
+        console.log("Outdated full_ts found, standby waiting for updated data")
+        // don't have to do anything here, SettingsDialog will take care of clearing query cache on settings change
     }
 
     const tableNotReady = !docReady || !fullTSProsDataReady || invalidData;
