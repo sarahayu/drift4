@@ -1,16 +1,28 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { GutsContext } from "../GutsContext";
-import { filterStats, LABEL_DESCRIPTIONS, LABEL_HEADERS, linkFragment, splitString, useProsodicMeasures } from "../utils/Utils";
+import { displaySnackbarAlert, filterStats, LABEL_DESCRIPTIONS, LABEL_HEADERS, linkFragment, measuresToTabSepStr, splitString, useProsodicMeasures } from "../utils/Utils";
 
 function MeasuresTable(props) {
 
     const { id, docReady } = props;
 
-    const { fullTSProsDataReady, fullTSProsData } = useProsodicMeasures(props);
+    const { 
+        fullTSProsMeasuresReady, fullTSProsMeasures,
+        selectionProsMeasures,
+     } = useProsodicMeasures(props);
     const { localhost, calcIntense } = useContext(GutsContext);
+    const [ copyAction, setCopyAction ] = useState();
 
-    const invalidData = fullTSProsDataReady && (
-        calcIntense && !("Dynamism" in fullTSProsData)
+    useEffect(() => {
+        setCopyAction(() => (() => {      
+            let cbContent = measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures);      
+            navigator.clipboard.writeText(cbContent);
+            displaySnackbarAlert("Copied!");
+        }));
+    }, [ selectionProsMeasures ])
+
+    const invalidData = fullTSProsMeasuresReady && (
+        calcIntense && !("Dynamism" in fullTSProsMeasures)
     );
 
     if (invalidData) {
@@ -18,7 +30,7 @@ function MeasuresTable(props) {
         // don't have to do anything here, SettingsDialog will take care of clearing query cache on settings change
     }
 
-    const tableNotReady = !docReady || !fullTSProsDataReady || invalidData;
+    const tableNotReady = !docReady || !fullTSProsMeasuresReady || invalidData;
     
     return (
         <div className="table-wrapper">
@@ -33,28 +45,24 @@ function MeasuresTable(props) {
             }
             {
                 !tableNotReady
-                    && <CopyButton id={ id } />
+                    && <CopyButton id={ id } copyAction={ copyAction } />
             }
         </div>
 
     );
 }
 
-function CopyButton({ id }) {
-
-    const handleClick = () => {
-        console.log("TODO copy")
-    }
+function CopyButton({ id, copyAction }) {
 
     return (
-        <button onClick={ handleClick } className="copy-btn" id={ id + '-copy-btn' }>Copy to Clipboard</button>
+        <button onClick={ copyAction } className="copy-btn" id={ id + '-copy-btn' }>Copy to Clipboard</button>
     );
 }
 
 function LoadedTable(props) {
-    const { fullTSProsData, selectionProsDataReady, selectionProsData } = useProsodicMeasures(props);
+    const { fullTSProsMeasures, selectionProsMeasuresReady, selectionProsMeasures } = useProsodicMeasures(props);
 
-    const measureKeys = filterStats(fullTSProsData);
+    const measureKeys = filterStats(fullTSProsMeasures);
 
     const getLinkAttrs = measureKey => {
         if (!LABEL_DESCRIPTIONS[measureKey]) return {};
@@ -80,11 +88,11 @@ function LoadedTable(props) {
             </tr>
             <tr>
                 <th>full recording duration</th>
-                <TableDataRow labelsToPrint={ measureKeys } data={ fullTSProsData } />
+                <TableDataRow labelsToPrint={ measureKeys } data={ fullTSProsMeasures } />
             </tr>
             <tr>
                 <th>selection</th>
-                <TableDataRow labelsToPrint={ measureKeys } data={ selectionProsDataReady && selectionProsData } />
+                <TableDataRow labelsToPrint={ measureKeys } data={ selectionProsMeasuresReady && selectionProsMeasures } />
             </tr>
         </table>
     );

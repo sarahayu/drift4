@@ -1,24 +1,38 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from '../GutsContext';
-import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, prevDefCb, rearrangeObjectProps, stripExt } from "../utils/Utils"
+import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, measuresToTabSepStr, prevDefCb, rearrangeObjectProps, stripExt, useProsodicMeasures } from "../utils/Utils"
 
-function DocCardHeader({ doc, onDragStart }) {
+function DocCardHeader({ doc, onDragStart, pmContext }) {
     return (
         <div className="docbar">
             <img src="tictactoe.svg" alt="drag indicator" title="Drag to change order of document" 
                 onMouseDown={ () => onDragStart(doc.id) } draggable={ false } />
             <div className="doc-name">{ doc.title }</div>
-            <DocOpts { ...doc } />
+            <DocOpts { ...{ ...doc, pmContext } } />
         </div>
     )
 }
 
-function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink }) {
+function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink, pmContext }) {
 
-    const { docs, setDocs, updateDoc, deleteDoc } = useContext(GutsContext);
-    const filenameBase = useRef(stripExt(title));
+    const { updateDoc, deleteDoc } = useContext(GutsContext);
 
-    const downloadVoxitCSV = () => console.log("TODO hamburger download voxit csv");
+    const { 
+        fullTSProsMeasures,
+        selectionProsMeasures,
+     } = useProsodicMeasures({ id, ...pmContext });
+
+    const filenameBase = stripExt(title);
+
+    const downloadVoxitCSV = () => {
+        let csvContent = measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures);
+        csvContent = csvContent.replace(/\t/g, ',')
+    
+        let out_filename = filenameBase + '-voxitcsv.csv';
+    
+        // eslint-disable-next-line no-undef
+        saveAs(new Blob([csvContent]), out_filename);
+    }
     const downloadWindowedData = () => {
         console.log("TODO hamburger download windowed data");
         displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
@@ -33,7 +47,7 @@ function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: a
         ...transcriptLink ? [{
             label: 'Download - Audio Transcript (.txt)',
             link: '/media/' + transcriptLink,
-            filename: `${ filenameBase.current }-transcript.${ getExt(transcriptLink) }`,
+            filename: `${ filenameBase }-transcript.${ getExt(transcriptLink) }`,
         }] : [],
         ...alignLink ? [{
             label: 'Download - Voxit Data (.csv)',
@@ -42,12 +56,12 @@ function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: a
         ...csvLink ? [{
             label: 'Download - Drift Data (.csv)',
             link: '/media/' + csvLink,
-            filename: `${ filenameBase.current }-csv.${ getExt(csvLink) }`,
+            filename: `${ filenameBase }-csv.${ getExt(csvLink) }`,
         }] : [],
         ...alignLink ? [{
             label: 'Download - Gentle Align (.json)',
             link: '/media/' + alignLink,
-            filename: `${ filenameBase.current }-align.${ getExt(alignLink) }`,
+            filename: `${ filenameBase }-align.${ getExt(alignLink) }`,
         }] : [],
         ...alignLink ? [{
             label: 'Download - Windowed Voxit Data (.csv)',

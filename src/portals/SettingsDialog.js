@@ -29,7 +29,7 @@ function SettingsDialog(props) {
 
             // reload prosodic data, i.e. delete dynamism and others if changing 
             // from intense calc to non-intense, add them if vice versa
-            queryClient.invalidateQueries(["prosodicData"]);
+            queryClient.invalidateQueries(["prosodicMeasures"]);
             
             displaySnackbarAlert("Settings updated!");
         }

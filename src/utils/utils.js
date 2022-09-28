@@ -96,24 +96,24 @@ const useProsodicData = ({ id, pitch, align, rms }) => {
 
 const useProsodicMeasures = ({ id, selection, docReady }) => {
     const { 
-        isSuccess: fullTSProsDataSuccess, 
-        isFetching: fullTSProsDataFetching, 
-        data: fullTSProsData 
-    } = useQuery(['prosodicData', 'fullTranscript', id], () => getMeasureFullTS(id), { enabled: docReady });
+        isSuccess: fullTSProsMeasuresSuccess, 
+        isFetching: fullTSProsMeasuresFetching, 
+        data: fullTSProsMeasures 
+    } = useQuery(['prosodicMeasures', 'fullTranscript', id], () => getMeasureFullTS(id), { enabled: docReady });
 
     const { 
-        isSuccess: selectionProsDataSuccess, 
-        isFetching: selectionProsDataFetching, 
-        data: selectionProsData 
-    } = useQuery(['prosodicData', selection, id], () => getMeasureSelection(id, selection.start_time, selection.end_time), { enabled: docReady && !!selection.start_time });
+        isSuccess: selectionProsMeasuresSuccess, 
+        isFetching: selectionProsMeasuresFetching, 
+        data: selectionProsMeasures 
+    } = useQuery(['prosodicMeasures', selection, id], () => getMeasureSelection(id, selection.start_time, selection.end_time), { enabled: docReady && !!selection.start_time });
 
     // check for fetching so data table isn't using stale data to populate table 
     // (even if it is valid, e.g. turning on intensive measures and adding addt. Dynamism measures)
     return {
-        fullTSProsDataReady: fullTSProsDataSuccess && !fullTSProsDataFetching,
-        fullTSProsData,
-        selectionProsDataReady: selectionProsDataSuccess && !selectionProsDataFetching,
-        selectionProsData,
+        fullTSProsMeasuresReady: fullTSProsMeasuresSuccess && !fullTSProsMeasuresFetching,
+        fullTSProsMeasures,
+        selectionProsMeasuresReady: selectionProsMeasuresSuccess && !selectionProsMeasuresFetching,
+        selectionProsMeasures,
     }
 }
 
@@ -222,7 +222,29 @@ function splitString(str, len, maxlines) {
     return strs.join('\n');
 }
 
-export { RESOLVING, 
+function measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures) {
+    let keys = filterStats(fullTSProsMeasures, true);
+    
+    let cliptxt = '\t';
+    keys.forEach((key) => {
+        cliptxt += key + '\t';
+    });
+    cliptxt += '\nfull clip\t';
+    keys.forEach((key) => {
+        cliptxt += fullTSProsMeasures[key] + '\t';
+    });
+
+    cliptxt += '\nselection\t';
+    keys.forEach((key) => {
+        cliptxt += selectionProsMeasures[key] + '\t';
+    });
+    cliptxt += '\n';
+
+    return cliptxt;
+}
+
+export { 
+    RESOLVING, 
     ENTER_KEY, 
     bytesToMB, 
     elemClassAdd, 
@@ -250,4 +272,5 @@ export { RESOLVING,
     LABEL_DESCRIPTIONS,
     LABEL_HEADERS,
     splitString,
+    measuresToTabSepStr,
 };

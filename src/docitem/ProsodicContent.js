@@ -9,7 +9,16 @@ import MeasuresTable from "./MeasuresTable";
 import Overview from "./Overview";
 import TimesTable from "./TimesTable";
 
-function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: savedRazorTime, autoscroll: savedAutoscroll, selection: savedSelection, docObject }) {
+function ProsodicContent({ 
+    id, 
+    align: alignURL, 
+    path: audioURL, 
+    razorTime: savedRazorTime, 
+    autoscroll: savedAutoscroll, 
+    selection: savedSelection, 
+    docObject, 
+    setPMContext 
+}) {
 
     const { updateDoc } = useContext(GutsContext);
     const [ playing, setPlaying, refPlaying ] = useRefState(false);
@@ -125,7 +134,13 @@ function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: saved
             audio.pause();
     }, [ playing ]);
 
-    let allProps = {
+    const docReady = pitchReady && alignReady && rmsReady && audioLoaded;
+
+    useEffect(() => {
+        setPMContext({ selection, docReady });
+    }, [ selection, pitchReady, alignReady, rmsReady, audioLoaded ])
+
+    const allProps = {
         ...includeDocInSelf(docObject),
         playing,
         setPlaying,
@@ -140,7 +155,7 @@ function ProsodicContent({ id, align: alignURL, path: audioURL, razorTime: saved
         setSelection,
         inProgressSelection,
         setInProgressSelection,
-        docReady: pitchReady && alignReady && rmsReady && audioLoaded
+        docReady,
     }
 
     return (
