@@ -204,7 +204,7 @@ function Words({ alignData, pitchData, inProgressSelection }) {
                 {
                     seg.wdlist
                         .filter(wd => 
-                            wd.start < end_time && wd.end > start_time && wd.type == 'gap')
+                            wd.start < end_time && wd.end > start_time && wd.type != 'gap')
                         .map((wd, wd_idx) => {
 
                             let wordPitch = pitchStats(pitchData.slice(Math.round(wd.start * 100),
