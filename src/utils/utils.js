@@ -202,6 +202,29 @@ const LABEL_HEADERS = {
     'Dynamism': 'Dynamism'
 }
 
+const WINDOWED_PARAMS = {
+    'WPM': 20,
+    'Gentle_Pause_Count_>100ms': 20,
+    'Gentle_Pause_Count_>500ms': 20,
+    'Gentle_Pause_Count_>1000ms': 20,
+    'Gentle_Pause_Count_>1500ms': 20,
+    'Gentle_Pause_Count_>2000ms': 20,
+    'Gentle_Pause_Count_>2500ms': 20,
+    'Gentle_Long_Pause_Count_>3000ms': 20,
+    'Gentle_Mean_Pause_Duration_(sec)': 20,
+    'Gentle_Pause_Rate_(pause/sec)': 20,
+    'Gentle_Complexity_All_Pauses': 20,
+    'Drift_f0_Mean_(hz)': 20,
+    'Drift_f0_Range_(octaves)': 20,
+    'Drift_f0_Mean_Abs_Velocity_(octaves/sec)': 20,
+    'Drift_f0_Mean_Abs_Accel_(octaves/sec^2)': 20,
+    'Drift_f0_Entropy': 20,
+    'Intensity_Mean_Abs_Velocity_(decibels/sec)': 20,
+    'Intensity_Mean_Abs_Accel_(decibels/sec^2)': 20,
+    'Intensity_Segment_Range_95_Percent_(decibels)': 20,
+    'Dynamism': 20,
+}
+
 function splitString(str, len, maxlines) {
     let strs = [], i = 0, j = len;
 
@@ -271,6 +294,7 @@ export {
     filterStats,
     LABEL_DESCRIPTIONS,
     LABEL_HEADERS,
+    WINDOWED_PARAMS,
     splitString,
     measuresToTabSepStr,
 };

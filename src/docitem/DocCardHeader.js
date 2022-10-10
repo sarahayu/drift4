@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from '../GutsContext';
-import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, measuresToTabSepStr, prevDefCb, rearrangeObjectProps, stripExt, useProsodicMeasures } from "../utils/Utils"
+import { postGetWindowedData } from "../utils/Queries";
+import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, measuresToTabSepStr, prevDefCb, rearrangeObjectProps, stripExt, useProsodicMeasures, WINDOWED_PARAMS } from "../utils/Utils"
 
 function DocCardHeader({ doc, onDragStart, pmContext }) {
     return (
@@ -34,7 +35,10 @@ function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: a
         saveAs(new Blob([csvContent]), out_filename);
     }
     const downloadWindowedData = () => {
-        console.log("TODO hamburger download windowed data");
+        const { measure: measureJSON } = postGetWindowedData({
+            id: id,
+            params: WINDOWED_PARAMS,
+        });
         displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
     }
 

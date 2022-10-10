@@ -101,6 +101,11 @@ const postTriggerMatCreation = async docid => {
     return res.data;
 }
 
+const postGetWindowedData = async ({ id, params }) => {
+    const res = await axios.post(`/_windowed`, { id, params });
+    return res.data;
+}
+
 export {
     getSettings,
     getInfos,
@@ -120,4 +125,5 @@ export {
     postTriggerAlignCreation,
     postTriggerCSVCreation,
     postTriggerMatCreation,
+    postGetWindowedData,
 };
