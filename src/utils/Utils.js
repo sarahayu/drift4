@@ -75,7 +75,9 @@ const useRefState = initVal => {
 
     useEffect(() => { ref.current = state }, [ state ]);
 
-    return [ state, setState, ref ];
+    const setRefState = newState => setState(ref.current = newState);
+
+    return [ state, setState, ref, setRefState ];
 }
 
 const useProsodicData = ({ id, pitch, align, rms }) => {

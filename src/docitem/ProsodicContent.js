@@ -3,8 +3,9 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { getAlign } from "../utils/Queries";
 import { includeDocInSelf, linkFragment, useAudio, useProsodicData, useRefState } from "../utils/Utils";
 import { GutsContext } from './../GutsContext';
-import { Graph, GraphEdge } from "./Graph";
+import Graph from "./Graph";
 import GraphDownloadButton from "./GraphDownloadButton";
+import GraphEdge from "./GraphEdge";
 import MeasuresTable from "./MeasuresTable";
 import Overview from "./Overview";
 import TimesTable from "./TimesTable";
@@ -21,12 +22,16 @@ function ProsodicContent({
 }) {
 
     const { updateDoc } = useContext(GutsContext);
-    const [ playing, setPlaying, refPlaying ] = useRefState(false);
     const [ audioLoaded, setAudioLoaded ] = useState(false);
     // refs abound! because race conditions suck!
+    const [ 
+        playing, setPlaying, refPlaying, setRefAndPlaying 
+    ] = useRefState(false);
     const [ razorTime, setRazorTime, refRazorTime ] = useRefState(savedRazorTime);
     const [ autoscroll, setAutoScroll, refAutoscroll ] = useRefState(savedAutoscroll);
-    const [ selection, setSelection, refSelection ] = useRefState(savedSelection)
+    const [ 
+        selection, setSelection, refSelection, setRefAndSelection 
+    ] = useRefState(savedSelection)
     const [ inProgressSelection, setInProgressSelection ] = useState(selection);
     const audio = useAudio(id, '/media/' + audioURL);
     const razorSoughtManually = useRef(false);
@@ -37,33 +42,33 @@ function ProsodicContent({
     }
 
     const updateRazor = () => {
+
         // check for refPlaying rather than playing because ref will be more up to date in the case it is
         // set to false in audio.onended
-        if (refPlaying.current) {
-            // ugh floating point errors are annoying
-            // also closure (sometimes)
-            if (audio.currentTime < refSelection.current.start_time - 0.01 || audio.currentTime > refSelection.current.end_time + 0.01) {
+        if (refPlaying.current == false)
+            return;
 
-                // use refAutoscroll instead of autoscroll to account for edge edge edge case
-                // that user changes autoscroll option mid-play
-                if (!refAutoscroll.current && !razorSoughtManually.current) {
-                    setPlaying(false);
-                    resetRazor();
-                    return;
-                }
-                
-                // set refSelection manually because race conditions are fun
-                // (sometimes when clicking outside selection region it won't get updated in time)
-                setSelection(refSelection.current = {
-                    start_time: audio.currentTime,
-                    end_time: Math.min(audio.currentTime + 20, audio.duration),
-                })
+        // if razor is outside selection bounds
+        if (audio.currentTime < refSelection.current.start_time - 0.01 || audio.currentTime > refSelection.current.end_time + 0.01) {
+
+            // if not autoscrolling or caused by clicking outside bounds, pause/reset
+            if (!refAutoscroll.current && !razorSoughtManually.current) {
+                setPlaying(false);
+                resetRazor();
+                return;
             }
             
-            razorSoughtManually.current = false;
-            setRazorTime(audio.currentTime);
-            window.requestAnimationFrame(updateRazor);
+            // refs are more up-to-date, needed for razors that update quickly
+            // (sometimes when clicking outside selection region it won't get updated in time)
+            setRefAndSelection({
+                start_time: audio.currentTime,
+                end_time: Math.min(audio.currentTime + 20, audio.duration),
+            })
         }
+        
+        razorSoughtManually.current = false;
+        setRazorTime(audio.currentTime);
+        window.requestAnimationFrame(updateRazor);
     }
 
     const resetRazor = () => {
@@ -99,13 +104,8 @@ function ProsodicContent({
 
         audio.onended = () => {
             setRazorTime(null);
-            setPlaying(false);
-
-            // set refPlaying to false manually, cuz for some reason
-            // useEffect might not detect change in playing state by the time
-            // updateRazor calls, thus refPlaying.current will not actually be updated
-            // with playing state value >:(
-            refPlaying.current = false;
+            // refs are more up-to-date, needed for razors that update quickly
+            setRefAndPlaying(false);
         }
 
         return function saveTimingInformation() {
@@ -200,15 +200,16 @@ function GraphSection(props) {
         <section className="graph-section">
             <div id={ id + '-detdiv' } className={ "detail " + (docReady ? "loaded" : "") }>
                 {
-                    docReady
-                        ? <>
+                    docReady &&
+                        <>
                             <GraphEdge/>
                             <Graph { ...props }/>
+                            <GraphDownloadButton id={ id } title={ title } selection={ selection } />
                         </>
-                        : <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
-
                 }
-                { docReady && <GraphDownloadButton id={ id } title={ title } selection={ selection } /> }
+                {
+                    !docReady && <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
+                }
             </div>
         </section>
     );

@@ -9,19 +9,27 @@ function Overview(props) {
     let {
         id,
         docReady,
+        razorTime,
     } = props;
+
+    const ovWrapper = useRef(null);
+
+    if (ovWrapper && razorTime) {
+        // TODO
+    }
 
     return (
         <div className="overview">
             { docReady && <OverviewHeader { ...props }/> }
-            <div id={ id + "-ov-wrapper" } className="overview-wrapper">
+            <div ref={ ovWrapper } id={ id + "-ov-wrapper" } className="overview-wrapper">
                 {
-                    docReady
-                        ? <OverviewSVGInteractor { ...props }>
+                    docReady && 
+                        <OverviewSVGInteractor { ...props }>
                             <OverviewSVG { ...props } />
                         </OverviewSVGInteractor>
-                        : <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
-
+                }
+                {
+                    !docReady && <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
                 }
             </div>
         </div>
