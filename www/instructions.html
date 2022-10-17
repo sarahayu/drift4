@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="reset.css?v=4.3.1" />
-  <link rel="stylesheet" href="base.css?v=4.3.1" />
-  <link rel="stylesheet" href="plainpage.css?v=4.3.1" />
+  <link rel="stylesheet" href="reset.css?v=4.4.0" />
+  <link rel="stylesheet" href="base.css?v=4.4.0" />
+  <link rel="stylesheet" href="plainpage.css?v=4.4.0" />
   <link rel="preconnect" href="https://fonts.gstatic.com" />
   <link rel="stylesheet" href="https://use.typekit.net/wlm4hlx.css" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap"
@@ -101,6 +101,32 @@
                 url into another browser). Usually, Chrome works best.</li>
               <li>Turn off AdBlock (for the DMG version, adding <code>localhost</code> to AdBlock's whitelist can be
                 tricky. Try turning off AdBlock temporarily in this case).</li>
+              <li>(Only for DMG) Make sure your computer allows apps opened from identified developers.
+                <ol>
+                  <li>Click the top-left Apple icon to open Mac options, and click the option "System Preferences".</li>
+                  <div class="screenshot-wrapper">
+                    <img class="screenshot" src="apple-dropdown.png"
+                      alt="Right click options on Big Sur with an option saying Open" />
+                  </div>
+                  <li>On the window that opens, click the option "Security and Privacy".</li>
+                  <div class="screenshot-wrapper">
+                    <img class="screenshot" src="system-preferences.png"
+                      alt="Right click options on Big Sur with an option saying Open" />
+                  </div>
+                  <li>
+                    On the window that opens and underneath the section that says "Allow apps downloaded from:", make sure the option "App Store and identified developers" is chosen.
+                    <div class="screenshot-wrapper">
+                      <img class="screenshot" src="security-and-privacy.png"
+                        alt="Right click options on Big Sur with an option saying Open" />
+                    </div>
+                    <ul>
+                      <li>If this option is not chosen, click the lock icon on the bottom-left corner to enable changes (make sure to enter your system password if it asks for it).</li>
+                      <li>If you tried to open Drift4 before opening your system preferences, you might get the message "'drift_gui' was blocked from use because..." underneath this section, like as it appears in the image included. You can click "Open Anyway" (either before or after enabling the option to allow apps from identified developers) to open Drift4.</li>
+                    </ul>
+                  </li>
+                </ol>
+
+              </li>
             </ul>
             <h3 id="opening-drift">Opening Drift</h3>
             <ol>
