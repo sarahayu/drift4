@@ -8,7 +8,9 @@ function Graph(props) {
 
     let {
         id,
+        playing,
         razorTime,
+        selection,
         inProgressSelection,
         seekAudioTime,
         docObject,
@@ -21,19 +23,20 @@ function Graph(props) {
     } = useProsodicData(docObject);
 
     const [ hoveringPos, setHoveringPos ] = useState(false);
-
-    let { start_time, end_time } = inProgressSelection;
-    let selectionWidth = t2x(end_time - start_time);
-
     const graphWrapper = useRef(null);
 
-    if (graphWrapper.current && razorTime) {
-        left = graphWrapper.current.scrollLeft, right = left + graphWrapper.current.clientWidth;
-        rX = t2x(razorTime - T.selections[T.cur_doc].start_time);
+    // scroll overview wrapper when razor goes out of view
+    if (playing && graphWrapper.current && razorTime) {
+        let left = graphWrapper.current.scrollLeft, right = left + graphWrapper.current.clientWidth;
+        let rX = t2x(razorTime - selection.start_time);
         if (rX < left || rX > right) {
-            graphWindow.scroll(rX, 0);
+            graphWrapper.current.scroll(rX, 0);
         }
     }
+
+    // use inProgressSelection here so we can update graph size as user is dragging over overview area
+    let { start_time, end_time } = inProgressSelection;
+    let selectionWidth = t2x(end_time - start_time);
 
     return (
         <div ref={ graphWrapper } id={ id + "-main-graph-wrapper" } className="main-graph-wrapper">

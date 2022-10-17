@@ -9,13 +9,21 @@ function Overview(props) {
     let {
         id,
         docReady,
+        playing,
         razorTime,
+        docObject,
     } = props;
 
+    const { pitchData } = useProsodicData(docObject);
     const ovWrapper = useRef(null);
 
-    if (ovWrapper && razorTime) {
-        // TODO
+    if (playing && ovWrapper.current && razorTime) {
+        let duration = pitchData.duration;
+        let left = ovWrapper.current.scrollLeft, right = left + ovWrapper.current.clientWidth;
+        let rX = duration * 10 * (razorTime / duration);
+        if (rX < left || rX > right) {
+            ovWrapper.current.scroll(rX, 0);
+        }
     }
 
     return (

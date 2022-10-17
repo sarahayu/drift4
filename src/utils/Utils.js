@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { getDurationFromPitchData } from "./MathUtils";
 import { getAlign, getMeasureFullTS, getMeasureSelection, getPitch, getRMS } from "./Queries";
 
 const RESOLVING = null;
