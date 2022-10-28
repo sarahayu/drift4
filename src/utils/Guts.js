@@ -1,5 +1,5 @@
 export default function loadGuts() {
-    /* eslint-disable no-undef */ // eslint doesn't like DB and A globals
+    /* eslint-disable no-undef */ // eslint doesn't like BS and A globals
 
     let db, attach;
 

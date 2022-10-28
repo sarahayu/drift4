@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { GutsContext } from '../GutsContext';
 import { postGetWindowedData } from "../utils/Queries";
-import { displaySnackbarAlert, elemClassAdd, elemClassRemove, getExt, measuresToTabSepStr, prevDefCb, rearrangeObjectProps, stripExt, useProsodicMeasures, WINDOWED_PARAMS } from "../utils/Utils"
+import { displaySnackbarAlert, elemClassAdd, elemClassRemove, filterStats, getExt, measuresToTabSepStr, prevDefCb, rearrangeObjectProps, stripExt, useProsodicMeasures, WINDOWED_PARAMS } from "../utils/Utils"
 
 function DocCardHeader({ doc, onDragStart, pmContext }) {
     return (
@@ -9,23 +9,27 @@ function DocCardHeader({ doc, onDragStart, pmContext }) {
             <img src="tictactoe.svg" alt="drag indicator" title="Drag to change order of document" 
                 onMouseDown={ () => onDragStart(doc.id) } draggable={ false } />
             <div className="doc-name">{ doc.title }</div>
-            <DocOpts { ...{ ...doc, pmContext } } />
+            <DocOptions { ...{ ...doc, pmContext } } />
         </div>
     )
 }
 
-function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink, pmContext }) {
+function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink, pmContext }) {
 
     const { updateDoc, deleteDoc } = useContext(GutsContext);
 
     const { 
+        fullTSProsMeasuresReady,
         fullTSProsMeasures,
+        selectionProsMeasuresReady,
         selectionProsMeasures,
      } = useProsodicMeasures({ id, ...pmContext });
 
     const filenameBase = stripExt(title);
 
     const downloadVoxitCSV = () => {
+        if (!fullTSProsMeasuresReady || !selectionProsMeasuresReady) return;
+
         let csvContent = measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures);
         csvContent = csvContent.replace(/\t/g, ',')
     
@@ -34,12 +38,45 @@ function DocOpts({ id, title, transcript: transcriptLink, csv: csvLink, align: a
         // eslint-disable-next-line no-undef
         saveAs(new Blob([csvContent]), out_filename);
     }
-    const downloadWindowedData = () => {
-        const { measure: measureJSON } = postGetWindowedData({
+
+    const downloadWindowedData = async () => {
+        if (!fullTSProsMeasuresReady) return;
+
+        displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
+        
+        const { measure: measureJSON } = await postGetWindowedData({
             id: id,
             params: WINDOWED_PARAMS,
         });
-        displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
+        
+        let maxSegments = -1;
+        
+        Object.values(measureJSON)
+            .forEach(measures => maxSegments = Math.max(maxSegments, measures.length));
+
+        let content = '';
+
+        let header = 'measure_label,window_len,full_transcript';
+        for (let i = 0; i < maxSegments; i++)
+            header += `,seg_${ i + 1 }`;
+
+        content += header;
+        content += ",INFO: For the prosodic measure data the default window or audio sample length is 20 seconds. Rigorous testing showed that a window/audio sample of 20 seconds is ideal for its consistency in matching the prosodic measures of the entire audio length."
+        content += '\n';
+
+        let filteredKeys = filterStats(fullTSProsMeasures);
+
+        filteredKeys.forEach(label => {
+            let measures = measureJSON[label];
+            content += `${ label },${ WINDOWED_PARAMS[label] },${ fullTSProsMeasures[label] }`;
+            measures.forEach(measure => content += `,${ measure }`);
+            for (let i = 0; i < maxSegments - measures.length - 1; i++)
+                content += ','
+            content += '\n';
+        })
+
+        // eslint-disable-next-line no-undef
+        saveAs(new Blob([content]), stripExt(title) + '-windowed.csv');
     }
 
     const options = () => ([
