@@ -1,4 +1,4 @@
-import { PITCH_H, t2x, x2t } from "../utils/MathUtils";
+import { PITCH_H, t2x, x2t } from "utils/MathUtils";
 
 function GraphRazors({ razorTime, hoveringPos, start_time }) {
     return (

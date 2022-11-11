@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
-import { GutsContext } from './GutsContext';
-import SettingsDialog from './portals/SettingsDialog';
-import GentleWarning from './portals/GentleWarning';
-import UploadArea from './portals/UploadArea';
+import { GutsContext } from 'context/GutsContext';
+import SettingsDialog from './SettingsDialog';
+import GentleWarning from './GentleWarning';
+import UploadArea from './UploadArea';
 
 function MiscPortals(props) {
     const { localhost } = useContext(GutsContext);

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { PITCH_H, t2x } from "../utils/MathUtils";
-import { useProsodicData } from "../utils/Utils";
+import useProsodicData from "hooks/useProsodicData";
+import { PITCH_H, t2x } from "utils/MathUtils";
 import { GraphInteractArea, GraphRazors } from "./GraphSVGInteractables";
 import { Amplitude, DetailedPitchTrace, Gaps, Grid, Infotag, Words } from "./GraphSVGParts";
 

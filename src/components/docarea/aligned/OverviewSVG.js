@@ -1,5 +1,5 @@
-import { range } from "../utils/MathUtils";
-import { useProsodicData } from "../utils/Utils";
+import { range } from "utils/MathUtils";
+import useProsodicData from "hooks/useProsodicData";
 import { OverviewRazor, SelectionOverlay, SimplifedPitchTrace, WordGaps } from "./OverviewSVGParts";
 
 function OverviewSVG(props) {

@@ -1,8 +1,8 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import DocCard from "./docitem/DocCard";
-import { GutsContext } from './GutsContext';
-import useDragger from "./utils/useDragger";
-import { elemClassAdd, elemClassRemove } from "./utils/Utils";
+import { useContext, useEffect } from "react";
+import { GutsContext } from 'context/GutsContext';
+import useDragger from "hooks/useDragger";
+import { elemClassAdd, elemClassRemove } from "utils/Utils";
+import DocCard from "./DocCard";
 
 function DocArea(props) {
     const { docs, setDocs, updateDoc } = useContext(GutsContext);

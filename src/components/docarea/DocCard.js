@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { hasData, includeDocInSelf } from "../utils/Utils"
-import ProsodicContent from "./ProsodicContent";
+import { useEffect, useState } from "react";
+import { hasData, includeDocInSelf } from "utils/Utils";
+import DocContentAligned from "./aligned/DocContentAligned";
 import DocCardHeader from "./DocCardHeader";
-import TranscriptInput from "./TranscriptInput";
+import DocContentUnaligned from "./unaligned/DocContentUnaligned";
 
 function DocCard(props) {
 
     let { doc, onDragEnter } = props;
 
     const [ hasUnfolded, setHasUnfolded ] = useState(false);        // for roll-down animation not to activate every time docs are re-ordered
-    const [ pmContext, setPMContext ] = useState();       // so header can know prosodic content data, like selection window
+    const [ pmContext, setPMContext ] = useState();                 // so header can know prosodic content data, like selection window
 
     const getClasses = () => `driftitem ${ doc.grabbed ? 'grabbed' : '' } ${ !hasUnfolded ? 'firstunfold' : '' }`;
 
@@ -23,8 +23,8 @@ function DocCard(props) {
             <div className="driftitem-content">
             {
                 hasData(doc) ?
-                    <ProsodicContent { ...{ ...includeDocInSelf(doc), setPMContext } } /> :
-                    <TranscriptInput { ...includeDocInSelf(doc) } />
+                    <DocContentAligned { ...{ ...includeDocInSelf(doc), setPMContext } } /> :
+                    <DocContentUnaligned { ...includeDocInSelf(doc) } />
             }
             </div>
         </div>  

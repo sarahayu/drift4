@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GutsContext } from '../GutsContext';
-import { postSettings } from '../utils/Queries';
-import { displaySnackbarAlert, RESOLVING } from '../utils/Utils';
+import { GutsContext } from 'context/GutsContext';
+import { postSettings } from 'utils/Queries';
+import { displaySnackbarAlert, RESOLVING } from 'utils/Utils';
 
 function SettingsDialog(props) {
 

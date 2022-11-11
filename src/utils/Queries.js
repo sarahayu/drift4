@@ -1,26 +1,26 @@
 import axios from 'axios';
 import { parsePitch, pitchStats } from './MathUtils';
 
-const getInfos = async ({ since }) => {
+async function getInfos({ since }) {
     const res = await axios.get(`/_rec/_infos.json?since=${ since }`);
     return res.data;
 };
 
-const getSettings = async () => {
+async function getSettings() {
     const res = await axios.post(`/_settings`, { get_settings: true });
     return res.data;
 };
 
-const postSettings = async ({ calcIntense, gentlePort }) => {
+async function postSettings({ calcIntense, gentlePort }) {
     const res = await axios.post(`/_settings`, { calc_intense: calcIntense, gentle_port: gentlePort });
     return res.data;
 };
 
-const getGentle = ({ gentlePort }) => {
+function getGentle({ gentlePort }) {
     return fetch(`//localhost:${ gentlePort }`, { mode: 'no-cors' });
 }
 
-const getPitch = async pitchURL => {
+async function getPitch(pitchURL) {
     const res = await fetch(`/media/${ pitchURL }`);
     const tex = await res.text();
 
@@ -31,84 +31,84 @@ const getPitch = async pitchURL => {
     }));
 }
 
-const getAlign = async alignURL => {
+async function getAlign(alignURL) {
     const res = await axios.get(`/media/${ alignURL }`);
     return res.data;
 }
 
-const getRMS = async rmsURL => {
+async function getRMS(rmsURL) {
     const res = await axios.get(`/media/${ rmsURL }`);
     return res.data;
 }
 
-const getMeasureSelection = async (docid, startTime, endTime) => {
+async function getMeasureSelection(docid, startTime, endTime) {
     const res = await axios.get(`/_measure?id=${docid}&start_time=${startTime}&end_time=${endTime}`);
     return res.data.measure;
 }
 
-const getMeasureFullTS = async (docid, forceGen) => {
+async function getMeasureFullTS(docid, forceGen) {
     if (forceGen === undefined)
         forceGen = false;
     const res = await axios.get(`/_measure?id=${docid}&force_gen=${forceGen}`);
     return res.data.measure;
 }
 
-const postDeleteDoc = async docid => {
+async function postDeleteDoc(docid) {
     const res = await axios.post(`/_rec/_remove`, { id: docid });
     return res.data;
 }
 
-const postCreateDoc = async ({ title, size, date }) => {
+async function postCreateDoc({ title, size, date }) {
     const res = await axios.post(`/_rec/_create`, { title, size, date });
     return res.data;
 }
 
 // use for path, transcript
-const postUpdateDoc = async docObject => {
+async function postUpdateDoc(docObject) {
     const res = await axios.post(`/_rec/_update`, docObject);
     return res.data;
 }
 
 // TODO do all this trigger stuff serverside?
 
-const postTriggerPitchCreation = async docid => {
+async function postTriggerPitchCreation(docid) {
     const res = await axios.post(`/_pitch`, { id: docid });
     return res.data;
 }
 
-const postTriggerRMSCreation = async docid => {
+async function postTriggerRMSCreation(docid) {
     const res = await axios.post(`/_rms`, { id: docid });
     return res.data;
 }
 
-const postTriggerHarvestCreation = async docid => {
+async function postTriggerHarvestCreation(docid) {
     const res = await axios.post(`/_harvest`, { id: docid });
     return res.data;
 }
 
-const postTriggerAlignCreation = async docid => {
+async function postTriggerAlignCreation(docid) {
     const res = await axios.post(`/_align`, { id: docid });
     return res.data;
 }
 
-const postTriggerCSVCreation = async docid => {
+async function postTriggerCSVCreation(docid) {
     const res = await axios.post(`/_csv`, { id: docid });
     return res.data;
 }
 
-const postTriggerMatCreation = async docid => {
+async function postTriggerMatCreation(docid) {
     const res = await axios.post(`/_mat`, { id: docid });
     return res.data;
 }
 
-const postGetWindowedData = async ({ id, params }) => {
+async function postGetWindowedData({ id, params }) {
     const res = await axios.post(`/_windowed`, { id, params });
     return res.data;
 }
 
 export {
-    getSettings,
     getInfos,
+    getSettings,
     postSettings,
     getGentle,
     getPitch,

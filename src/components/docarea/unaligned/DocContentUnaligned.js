@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { GutsContext } from "../GutsContext";
-import { postTriggerAlignCreation, postTriggerCSVCreation, postTriggerMatCreation, postUpdateDoc } from "../utils/Queries";
-import { displaySnackbarAlert, stopProp, useRefState } from "../utils/Utils";
+import { GutsContext } from "context/GutsContext";
+import { postTriggerAlignCreation, postTriggerCSVCreation, postTriggerMatCreation, postUpdateDoc } from "utils/Queries";
+import { displaySnackbarAlert, stopProp } from "utils/Utils";
 
-function TranscriptInput({ id, path, docObject }) {
+function DocContentUnaligned({ id, path, docObject }) {
 
     const { foundGentle, attachPutFile, updateDoc } = useContext(GutsContext);
     const [ aligningInProgress, setAligningInProgress ] = useState(false);
@@ -103,4 +103,4 @@ function ProgressBar({ upload_status, path, align_px, align }) {
 }
 
 
-export default TranscriptInput;
+export default DocContentUnaligned;

@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
-import { prevDef, useProsodicData } from "../utils/Utils";
-import OverviewSVG from "./OverviewSVG";
+import { useRef } from "react";
+import useProsodicData from "hooks/useProsodicData";
 
 function OverviewSVGInteractor(props) {
 

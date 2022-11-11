@@ -1,4 +1,4 @@
-import { pitch2y, PITCH_H, range } from "../utils/MathUtils";
+import { pitch2y, PITCH_H, range } from "utils/MathUtils";
 import { COLORS } from "./GraphSVGParts";
 
 function GraphEdge() {

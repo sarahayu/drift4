@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { rearrangeObjectProps } from "./Utils";
+import { rearrangeObjectProps } from "utils/Utils";
 
 const useDragger = ({ setDocs, updateDoc }) => {
     const [ draggedItem, setDraggedItem ] = useState(null);

@@ -1,5 +1,5 @@
-import { getTranscriptBoundsFromAlign } from "../utils/MathUtils";
-import { useProsodicData } from "../utils/Utils";
+import { getTranscriptBoundsFromAlign } from "utils/MathUtils";
+import useProsodicData from "hooks/useProsodicData";
 import TimesTableCell from "./TimesTableCell";
 
 function TimesTable({ docObject, selection, setSelection, inProgressSelection, resetRazor, audioLoaded }) {

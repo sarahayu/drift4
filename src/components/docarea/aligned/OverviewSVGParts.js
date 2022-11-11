@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { getTranscriptBoundsFromAlign, pitch2y, pitchStats } from "../utils/MathUtils";
+import { getTranscriptBoundsFromAlign, pitch2y, pitchStats } from "utils/MathUtils";
 
 function SimplifedPitchTrace({ pitchData, alignData, width, duration }) {
 

@@ -1,7 +1,7 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { GutsContext } from './GutsContext';
-import useDragger from "./utils/useDragger";
-import { bytesToMB, ENTER_KEY, prevDefStopProp, prevDefStopPropCb, rearrangeObjectProps } from "./utils/Utils";
+import { useContext } from "react";
+import { GutsContext } from 'context/GutsContext';
+import useDragger from "hooks/useDragger";
+import { bytesToMB, ENTER_KEY, prevDefStopProp, prevDefStopPropCb } from "utils/Utils";
 
 function Filelist() {
     const { docs, setDocs, updateDoc } = useContext(GutsContext);

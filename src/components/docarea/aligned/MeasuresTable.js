@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import { GutsContext } from "../GutsContext";
-import { displaySnackbarAlert, filterStats, LABEL_DESCRIPTIONS, LABEL_HEADERS, linkFragment, measuresToTabSepStr, splitString, useProsodicMeasures } from "../utils/Utils";
+import { GutsContext } from "context/GutsContext";
+import useProsodicMeasures from "hooks/useProsodicMeasures";
+import { displaySnackbarAlert, filterStats, LABEL_DESCRIPTIONS, LABEL_HEADERS, linkFragment, measuresToTabSepStr, splitString } from "utils/Utils";
 
 function MeasuresTable(props) {
 

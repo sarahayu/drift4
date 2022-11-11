@@ -1,6 +1,7 @@
 import { useRef } from "react";
-import { getTranscriptBoundsFromAlign } from "../utils/MathUtils";
-import { prevDef, useProsodicData } from "../utils/Utils";
+import { getTranscriptBoundsFromAlign } from "utils/MathUtils";
+import useProsodicData from "hooks/useProsodicData";
+import { prevDef } from "utils/Utils";
 import OverviewSVG from "./OverviewSVG";
 import OverviewSVGInteractor from "./OverviewSVGInteractor";
 

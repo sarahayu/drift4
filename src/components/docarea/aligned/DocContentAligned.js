@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
-import { getAlign } from "../utils/Queries";
-import { includeDocInSelf, linkFragment, useAudio, useProsodicData, useRefState } from "../utils/Utils";
-import { GutsContext } from './../GutsContext';
+import { getAlign } from "utils/Queries";
+import useProsodicData from "hooks/useProsodicData";
+import { includeDocInSelf, linkFragment } from "utils/Utils";
+import { GutsContext } from 'context/GutsContext';
 import Graph from "./Graph";
-import GraphDownloadButton from "./GraphDownloadButton";
 import GraphEdge from "./GraphEdge";
 import MeasuresTable from "./MeasuresTable";
 import Overview from "./Overview";
 import TimesTable from "./TimesTable";
+import useRefState from "hooks/useRefState";
+import useAudio from "hooks/useAudio"
+import GraphDownloadButton from "./GraphDownloadButton";
 
-function ProsodicContent({ 
+function DocContentAligned({ 
     id, 
     align: alignURL, 
     path: audioURL, 
@@ -234,4 +237,4 @@ function TableSection(props) {
     );
 }
 
-export default ProsodicContent;
+export default DocContentAligned;

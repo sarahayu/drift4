@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { fr2x, getTranscriptBoundsFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "../utils/MathUtils";
+import { fr2x, getTranscriptBoundsFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "utils/MathUtils";
 
 function Gaps({ alignData, inProgressSelection }) {
 

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { GutsContext } from '../GutsContext';
-import { postCreateDoc, postTriggerHarvestCreation, postTriggerPitchCreation, postTriggerRMSCreation, postUpdateDoc } from '../utils/Queries';
+import { GutsContext } from 'context/GutsContext';
+import { postCreateDoc, postTriggerHarvestCreation, postTriggerPitchCreation, postTriggerRMSCreation, postUpdateDoc } from 'utils/Queries';
 
 // moved all event listener stuff here because file upload things depend on React App's got_files function, 
 // and why not keep related event listener stuff here as well

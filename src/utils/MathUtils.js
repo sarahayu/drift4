@@ -1,10 +1,19 @@
-const parsePitch = (pitch) => {
+/* ======== constants ========= */
+
+const XSCALE = 300;
+const LPAD = 0;
+const MAX_A = 15;
+const PITCH_H = 250;
+
+/* ======== functions ========= */
+
+function parsePitch(pitch) {
     return pitch.split('\n')
         .filter((x) => x.length > 5)
         .map((x) => Number(x.split(' ')[1]));
 }
 
-const smooth = (seq, N) => {
+function smooth(seq, N) {
     N = N || 5;
 
     let out = [];
@@ -23,7 +32,7 @@ const smooth = (seq, N) => {
             }
             else if (j1 >= i) {
                 // Hit gap after idx
-                break
+                break;
             }
             else if (j1 <= i) {
                 // Hit gap before/on: reset
@@ -41,28 +50,28 @@ const smooth = (seq, N) => {
     return out;
 }
 
-const derivative = (seq) => {
+function derivative(seq) {
     let out = [];
     for (let i = 0; i < seq.length; i++) {
         let s1 = seq[i];
         let s2 = seq[i + 1];
-        if (s1 && s2) {// && s1 > 20 && s2 > 20) {
+        if (s1 && s2) { // && s1 > 20 && s2 > 20) {
             out.push(s2 - s1);
         }
         else {
-            out.push(0)
+            out.push(0);
         }
     }
     return out;
 }
 
-const getDistribution = (seq, name) => {
+function getDistribution(seq, name) {
     name = name || '';
 
     seq = Object.assign([], seq).sort((x, y) => x > y ? 1 : -1);
 
     if (seq.length == 0) {
-        return {}
+        return {};
     }
 
     // Ignore outliers
@@ -78,11 +87,11 @@ const getDistribution = (seq, name) => {
     return out;
 }
 
-const timeStats = (wdlist) => {
+function timeStats(wdlist) {
     // Analyze gaps
     let gaps = wdlist.filter((x) => x.type == 'gap');
 
-    let gap_distr = getDistribution(gaps.map((x) => x.end - x.start), 'gap_')
+    let gap_distr = getDistribution(gaps.map((x) => x.end - x.start), 'gap_');
 
     let pgap = gaps.length / wdlist.length;
 
@@ -94,7 +103,7 @@ const timeStats = (wdlist) => {
     return Object.assign({ pgap }, gap_distr, phone_distr);
 }
 
-const pitchStats = (seq) => {
+function pitchStats(seq) {
 
     let smoothed = smooth(seq);
 
@@ -103,7 +112,7 @@ const pitchStats = (seq) => {
 
     let pitched = seq.filter((p) => p > 20);
     if (pitched.length == 0) {
-        return
+        return;
     }
 
     let pitch_distr = getDistribution(pitched, 'pitch_');
@@ -119,11 +128,6 @@ const pitchStats = (seq) => {
     },
         pitch_distr, accel_distr);
 }
-
-const XSCALE = 300;
-const LPAD = 0;
-const MAX_A = 15;
-const PITCH_H = 250;
 
 function fr2x(fr) {
     return t2x(fr / 100.0);
@@ -153,10 +157,12 @@ function pitch2y(p, p_h) {
     return (-60 * Math.log2(p / 440));
 }
 
-const getTranscriptBoundsFromAlign = ({ segments }) => ([ segments[0].start, segments[segments.length - 1].end ]);
+function getTranscriptBoundsFromAlign({ segments }) {
+    return ([segments[0].start, segments[segments.length - 1].end]);
+}
 
 // like python's range()
-const range = (start, end, step) => {
+function range(start, end, step) {
     if (end == undefined) {
         end = start;
         start = 0;
@@ -172,6 +178,7 @@ const range = (start, end, step) => {
 }
 
 export {
+    PITCH_H,
     parsePitch,
     smooth,
     derivative,
@@ -185,5 +192,4 @@ export {
     pitch2y,
     getTranscriptBoundsFromAlign,
     range,
-    PITCH_H,
 };

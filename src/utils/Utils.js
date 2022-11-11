@@ -1,161 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { getAlign, getMeasureFullTS, getMeasureSelection, getPitch, getRMS } from "./Queries";
+import { getAlign, getPitch, getRMS, postGetWindowedData } from "./Queries";
+
+/* ======== constants ========= */
 
 const RESOLVING = null;
+
 const ENTER_KEY = 13;
-
-const bytesToMB = bytes => Math.round(bytes / Math.pow(2, 20) * 100) / 100;
-
-const elemClassAdd = (id, className) => document.getElementById(id).classList.add(className);
-const elemClassRemove = (id, className) => document.getElementById(id).classList.remove(className);
-
-const stopProp = ev => ev.stopPropagation();
-const prevDef = ev => ev.preventDefault();
-const prevDefStopProp = ev => {
-    ev.stopPropagation();
-    ev.preventDefault();
-}
-
-const prevDefStopPropCb = cb => {
-    return ev => {
-        ev.stopPropagation();
-        ev.preventDefault();
-        cb();
-    }
-}
-
-const prevDefCb = cb => {
-    return ev => {
-        ev.preventDefault();
-        cb();
-    }
-}
-
-const stripExt = filename => {
-    filename = filename.split(".").reverse();
-    filename.shift();
-    return filename.reverse().join("");
-}
-
-const getExt = filename => filename.split('.').reverse()[0];
-
-const rearrangeObjectProps = (obj, keys) => {
-    return keys.reduce((newObj, key) => {
-        newObj[key] = obj[key];
-        return newObj;
-    }, {});
-}
-
-const includeDocInSelf = doc => ({ ...doc, 'docObject': doc });
-
-const hasData = doc => doc && doc.pitch && doc.align && doc.rms;
-
-const pitchQuery = (id, path) => ([ ['pitch', id], () => getPitch(path), { enabled: !!path } ]);
-const alignQuery = (id, path) => ([ ['align', id], () => getAlign(path), { enabled: !!path } ]);
-const rmsQuery = (id, path) => ([ ['rms', id], () => getRMS(path), { enabled: !!path } ]);
-
-// we do this because React's Audio code is SLOW on multiple play/pauses; loadAudio is plain JS code using plain JS Audio
-const useAudio = (id, url) => {
-    // eslint-disable-next-line no-undef
-    return loadAudio(id, url);
-}
-
-const displaySnackbarAlert = (message, milliseconds) => {
-    // eslint-disable-next-line no-undef
-    showLittleAlert(message, milliseconds);
-}
-
-// helps us access updated state values in function closures
-const useRefState = initVal => {
-    
-    const [ state, setState ] = useState(initVal);
-    const ref = useRef(state);
-
-    useEffect(() => { ref.current = state }, [ state ]);
-
-    const setRefState = newState => setState(ref.current = newState);
-
-    return [ state, setState, ref, setRefState ];
-}
-
-const useProsodicData = ({ id, pitch, align, rms }) => {
-    
-    const { isSuccess: pitchReady, data: pitchData } = useQuery(['pitch', id], () => getPitch(pitch), { enabled: !!pitch });
-    const { isSuccess: alignReady, data: alignData } = useQuery(['align', id], () => getAlign(align), { enabled: !!align });
-    const { isSuccess: rmsReady, data: rmsData } = useQuery(['rms', id], () => getRMS(rms), { enabled: !!rms });
-
-    return {
-        pitchReady,
-        pitchData,
-        alignReady,
-        alignData,
-        rmsReady,
-        rmsData,
-    }
-}
-
-const useProsodicMeasures = ({ id, selection, docReady }) => {
-    const { 
-        isSuccess: fullTSProsMeasuresSuccess, 
-        isFetching: fullTSProsMeasuresFetching, 
-        data: fullTSProsMeasures 
-    } = useQuery(['prosodicMeasures', 'fullTranscript', id], () => getMeasureFullTS(id), { enabled: docReady });
-
-    const { 
-        isSuccess: selectionProsMeasuresSuccess, 
-        isFetching: selectionProsMeasuresFetching, 
-        data: selectionProsMeasures 
-    } = useQuery(['prosodicMeasures', selection, id], () => getMeasureSelection(id, selection.start_time, selection.end_time), { enabled: docReady && !!selection.start_time });
-
-    // check for fetching so data table isn't using stale data to populate table 
-    // (even if it is valid, e.g. turning on intensive measures and adding addt. Dynamism measures)
-    return {
-        fullTSProsMeasuresReady: fullTSProsMeasuresSuccess && !fullTSProsMeasuresFetching,
-        fullTSProsMeasures,
-        selectionProsMeasuresReady: selectionProsMeasuresSuccess && !selectionProsMeasuresFetching,
-        selectionProsMeasures,
-    }
-}
-
-const linkFragment = (url, text, id_alt) => 
-    'fragmentDirective' in document ? url + '#:~:text=' + escape(text).replaceAll('-', '%2D') : url + '#' + id_alt;
-
-
-function filterStats(stats, keep_start_ends) {
-    // take out pause counts that are not 100, 500, 1000, or 2000 and maybe start_time and end_time
-    let keys = Object.keys(stats), start_ends = keys.splice(0, 2);
-
-    keys = keys.filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
-    
-    // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures (and maybe start/end times)
-    let pauseCounts = keys.splice(
-        keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
-        keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
-    );
-    let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
-    keys.splice(1, 0, ...drifts);
-    keys.push(...pauseCounts);
-
-    if (keep_start_ends)
-        keys.push(...start_ends);
-
-    // finally, remove these unneeded Voxit values
-    let unneeded = [
-        "f0_Mean",
-        "f0_Entropy",
-        "f0_Range_95_Percent",
-        "f0_Mean_Abs_Velocity",
-        "f0_Mean_Abs_Accel",
-        "Intensity_Mean_(decibels)",
-        "Complexity_Syllables",
-        "Complexity_Phrases",
-    ]
-
-    keys = keys.filter(key => !unneeded.includes(key))
-
-    return keys;
-}
 
 const LABEL_DESCRIPTIONS = {
     'WPM': 'The average number of words per minute. The transcript of the recording created by Gentle, corrected when necessary, produced the number of words read, which was divided by the length of the recording and normalized, if the recording was longer or shorter than one minute, to reflect the speaking rate for 60 seconds.',
@@ -226,6 +75,129 @@ const WINDOWED_PARAMS = {
     'Dynamism': 20,
 }
 
+/* ======== functions ========= */
+
+function bytesToMB(bytes) {
+    return Math.round(bytes / Math.pow(2, 20) * 100) / 100;
+}
+
+function elemClassAdd(id, className) {
+    return document.getElementById(id).classList.add(className);
+}
+
+function elemClassRemove(id, className) {
+    return document.getElementById(id).classList.remove(className);
+}
+
+function stopProp(ev) {
+    return ev.stopPropagation();
+}
+
+function prevDef(ev) {
+    return ev.preventDefault();
+}
+
+function prevDefStopProp(ev) {
+    ev.stopPropagation();
+    ev.preventDefault();
+}
+
+function prevDefStopPropCb(cb) {
+    return ev => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        cb();
+    };
+}
+
+function prevDefCb(cb) {
+    return ev => {
+        ev.preventDefault();
+        cb();
+    };
+}
+
+function stripExt(filename) {
+    filename = filename.split(".").reverse();
+    filename.shift();
+    return filename.reverse().join("");
+}
+
+function getExt(filename) {
+    return filename.split('.').reverse()[0];
+}
+
+function rearrangeObjectProps(obj, keys) {
+    return keys.reduce((newObj, key) => {
+        newObj[key] = obj[key];
+        return newObj;
+    }, {});
+}
+
+function includeDocInSelf(doc) {
+    return ({ ...doc, 'docObject': doc });
+}
+
+function hasData(doc) {
+    return doc && doc.pitch && doc.align && doc.rms;
+}
+
+function pitchQuery(id, path) {
+    return ([['pitch', id], () => getPitch(path), { enabled: !!path }]);
+}
+
+function alignQuery(id, path) {
+    return ([['align', id], () => getAlign(path), { enabled: !!path }]);
+}
+
+function rmsQuery(id, path) {
+    return ([['rms', id], () => getRMS(path), { enabled: !!path }]);
+}
+
+function displaySnackbarAlert(message, milliseconds) {
+    // eslint-disable-next-line no-undef
+    showLittleAlert(message, milliseconds);
+}
+
+function linkFragment(url, text, id_alt) {
+    return 'fragmentDirective' in document ? url + '#:~:text=' + escape(text).replaceAll('-', '%2D') : url + '#' + id_alt;
+}
+
+function filterStats(stats, keep_start_ends) {
+    // take out pause counts that are not 100, 500, 1000, or 2000 and maybe start_time and end_time
+    let keys = Object.keys(stats), start_ends = keys.splice(0, 2);
+
+    keys = keys.filter(key => !key.startsWith('Gentle_Pause_Count') || ['100', '500', '1000', '2000'].find(pauseLen => key.includes('>' + pauseLen)));
+    
+    // sort keys so that WPM comes first, then Drift measures, then Gentle measures, and lastly Gentle Pause Count measures (and maybe start/end times)
+    let pauseCounts = keys.splice(
+        keys.findIndex(d => d.startsWith('Gentle_Pause_Count')), 
+        keys.findIndex(d => d.includes('Gentle_Long_Pause_Count'))
+    );
+    let drifts = keys.splice(keys.findIndex(d => d.startsWith('Drift')));
+    keys.splice(1, 0, ...drifts);
+    keys.push(...pauseCounts);
+
+    if (keep_start_ends)
+        keys.push(...start_ends);
+
+    // finally, remove these unneeded Voxit values
+    let unneeded = [
+        "f0_Mean",
+        "f0_Entropy",
+        "f0_Range_95_Percent",
+        "f0_Mean_Abs_Velocity",
+        "f0_Mean_Abs_Accel",
+        "Intensity_Mean_(decibels)",
+        "Complexity_Syllables",
+        "Complexity_Phrases",
+    ]
+
+    keys = keys.filter(key => !unneeded.includes(key))
+
+    return keys;
+}
+
 function splitString(str, len, maxlines) {
     let strs = [], i = 0, j = len;
 
@@ -267,35 +239,85 @@ function measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures) {
     return cliptxt;
 }
 
-export { 
-    RESOLVING, 
-    ENTER_KEY, 
-    bytesToMB, 
-    elemClassAdd, 
-    elemClassRemove, 
+function downloadVoxitCSV({ filenameBase, fullTSProsMeasuresReady, fullTSProsMeasures, selectionProsMeasuresReady, selectionProsMeasures }) {
+    if (!fullTSProsMeasuresReady || !selectionProsMeasuresReady)
+        return;
+
+    let csvContent = measuresToTabSepStr(fullTSProsMeasures, selectionProsMeasures);
+    csvContent = csvContent.replace(/\t/g, ',');
+
+    // eslint-disable-next-line no-undef
+    saveAs(new Blob([csvContent]), filenameBase + '-voxitcsv.csv');
+};
+
+async function downloadWindowedData({ filenameBase, id, fullTSProsMeasuresReady, fullTSProsMeasures }) {
+    if (!fullTSProsMeasuresReady)
+        return;
+
+    displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
+
+    const { measure: measureJSON } = await postGetWindowedData({
+        id: id,
+        params: WINDOWED_PARAMS,
+    });
+
+    let maxSegments = -1;
+
+    Object.values(measureJSON)
+        .forEach(measures => maxSegments = Math.max(maxSegments, measures.length));
+
+    let content = '';
+
+    let header = 'measure_label,window_len,full_transcript';
+    for (let i = 0; i < maxSegments; i++)
+        header += `,seg_${i + 1}`;
+
+    content += header;
+    content += ",INFO: For the prosodic measure data the default window or audio sample length is 20 seconds. Rigorous testing showed that a window/audio sample of 20 seconds is ideal for its consistency in matching the prosodic measures of the entire audio length.";
+    content += '\n';
+
+    let filteredKeys = filterStats(fullTSProsMeasures);
+
+    filteredKeys.forEach(label => {
+        let measures = measureJSON[label];
+        content += `${label},${WINDOWED_PARAMS[label]},${fullTSProsMeasures[label]}`;
+        measures.forEach(measure => content += `,${measure}`);
+        for (let i = 0; i < maxSegments - measures.length - 1; i++)
+            content += ',';
+        content += '\n';
+    });
+
+    // eslint-disable-next-line no-undef
+    saveAs(new Blob([content]), filenameBase + '-windowed.csv');
+};
+
+export {
+    RESOLVING,
+    ENTER_KEY,
+    LABEL_DESCRIPTIONS,
+    LABEL_HEADERS,
+    WINDOWED_PARAMS,
+    bytesToMB,
+    elemClassAdd,
+    elemClassRemove,
     stopProp,
     prevDef,
     prevDefStopProp,
     prevDefStopPropCb,
     prevDefCb,
-    stripExt, 
-    getExt, 
-    rearrangeObjectProps, 
-    includeDocInSelf, 
+    stripExt,
+    getExt,
+    rearrangeObjectProps,
+    includeDocInSelf,
     hasData,
     pitchQuery,
     alignQuery,
     rmsQuery,
-    useAudio,
     displaySnackbarAlert,
-    useRefState,
-    useProsodicData,
-    useProsodicMeasures,
     linkFragment,
     filterStats,
-    LABEL_DESCRIPTIONS,
-    LABEL_HEADERS,
-    WINDOWED_PARAMS,
     splitString,
     measuresToTabSepStr,
+    downloadVoxitCSV,
+    downloadWindowedData,
 };
