@@ -1,6 +1,8 @@
 import { Fragment, useMemo } from "react";
 import { fr2x, getTranscriptBoundsFromAlign, pitch2y, pitchStats, PITCH_H, range, t2w, t2x, x2t } from "utils/MathUtils";
 
+// TODO move all these components to separate files? 
+// TODO extract filter and map anon functions?
 function Gaps({ alignData, inProgressSelection }) {
 
     let { start_time, end_time } = inProgressSelection;

@@ -19,11 +19,13 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
             addtClasses: 'min-btn',
             action: () => updateDoc(id, { opened: false }),
         },
+
         ...transcriptLink ? [{
             label: 'Download - Audio Transcript (.txt)',
             link: '/media/' + transcriptLink,
             filename: `${filenameBase}-transcript.${getExt(transcriptLink)}`,
         }] : [],
+
         ...alignLink ? [{
             label: 'Download - Voxit Data (.csv)',
             action: () => downloadVoxitCSV({
@@ -32,16 +34,19 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
                 selectionProsMeasuresReady, selectionProsMeasures
             }),
         }] : [],
+
         ...csvLink ? [{
             label: 'Download - Drift Data (.csv)',
             link: '/media/' + csvLink,
             filename: `${filenameBase}-csv.${getExt(csvLink)}`,
         }] : [],
+
         ...alignLink ? [{
             label: 'Download - Gentle Align (.json)',
             link: '/media/' + alignLink,
             filename: `${filenameBase}-align.${getExt(alignLink)}`,
         }] : [],
+
         ...alignLink ? [{
             label: 'Download - Windowed Voxit Data (.csv)',
             action: () => downloadWindowedData({ 
@@ -49,6 +54,7 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
                 fullTSProsMeasuresReady, fullTSProsMeasures 
             }),
         }] : [],
+
         {
             label: 'Delete Audioclip',
             action: () => deleteDoc(id),
@@ -59,7 +65,7 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
         <button className="dl-btn">
             <img src="ellipsis.svg" alt="options indicator" />
             <ul className="dl-dropdown rightedge">
-                {options.map(option => <Option key={ option.label } {...option} />)}
+                { options.map(option => <Option key={ option.label } {...option} />) }
             </ul>
         </button>
     );
@@ -68,11 +74,8 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
 function Option({ label, action, link, filename, addtClasses }) {
     return (
         <li>
-            {
-                action ?
-                <button className={ `action-btn ${ addtClasses || '' }` } onClick={ prevDefCb(action) }>{ label }</button> :
-                <a className={ `action-btn ${ addtClasses || '' }` } href={ link } target="_blank" download={ filename }>{ label }</a>
-            }
+            { action && <button className={ `action-btn ${ addtClasses || '' }` } onClick={ prevDefCb(action) }>{ label }</button> }
+            { !action && <a className={ `action-btn ${ addtClasses || '' }` } href={ link } target="_blank" download={ filename }>{ label }</a> }
         </li>
     )
 }

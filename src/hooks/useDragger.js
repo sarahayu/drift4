@@ -9,10 +9,12 @@ const useDragger = ({ setDocs, updateDoc }) => {
         setDraggedItem(null);
         window.onmouseup = null;
     }
+    
     const onDragStart = docid => {
         setDraggedItem(docid);
         window.onmouseup = onDragEnd;
     }
+    
     const onDragEnter = docid => {
         if (draggedItem && draggedItem != docid) {
             setDocs(oldDocs => {

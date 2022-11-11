@@ -4,18 +4,18 @@ import useDragger from "hooks/useDragger";
 import { elemClassAdd, elemClassRemove } from "utils/Utils";
 import DocCard from "./DocCard";
 
-function DocArea(props) {
+function DocArea() {
     const { docs, setDocs, updateDoc } = useContext(GutsContext);
     const { onDragStart, onDragEnter } = useDragger({ setDocs, updateDoc });
 
-    const anyDocs = () => Object.values(docs).length != 0;
-    const anyOpened = () => Object.values(docs).filter(doc => doc.opened).length != 0;
-    const anyGrabbed = () => Object.values(docs).some(doc => doc.grabbed);
-
     useEffect(() => {
-        if (anyDocs()) {
+        const anyDocs = Object.values(docs).length != 0;
+        const anyOpened = Object.values(docs).filter(doc => doc.opened).length != 0;
+        const anyGrabbed = Object.values(docs).some(doc => doc.grabbed);
+
+        if (anyDocs) {
             elemClassRemove('nofiles', 'show');
-            if (anyOpened())
+            if (anyOpened)
                 elemClassRemove('noneselected', 'show');
             else
                 elemClassAdd('noneselected', 'show');
@@ -25,7 +25,7 @@ function DocArea(props) {
             elemClassRemove('noneselected', 'show');
         }
 
-        if (anyGrabbed())
+        if (anyGrabbed)
             elemClassAdd('dashboard', 'grabbed');
         else 
             elemClassRemove('dashboard', 'grabbed');

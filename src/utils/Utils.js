@@ -102,6 +102,9 @@ function prevDefStopProp(ev) {
     ev.preventDefault();
 }
 
+/**
+ * stop propagation and prevent default wrapper
+ */
 function prevDefStopPropCb(cb) {
     return ev => {
         ev.stopPropagation();
@@ -110,6 +113,9 @@ function prevDefStopPropCb(cb) {
     };
 }
 
+/**
+ * prevent default wrapper
+ */
 function prevDefCb(cb) {
     return ev => {
         ev.preventDefault();

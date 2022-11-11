@@ -1,17 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
-import { getAlign } from "utils/Queries";
-import useProsodicData from "hooks/useProsodicData";
-import { includeDocInSelf, linkFragment } from "utils/Utils";
+import { useQuery } from "@tanstack/react-query";
+
 import { GutsContext } from 'context/GutsContext';
-import Graph from "./Graph";
-import GraphEdge from "./GraphEdge";
-import MeasuresTable from "./MeasuresTable";
-import Overview from "./Overview";
-import TimesTable from "./TimesTable";
-import useRefState from "hooks/useRefState";
+
 import useAudio from "hooks/useAudio"
-import GraphDownloadButton from "./GraphDownloadButton";
+import useProsodicData from "hooks/useProsodicData";
+import useRefState from "hooks/useRefState";
+
+import { getAlign } from "utils/Queries";
+import { includeDocInSelf } from "utils/Utils";
+
+import GeneralWidgetsSection from "./GeneralWidgetsSection";
+import GraphSection from "./GraphSection";
+import TableSection from "./TableSection";
 
 function DocContentAligned({ 
     id, 
@@ -39,6 +40,7 @@ function DocContentAligned({
     const audio = useAudio(id, '/media/' + audioURL);
     const razorSoughtManually = useRef(false);
 
+    // TODO move audio logic to a hook
     const seekAudioTime = time => {
         setRazorTime(audio.currentTime = time);
         razorSoughtManually.current = true;
@@ -163,77 +165,10 @@ function DocContentAligned({
 
     return (
         <>
-            <TopSection { ...allProps } />
+            <GeneralWidgetsSection { ...allProps } />
             <GraphSection { ...allProps } />
             <TableSection { ...allProps } />
         </>
-    );
-}
-
-function TopSection(props) {
-
-    let { setPlaying, playing, docReady } = props;
-
-    const togglePlayPause = () => {
-        setPlaying(oldPlaying => !oldPlaying);
-    }
-
-    return (
-        <section className="top-section">
-            <button className="play-btn" onClick={ togglePlayPause } disabled={ !docReady }>
-                <img src={ playing ? 'pause-icon.svg' : 'play-icon.svg' } alt="Play/Pause icon" />
-                <span>{ playing ? 'pause' : 'play' }</span>
-            </button>
-            <Overview { ...props } />
-            <TimesTable { ...props } />
-        </section>
-    );
-}
-
-function GraphSection(props) {
-
-    let {
-        id,
-        title,
-        selection,
-        docReady,
-    } = props;
-
-    return (
-        <section className="graph-section">
-            <div id={ id + '-detdiv' } className={ "detail " + (docReady ? "loaded" : "") }>
-                {
-                    docReady &&
-                        <>
-                            <GraphEdge/>
-                            <Graph { ...props }/>
-                            <GraphDownloadButton id={ id } title={ title } selection={ selection } />
-                        </>
-                }
-                {
-                    !docReady && <div className="loading-placement">Loading... If this is taking too long, try reloading the webpage, turning off AdBlock, or reuploading this data file</div>
-                }
-            </div>
-        </section>
-    );
-}
-
-function TableSection(props) {
-
-    return (
-        <section className="table-section">
-            <MeasuresTable { ...props } />
-            <span><a 
-                href={ linkFragment('prosodic-measures.html', 'Full Recording Duration vs. Selection', 'full-vs-selection') }
-                title="Click for more information"
-                target="_blank"
-                >*vocal duration that corresponds to the transcript</a></span>
-            <span><a 
-                href={ linkFragment('about.html', 'About Voxit: Vocal Analysis Tools', 'about-voxit') }
-                title="Click for more information about Voxit"
-                target="_blank"
-                >Prosodic measures are calculated using Voxit</a></span>
-        </section>
     );
 }
 

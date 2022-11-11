@@ -1,13 +1,16 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { GutsContext } from "context/GutsContext";
 import { postTriggerAlignCreation, postTriggerCSVCreation, postTriggerMatCreation, postUpdateDoc } from "utils/Queries";
-import { displaySnackbarAlert, stopProp } from "utils/Utils";
+import { displaySnackbarAlert } from "utils/Utils";
+import TranscriptTextArea from "./TranscriptTextArea";
+import ProgressBar from "./ProgressBar";
 
 function DocContentUnaligned({ id, path, docObject }) {
 
     const { foundGentle, attachPutFile, updateDoc } = useContext(GutsContext);
     const [ aligningInProgress, setAligningInProgress ] = useState(false);
     const transcriptValue = useRef("");
+
     const readyForTranscript = path != undefined;
 
     const setTranscript = async ev => {
@@ -56,11 +59,13 @@ function DocContentUnaligned({ id, path, docObject }) {
     else
         buttonText = "uploading...";
 
+    let btnDisabled = aligningInProgress || !readyForTranscript || !foundGentle;
+
     return (
         <>
             <TranscriptTextArea { ...{ ...docObject, transcriptValue, aligningInProgress } } />
             <div className="bottom-wrapper">
-                <button className="basic-btn" disabled={ aligningInProgress || !readyForTranscript || !foundGentle } onClick={ setTranscript }>
+                <button className="basic-btn" disabled={ btnDisabled } onClick={ setTranscript }>
                     { buttonText }
                 </button>
                 <ProgressBar { ...docObject } />
@@ -68,39 +73,5 @@ function DocContentUnaligned({ id, path, docObject }) {
         </>
     );
 }
-
-function TranscriptTextArea({ path, transcriptValue, aligningInProgress }) {
-
-    const [ textareaStr, setTextareaStr ] = useState(transcriptValue.current);
-
-    useEffect(() => {
-        transcriptValue.current = textareaStr;
-    }, [ textareaStr ]);
-
-    return (
-        <>
-        { 
-            path != undefined 
-                && <textarea 
-                    value={ textareaStr } 
-                    onChange={ ev => setTextareaStr(ev.target.value) }
-                    className="ptext" 
-                    placeholder="Enter Gentle Transcript here..." 
-                    disabled={ aligningInProgress }
-                    rows="5" onClick={ stopProp }></textarea>
-        }
-        </>
-    );
-}
-
-function ProgressBar({ upload_status, path, align_px, align }) {
-    return (
-        <>
-            { upload_status !== undefined && path == undefined && <progress max="100" value={ "" + Math.floor(100 * upload_status) }/> }
-            { align_px !== undefined && align == undefined && <progress max="100" value={ "" + Math.floor(100 * align_px) }/> }
-        </>
-    )
-}
-
 
 export default DocContentUnaligned;

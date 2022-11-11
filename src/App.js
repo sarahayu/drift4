@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-
 import { useQuery } from '@tanstack/react-query';
+
 import DocArea from 'components/docarea/DocArea';
 import Filelist from 'components/filelist/Filelist';
-import { GutsContext } from 'context/GutsContext';
 import MiscPortals from 'components/portals/MiscPortals';
+
+import { GutsContext } from 'context/GutsContext';
+
+import loadGuts from 'utils/Guts';
 import { getGentle, getInfos, getSettings, postDeleteDoc } from 'utils/Queries';
 import { rearrangeObjectProps, RESOLVING } from 'utils/Utils';
-import loadGuts from 'utils/Guts';
+
 
 const FilelistPortal = () => createPortal(
     <Filelist />,
