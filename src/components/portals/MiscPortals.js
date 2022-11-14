@@ -4,6 +4,7 @@ import SettingsDialog from './SettingsDialog';
 import GentleWarning from './GentleWarning';
 import UploadArea from './UploadArea';
 
+// TODO download all
 function MiscPortals(props) {
     const { localhost } = useContext(GutsContext);
     

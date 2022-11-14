@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { GutsContext } from "context/GutsContext";
 import useProsodicMeasures from "hooks/useProsodicMeasures";
-import { downloadVoxitCSV, downloadWindowedData, getExt, prevDefCb, stripExt } from "utils/Utils";
+import { downloadVoxitCSV, downloadWindowedData, getExt, linkFragment, prevDefCb, stripExt } from "utils/Utils";
 
 function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink, pmContext }) {
 
@@ -16,19 +16,21 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
     const options = [
         {
             label: 'Close Document',
-            addtClasses: 'min-btn',
-            action: () => updateDoc(id, { opened: false }),
+            classes: 'action-btn min-btn',
+            fn: () => updateDoc(id, { opened: false }),
         },
 
         ...transcriptLink ? [{
             label: 'Download - Audio Transcript (.txt)',
+            classes: 'action-btn',
             link: '/media/' + transcriptLink,
             filename: `${filenameBase}-transcript.${getExt(transcriptLink)}`,
         }] : [],
 
         ...alignLink ? [{
             label: 'Download - Voxit Data (.csv)',
-            action: () => downloadVoxitCSV({
+            classes: 'action-btn',
+            fn: () => downloadVoxitCSV({
                 filenameBase, 
                 fullTSProsMeasuresReady, fullTSProsMeasures, 
                 selectionProsMeasuresReady, selectionProsMeasures
@@ -37,27 +39,37 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
 
         ...csvLink ? [{
             label: 'Download - Drift Data (.csv)',
+            classes: 'action-btn',
             link: '/media/' + csvLink,
             filename: `${filenameBase}-csv.${getExt(csvLink)}`,
         }] : [],
 
         ...alignLink ? [{
             label: 'Download - Gentle Align (.json)',
+            classes: 'action-btn',
             link: '/media/' + alignLink,
             filename: `${filenameBase}-align.${getExt(alignLink)}`,
         }] : [],
 
         ...alignLink ? [{
             label: 'Download - Windowed Voxit Data (.csv)',
-            action: () => downloadWindowedData({ 
+            classes: 'action-btn',
+            fn: () => downloadWindowedData({ 
                 filenameBase, id, 
                 fullTSProsMeasuresReady, fullTSProsMeasures 
             }),
         }] : [],
 
+        ...(transcriptLink || alignLink || csvLink) ? [{
+            label: 'What do these mean?',
+            classes: 'addt-info-btn hover-no-underline',
+            link: linkFragment('prosodic-measures.html', 'Downloadable Data', 'downloadable-data'),
+        }] : [],
+
         {
             label: 'Delete Audioclip',
-            action: () => deleteDoc(id),
+            classes: 'action-btn',
+            fn: () => deleteDoc(id),
         },
     ];
 
@@ -71,11 +83,11 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
     );
 }
 
-function Option({ label, action, link, filename, addtClasses }) {
+function Option({ label, fn, link, filename, classes }) {
     return (
         <li>
-            { action && <button className={ `action-btn ${ addtClasses || '' }` } onClick={ prevDefCb(action) }>{ label }</button> }
-            { !action && <a className={ `action-btn ${ addtClasses || '' }` } href={ link } target="_blank" download={ filename }>{ label }</a> }
+            { fn && <button className={ classes } onClick={ prevDefCb(fn) }>{ label }</button> }
+            { !fn && <a className={ classes } href={ link } target="_blank" download={ filename }>{ label }</a> }
         </li>
     )
 }

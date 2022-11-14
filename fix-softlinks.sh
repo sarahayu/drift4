@@ -5,5 +5,3 @@ ln -sf numpy-media-tricks/nmt nmt
 
 ln -sf ../ext/guts/template/attachments.js public/attachments.js
 ln -sf ../ext/guts/template/babysteps.js public/babysteps.js
-ln -sf ../ext/guts/template/farming.js public/farming.js
-ln -sf ../ext/guts/template/palilalia.js public/palilalia.js

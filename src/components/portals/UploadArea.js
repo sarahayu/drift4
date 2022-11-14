@@ -91,7 +91,7 @@ function UploadArea(props) {
             localhost ?
                 "Only upload large files if your machine can handle it!"
                 : "Please be courteous and only upload files less than 10 minutes!";
-    }, [ calcIntense ]);
+    }, [ calcIntense ]);        // TODO why does this only depend on calcIntense?
 
     return createPortal(
         null,
