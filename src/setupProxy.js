@@ -6,6 +6,7 @@ module.exports = function(app) {
     [
         "/_settings",
         "/_measure",
+        "/_measure_all",
         "/_windowed",
         "/_rec/**",
         "/media/**",

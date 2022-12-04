@@ -630,11 +630,6 @@ main
     border-bottom: 1px solid #eee;
 }
 
-.dl-dropdown li:last-child .action-btn
-{
-    border-top: 1px solid #eee;
-}
-
 .sep-before
 {
     border-top: 1px solid #eee;

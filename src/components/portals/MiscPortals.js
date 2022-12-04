@@ -3,8 +3,8 @@ import { GutsContext } from 'context/GutsContext';
 import SettingsDialog from './SettingsDialog';
 import GentleWarning from './GentleWarning';
 import UploadArea from './UploadArea';
+import BulkActions from './BulkActions';
 
-// TODO download all
 function MiscPortals(props) {
     const { localhost } = useContext(GutsContext);
     
@@ -13,6 +13,7 @@ function MiscPortals(props) {
             { localhost && <SettingsDialog />  }
             { localhost && <GentleWarning /> }
             <UploadArea />
+            <BulkActions />
         </>
     );
 }

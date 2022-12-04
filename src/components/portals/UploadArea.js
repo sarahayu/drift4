@@ -3,9 +3,7 @@ import { createPortal } from 'react-dom';
 import { GutsContext } from 'context/GutsContext';
 import { postCreateDoc, postTriggerHarvestCreation, postTriggerPitchCreation, postTriggerRMSCreation, postUpdateDoc } from 'utils/Queries';
 
-// moved all event listener stuff here because file upload things depend on React App's got_files function, 
-// and why not keep related event listener stuff here as well
-function UploadArea(props) {
+function UploadArea() {
 
     const { 
         pushNewDoc, attachPutFile, updateDoc, calcIntense 
@@ -67,21 +65,9 @@ function UploadArea(props) {
             ev.preventDefault();
             ev.currentTarget.children[0].textContent = "UPLOAD FILE";
         };
-        $uplArea.ondrop = (ev) => {
-            ev.stopPropagation();
-            ev.preventDefault();
-
-            console.log("drop");
-            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
-
-            handleFiles(ev.dataTransfer.files);
-        };
+        
         $uplArea.onclick = () => {
             document.getElementById("upload-button").click()
-        };
-
-        document.getElementById("upload-button").onchange = (ev) => {
-            handleFiles(ev.target.files);
         };
 
         // eslint-disable-next-line no-restricted-globals
@@ -91,7 +77,28 @@ function UploadArea(props) {
             localhost ?
                 "Only upload large files if your machine can handle it!"
                 : "Please be courteous and only upload files less than 10 minutes!";
-    }, [ calcIntense ]);        // TODO why does this only depend on calcIntense?
+    }, [])
+
+    useEffect(() => {
+        console.log("updating upload area")
+
+        const $uplArea = document.getElementById("upload-area");
+
+        $uplArea.ondrop = (ev) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+
+            console.log("drop");
+            ev.currentTarget.children[0].textContent = "UPLOAD FILE";
+
+            handleFiles(ev.dataTransfer.files);
+        };
+
+        document.getElementById("upload-button").onchange = (ev) => {
+            handleFiles(ev.target.files);
+        };
+        
+    }, [ /*pushNewDoc, attachPutFile, updateDoc, calcIntense*/ ]); // TODO check if this makes a difference for multiple file uploads?
 
     return createPortal(
         null,

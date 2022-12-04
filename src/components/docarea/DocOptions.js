@@ -1,7 +1,8 @@
-import { useContext } from "react";
+import Option from "components/Option";
 import { GutsContext } from "context/GutsContext";
 import useProsodicMeasures from "hooks/useProsodicMeasures";
-import { downloadVoxitCSV, downloadWindowedData, getExt, linkFragment, prevDefCb, stripExt } from "utils/Utils";
+import { useContext } from "react";
+import { downloadVoxitCSV, downloadWindowedData, getExt, linkFragment, stripExt } from "utils/Utils";
 
 function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align: alignLink, pmContext }) {
 
@@ -68,7 +69,7 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
 
         {
             label: 'Delete Audioclip',
-            classes: 'action-btn',
+            classes: 'action-btn sep-before',
             fn: () => deleteDoc(id),
         },
     ];
@@ -81,15 +82,6 @@ function DocOptions({ id, title, transcript: transcriptLink, csv: csvLink, align
             </ul>
         </button>
     );
-}
-
-function Option({ label, fn, link, filename, classes }) {
-    return (
-        <li>
-            { fn && <button className={ classes } onClick={ prevDefCb(fn) }>{ label }</button> }
-            { !fn && <a className={ classes } href={ link } target="_blank" download={ filename }>{ label }</a> }
-        </li>
-    )
 }
 
 export default DocOptions;

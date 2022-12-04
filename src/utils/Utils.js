@@ -297,6 +297,95 @@ async function downloadWindowedData({ filenameBase, id, fullTSProsMeasuresReady,
     saveAs(new Blob([content]), filenameBase + '-windowed.csv');
 };
 
+// use for align and transcript
+function downloadAllZipped(mediaTitle, docs) {
+    // filter only those that have the content we need
+    const hasMedia = Object.values(docs).filter(doc => doc[mediaTitle]);
+
+    Promise.all(hasMedia.map(doc =>
+        fetch('/media/' + doc[mediaTitle])
+            .then(response => response.blob())
+            .then(blob => ({ docid: doc.id, blob: blob }))
+    )).then(blobdocs => {
+        console.log('zipping...');
+        // eslint-disable-next-line no-undef
+        let zip = new JSZip();
+        let folder = zip.folder(mediaTitle + 'files');
+        blobdocs.forEach(({ docid, blob }) => {
+            let doc = docs[docid];
+            let filename = stripExt(doc.title);
+            let filename_basic = filename + '-' + mediaTitle, 
+                suffix = '.' + doc[mediaTitle].split('.')[1];
+            let counter = 1;
+            let out_filename = filename_basic;
+            // append number to filename if file exists with the same name
+            while (folder.file(out_filename + suffix)) 
+                out_filename = filename_basic + `(${counter++})`;
+            out_filename += suffix;
+            folder.file(out_filename, new File([blob], out_filename, { type: 'text/plain' }));
+        })
+        // eslint-disable-next-line no-undef
+        zip.generateAsync({ type: 'blob' }).then(content => saveAs(content, `${mediaTitle}files.zip`));
+    }).catch(err => {
+        displaySnackbarAlert("ERROR: Some content could not be loaded. Try disabling AdBlock", 5000);
+        console.error("Some content could not be loaded, perhaps due to AdBlock.\n", err)
+    })
+}
+
+function downloadAllDriftData(docs) {
+    // filter only those that have the content we need
+    const hasMedia = Object.values(docs).filter(doc => doc.csv);
+
+    Promise.all(hasMedia.map(doc =>
+        fetch('/media/' + doc.csv)
+            .then(response => response.text())
+            .then(textContent => ({ docid: doc.id, textContent: textContent }))
+    )).then(blobdocs => {
+        let cocatenated = '';
+        blobdocs.forEach(({ docid, textContent }) => {
+            let doc = docs[docid];
+            cocatenated += `"${doc.title}"`;
+            let numCommas = textContent.substring(0, textContent.indexOf('\n')).split(',').length - 1;
+            for (let i = 0; i < numCommas; i++) cocatenated += ',';
+            cocatenated += '\n';
+            cocatenated += textContent;
+        })
+
+        // eslint-disable-next-line no-undef
+        saveAs(new Blob([cocatenated]), 'driftcsvfiles.csv');
+    }).catch(err => {
+        displaySnackbarAlert("ERROR: Some content could not be loaded. Try disabling AdBlock", 5000);
+        console.error("Some content could not be loaded, perhaps due to AdBlock.\n", err)
+    })
+}
+
+// this doesn't rely on docs unlike downloadAllDriftData and downloadAllZipped
+// because it's one of the newer functions in which I added serverside code for
+// so... maybe do serverside for all downloadalls? 
+async function downloadAllVoxitData() {
+
+    let cocatenated = '';
+    let keys;
+    
+    let response = await fetch('/_measure_all');
+    let all_docs = await response.json();
+    let first = true;
+
+    for (let { title, measure } of Object.values(all_docs)) {
+        if (first) {
+            keys = filterStats(measure, true);
+            cocatenated = ['audio_document',...keys].join(',') + '\n';
+            first = false;
+        }
+
+        cocatenated += `"${ title }"` + ',';
+        cocatenated += keys.map(key => measure[key]).join(',') + '\n';
+    }
+    
+    // eslint-disable-next-line no-undef
+    saveAs(new Blob([cocatenated]), 'voxitcsvfiles.csv');
+}
+
 export {
     RESOLVING,
     ENTER_KEY,
@@ -326,4 +415,7 @@ export {
     measuresToTabSepStr,
     downloadVoxitCSV,
     downloadWindowedData,
+    downloadAllZipped,
+    downloadAllDriftData,
+    downloadAllVoxitData,
 };
