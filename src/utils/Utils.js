@@ -260,7 +260,9 @@ async function downloadWindowedData({ filenameBase, id, fullTSProsMeasuresReady,
     if (!fullTSProsMeasuresReady)
         return;
 
-    displaySnackbarAlert("Calculating... This might take a few minutes. DO NOT reload or change settings!", 4000);
+    displaySnackbarAlert(`Calculating... This might take a few minutes. DO NOT reload${
+        process.env.REACT_APP_BUILD === "bundle" ? ' or change settings' : ''
+    }!`, 4000);
 
     const { measure: measureJSON } = await postGetWindowedData({
         id: id,

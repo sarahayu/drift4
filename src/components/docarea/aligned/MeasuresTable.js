@@ -11,7 +11,7 @@ function MeasuresTable(props) {
         fullTSProsMeasuresReady, fullTSProsMeasures,
         selectionProsMeasures,
      } = useProsodicMeasures(props);
-    const { localhost, calcIntense } = useContext(GutsContext);
+    const { calcIntense } = useContext(GutsContext);
     const [ copyAction, setCopyAction ] = useState();
 
     useEffect(() => {
@@ -42,7 +42,7 @@ function MeasuresTable(props) {
             }
             {
                 tableNotReady
-                    && <LoadingMessage { ...{ localhost, calcIntense } }/>
+                    && <LoadingMessage calcIntense={ calcIntense } />
             }
             {
                 !tableNotReady
@@ -133,9 +133,9 @@ function UnloadedTable() {
     );
 }
 
-function LoadingMessage({ localhost, calcIntense }) {
+function LoadingMessage({ calcIntense }) {
 
-    if (!localhost || !calcIntense)
+    if (process.env.REACT_APP_BUILD === "web" || !calcIntense)
         return (
             <p className="table-loading">Loading... This may take a few minutes the first time you open this document.</p>
         );

@@ -26,7 +26,6 @@ const DocAreaPortal = () => createPortal(
 function App() {
     const infosLatestModified = useRef(0);
     
-    const [ localhost ] = useState(location.hostname === 'localhost');    // eslint-disable-line no-restricted-globals
     const [ docs, setDocs ] = useState({});
     const [ guts ] = useState(() => loadGuts());
     const [ calcIntense, setCalcIntense ] = useState(RESOLVING);
@@ -92,7 +91,7 @@ function App() {
             
         setFoundGentle(RESOLVING);
       
-        if (localhost) {
+        if (process.env.REACT_APP_BUILD === "bundle") {
             getGentle({ gentlePort })
                 .then(() => {
                     console.log(`Gentle seems to be running! (on port ${ gentlePort })`);
@@ -104,10 +103,6 @@ function App() {
                 });
         }
         
-    };
-
-    const printDocs = () => {
-        console.log('from docs', docs);
     };
 
     const updateDoc = (docid, updatedAttrs) => {
@@ -137,6 +132,22 @@ function App() {
         })
     };
 
+    const globalizeDocs = () => {
+        // eslint-disable-next-line no-undef
+        T.docs = docs;
+    };
+
+    const globalizeDeleteAction = () => {
+        // eslint-disable-next-line no-undef
+        delete_action = doc => postDeleteDoc(doc.id).then(removedID => {
+            // this doesn't work for some reason, but docs are removed serverside so just reload webpage
+            // setDocs(oldDocs => {
+            //     delete oldDocs[removedID]
+            //     return { ...oldDocs };
+            // })
+        });
+    };
+
     const attachPutFile = async (file, progressCB) => {
         return new Promise(resolve => {
             guts.attach.put_file(file, x => {
@@ -154,7 +165,10 @@ function App() {
     // whenever gentlePort changes (e.g. through settings), we need to recheck if gentle is running on said port
     useEffect(findGentle, [gentlePort]);
 
-    useEffect(printDocs, [docs]);
+    // these were from vanilla js days when you could access doc stuff from the browser console,
+    // reproducing that behavior for maintenance purposes
+    useEffect(globalizeDocs, [docs]);
+    useEffect(globalizeDeleteAction);
 
     // *this is where it all starts---get all docs from server and add them to our state
     useQuery(['infos'], () => getInfos({ since: infosLatestModified.current }), {
@@ -167,7 +181,6 @@ function App() {
 
     return (
         <GutsContext.Provider value={{
-            localhost,
             docs, 
             setDocs,
             updateDoc,

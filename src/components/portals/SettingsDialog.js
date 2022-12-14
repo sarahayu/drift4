@@ -33,7 +33,7 @@ function SettingsDialog(props) {
             
             displaySnackbarAlert("Settings updated!");
         }
-        // it is possible settings did not get changed, maybe because /_settings endpoint isn't actually enabled to change settings (e.g. web version)
+        // this should be unreachable
         else {
             console.log("ERROR: Settings not updated!")
         }

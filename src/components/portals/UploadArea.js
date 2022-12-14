@@ -70,11 +70,8 @@ function UploadArea() {
             document.getElementById("upload-button").click()
         };
 
-        // eslint-disable-next-line no-restricted-globals
-        let localhost = location.hostname === 'localhost';
-
         document.getElementById("upload-warning").innerText = 
-            localhost ?
+            process.env.REACT_APP_BUILD === "bundle" ?
                 "Only upload large files if your machine can handle it!"
                 : "Please be courteous and only upload files less than 10 minutes!";
     }, [])

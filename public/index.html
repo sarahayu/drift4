@@ -39,6 +39,24 @@
                 audios[key] = new Audio(url);
             return audios[key];
         }
+
+        // these were from vanilla js days when you could access doc stuff from the command line,
+        // reproducing that behavior for maintenance purposes
+        var T = {}
+        var delete_action;
+        
+        function count_by_name(doc_name) {
+            let founds = Object.values(T.docs).filter(doc => doc.title.includes(doc_name));
+            console.log('Found ' + founds.length + ' documents including name ' + doc_name);
+            let output = "";
+            founds.forEach((doc, i) => {
+                if (i != 0) output += "\n";
+
+                output += doc.title + ", " + new Date(doc.date * 1000).toLocaleString().replace(",", " ");
+            });
+
+            console.log(output);
+        }
     </script>
   </head>
 
@@ -103,12 +121,5 @@
     <span id="snackbar-alert">Copied!</span>
     <dialog class="settings-dialog" id="settings-dialog">
     </dialog>
-    <script>
-        // these were from before I ported over to React, but I'll keep these here because they're useful for simple elements and I'm too lazy to refactor these
-        if (location.hostname == 'localhost')
-            document.querySelectorAll("[webshow]").forEach(e => e.remove());
-        else
-            document.querySelectorAll("[localshow]").forEach(e => e.remove());
-    </script>
   </body>
 </html>
