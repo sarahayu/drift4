@@ -59,7 +59,7 @@ function DocContentUnaligned({ id, path, docObject }) {
     else
         buttonText = "uploading...";
 
-    let btnDisabled = aligningInProgress || !readyForTranscript || !foundGentle;
+    let btnDisabled = aligningInProgress || !readyForTranscript || (process.env.REACT_APP_BUILD === "bundle" && !foundGentle);
 
     return (
         <>
