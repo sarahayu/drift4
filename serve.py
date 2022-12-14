@@ -4,7 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description = "Drift4")
 parser.add_argument("port", help="specify port to serve Drift from; default: 9899", nargs='?', type=int, default=9899)
-parser.add_argument("-g", "--gentle_port", help="specify port Drift should find Gentle on. default: 8765", type=int, default=8765)
+parser.add_argument("-g", "--gentle_port", help="specify port Drift should find Gentle on. default: 8765. note this value can be changed later through GUI settings", type=int, default=8765)
 parser.add_argument("-c", "--calc_intense", help="allow for more intensive Voxit calculations, disabled by default. note this value can be changed later through GUI settings", action='store_true')
 parser.add_argument("-w", "--web", help="enable if hosting Drift as a website. This option disables changing of settings through web interface", action='store_true')
 
