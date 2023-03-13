@@ -8,7 +8,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     ```shell
     git clone --recurse-submodules https://github.com/sarahayu/drift4.git
 2. Prepare the python environment
-    * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. A virtual environment can be useful here.
+    * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. At this time of development, the versions used are `2.7.18` for python2 and `3.8.10` for python3.
     * `scikits.audiolab` requires `libsndfile`, so install the latter first. On Mac, this can be done through Homebrew:
       ```shell
       brew install libsndfile
