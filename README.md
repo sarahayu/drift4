@@ -34,7 +34,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     ```shell
     npm run dev
     ```
-    By default, Drift will run on port `9899`. Navigate to `localhost:<port>` on any browser and you should see the Drift main page. You can change the port in the `run_dev.sh` file.
+    This will run Drift's backend on port `9899` (you can change the port in the `npm_drift.sh` file). Navigate to React's endpoint (usually `localhost:3000` unless you've changed this) to see the compiled frontend. Editing/saving any file in `src/` will result in those changes being updated live.
 
 ## Making a DMG
 
