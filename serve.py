@@ -862,4 +862,5 @@ root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 #             {"type": "remove", "id": "meta", "key": "harvest"},
 #         )
 
+print(f"=== If you are running a development environment, DO NOT navigate to localhost:{port} to see the frontend. Go to React's endpoint (usually localhost:3000) ===")
 guts.serve("stage.py", globals(), root=root)

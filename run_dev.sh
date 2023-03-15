@@ -1,4 +1,4 @@
-# you can run this shell script either directly, or by running `npm run dev` (which will also just call this script)
+# DO NOT run this script directly. Use `npm run dev`
 
 # make www directory if it doesn't exist
 mkdir www
