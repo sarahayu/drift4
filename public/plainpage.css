@@ -261,8 +261,9 @@ ol ol
     margin-left: 1em;
 }
 
-.video-card video
+.video-card .video
 {
+    aspect-ratio: 1.33;
     width: 100%;
 }
 
