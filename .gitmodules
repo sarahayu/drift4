@@ -10,3 +10,6 @@
 	path = numpy-media-tricks
 	url = https://github.com/strob/numpy-media-tricks.git
     ignore = dirty
+[submodule "gentle"]
+	path = gentle
+	url = https://github.com/lowerquality/gentle/
