@@ -58,6 +58,26 @@ def get_calc_sbpca():
     return "./ext/calc_sbpca/python/SAcC.py"
     # return "./py/py2/sacc_cli.py"
 
+
+def get_open_port(desired=0):
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("",desired))
+    except socket.error:
+        return get_open_port(0)
+    s.listen(1)
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+def start_gentle(desired):
+    port = get_open_port(desired)
+    # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
+    proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)])
+
+    return port, proc
+
 port = driftargs.port
 root = secureroot.FolderlessRoot(port=port, interface="0.0.0.0", dirpath="www") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
     else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
@@ -66,6 +86,9 @@ calc_intense = driftargs.calc_intense
 print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
 print(f"SYSTEM: GENTLE_PORT is { GENTLE_PORT }")
 print(f"SYSTEM: WEBSERVE is { WEBSERVE }")
+
+GENTLE_PORT, gentle_proc = start_gentle(GENTLE_PORT)
+print(f"Starting Gentle on port {GENTLE_PORT} (this might different than GENTLE_PORT that was passed in)")
 
 db = guts.Babysteps(os.path.join(get_local(), "db"))
 
