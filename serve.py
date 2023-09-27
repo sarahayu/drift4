@@ -25,10 +25,12 @@ import sys
 import time
 import pyworld
 import librosa
+import signal
 
 from py import prosodic_measures
 import secureroot
 from dotenv import load_dotenv
+from twisted.internet import reactor
 
 load_dotenv()
 
@@ -846,19 +848,6 @@ def _windowed(cmd):
                     elif label in voxit_data:
                         full_data["measure"][label].append(voxit_data[label])
 
-
-    # if full_ts:
-    #     with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as dfh:
-    #         json.dump(full_data, dfh, indent=2)
-
-    #         dfh.close()
-    #     fulltshash = guts.attach(dfh.name, get_attachpath())
-
-    #     guts.bschange(
-    #         rec_set.dbs[id],
-    #         {"type": "set", "id": "meta", "key": "full_ts", "val": fulltshash},
-    #     )
-
     return full_data
 
 
@@ -866,24 +855,20 @@ root.putChild(b"_harvest", guts.PostJson(_harvest, runasync=True))
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
 root.putChild(b"_measure_all", guts.GetArgs(_measure_all, runasync=True))
 root.putChild(b"_windowed", guts.PostJson(_windowed, runasync=True))
-
 root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
-
 root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
-
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
-    
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
-
 root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 
-# for doc in rec_set.get_infos():
-#     if rec_set.get_meta(doc["id"]).get("harvest"):
-#         guts.bschange(
-#             rec_set.dbs[doc["id"]],
-#             {"type": "remove", "id": "meta", "key": "harvest"},
-#         )
+# detect SIGINT so we can kill Gentle process
+def cleanup(*args):
+    gentle_proc.send_signal(signal.SIGINT)
+    # have to kill Twisted reactor manually, since it seems to keep running when we catch SIGINT
+    reactor.stop()
+
+signal.signal(signal.SIGINT, cleanup)
 
 print(f"=== If you are running a development environment, DO NOT navigate to localhost:{port} to see the frontend. Go to React's endpoint (usually localhost:3000) ===")
 guts.serve("stage.py", globals(), root=root)

@@ -9,6 +9,7 @@ import subprocess
 import threading
 import webbrowser
 import sys
+import signal 
 
 __version__ = "4.4.0"
 
@@ -105,22 +106,10 @@ Words and intonation."""
 )
 layout.addWidget(txt)
 
-if not gentle_running:
-    gtxt = QtWidgets.QLabel(
-        """Gentle is not running.
-Please install and run Gentle before running Drift."""
-    )
-    layout.addWidget(gtxt)
-
-    gbtn = QtWidgets.QPushButton("Download Gentle")
-    gbtn.setStyleSheet("font-weight: bold;")
-    layout.addWidget(gbtn)
-    gbtn.clicked.connect(open_gentle)
-else:
-    btn = QtWidgets.QPushButton("Open in browser")
-    btn.setStyleSheet("font-weight: bold;")
-    layout.addWidget(btn)
-    btn.clicked.connect(open_browser)
+btn = QtWidgets.QPushButton("Open in browser")
+btn.setStyleSheet("font-weight: bold;")
+layout.addWidget(btn)
+btn.clicked.connect(open_browser)
 
 abt = QtWidgets.QPushButton("About Drift")
 layout.addWidget(abt)
@@ -138,5 +127,5 @@ w.activateWindow()
 app.exec_()
 
 logging.info("Waiting for server to quit.")
-S_PROC.kill()
+S_PROC.send_signal(signal.SIGINT)
 S_PROC.wait()
