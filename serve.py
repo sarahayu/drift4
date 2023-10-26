@@ -75,8 +75,16 @@ def get_open_port(desired=0):
 
 def start_gentle(desired):
     port = get_open_port(desired)
+    if BUNDLE:
+        proc = subprocess.Popen(
+            ["./serve_gentle", '--port', str(port)],
+            cwd=os.path.join(os.path.abspath(
+                os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "gentle-dist")
+            )),
+        )
     # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
-    proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)])
+    else:
+        proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)])
 
     return port, proc
 

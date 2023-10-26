@@ -27,6 +27,15 @@ rsync -avzPL ext/calc_sbpca/python/dist/SAcC/ serve-dist/sacc/
 #ext/gentle/dist/gentle_serve/
 cp stage.py ffmpeg serve-dist/
 
+
+python3 -m PyInstaller --onedir -y serve_gentle.py --add-data 'ext/gentle/exp:exp'
+
+mkdir gentle-dist
+rsync -avzPL dist/serve_gentle/ gentle-dist/
+cp ffmpeg gentle-dist/
+
+
+
 # rsync -avzP ext/gentle/exp serve-dist/
 # mkdir serve-dist/ext
 # cp ext/gentle/ext/k3 ext/gentle/ext/m3 serve-dist/
@@ -39,6 +48,7 @@ cp -r ext/calc_sbpca/python/aux ext/calc_sbpca/python/*.config serve-dist/
 # NOTE: At this point of writing, PyQt5 v5.15 throws segfault on compilation and I had to rollback to PyQt5 v5.12.3
 python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py
 mv serve-dist dist/drift_gui.app/Contents/Resources/
+mv gentle-dist dist/drift_gui.app/Contents/Resources/
 
 
 hdiutil create dist/drift4.dmg -volname "Drift4" -srcfolder dist/drift_gui.app/
