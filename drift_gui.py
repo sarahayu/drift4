@@ -31,17 +31,7 @@ def get_open_port(desired=0):
 
 PORT = get_open_port(9899)
 
-
-def get_binary(name):
-    if BUNDLE:
-        return os.path.abspath(
-            os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "Resources", name)
-        )
-
-    return name
-
-
-def get_cwd():
+def get_serve_dir():
     if BUNDLE:
         return os.path.abspath(
             os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "Resources", "serve-dist")
@@ -59,17 +49,12 @@ def serve(port):
     global S_PROC
     S_PROC = subprocess.Popen(
         ["./serve", str(port)],
-        cwd=os.path.join(get_cwd()),
+        cwd=get_serve_dir(),
         stdout=devnull,
         stderr=devnull,
     )
 
-
-gentle_running = get_open_port(8765) != 8765
-
-# Start a thread for the web server.
-webthread = threading.Thread(target=serve, args=(PORT,))
-webthread.start()
+serve(PORT)
 
 
 def open_browser():

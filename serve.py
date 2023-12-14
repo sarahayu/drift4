@@ -32,6 +32,9 @@ import secureroot
 from dotenv import load_dotenv
 from twisted.internet import reactor
 
+import threading
+import serve_gentle
+
 load_dotenv()
 
 # specifies if we are releasing for MAC DMG
@@ -75,12 +78,18 @@ def get_open_port(desired=0):
 
 def start_gentle(desired):
     port = get_open_port(desired)
+
+    # webthread = threading.Thread(target=serve_gentle.serve, args=(port,))
+    # webthread.start()
+
+    # return port, webthread
     if BUNDLE:
+        gentle_dir = os.path.join(os.path.abspath(
+                os.path.join(getattr(sys, "_MEIPASS", ""), "gentle")
+            ))
         proc = subprocess.Popen(
             ["./serve_gentle", '--port', str(port)],
-            cwd=os.path.join(os.path.abspath(
-                os.path.join(getattr(sys, "_MEIPASS", ""), os.pardir, "gentle-dist")
-            )),
+            cwd=gentle_dir,
         )
     # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
     else:
@@ -879,4 +888,4 @@ def cleanup(*args):
 signal.signal(signal.SIGINT, cleanup)
 
 print(f"=== If you are running a development environment, DO NOT navigate to localhost:{port} to see the frontend. Go to React's endpoint (usually localhost:3000) ===")
-guts.serve("stage.py", globals(), root=root)
+root.run_forever()
