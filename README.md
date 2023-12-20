@@ -6,7 +6,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
 
 1. Clone this repository, including its submodules:
     ```console
-    $ git clone --recurse-submodules https://github.com/sarahayu/drift4.git
+    git clone --recurse-submodules https://github.com/sarahayu/drift4.git
 2. Prepare the python environment
     * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. At this time of development, the versions used are `2.7.18` for python2 and `3.8.2` for python3.
     * `scikits.audiolab` requires `libsndfile`, so install the latter first. On Mac, this can be done through Homebrew:
@@ -61,7 +61,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     ```shell
     ./serve -w
     ```
-    You can run `./serve -h` to see a list of options, like changing Drift or Gentle ports.
+    You can run `./serve -h` to see a list of options.
     * You can host Drift securely by providing a `.env` file with variables `PRIVATE_KEY_FILENAME` and `CERT_FILENAME` that point to your certificates before running the above command.
       
       Example `.env` file:
