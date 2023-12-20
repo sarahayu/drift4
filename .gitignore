@@ -8,8 +8,9 @@ calc_sbpca
 __pycache__/
 local/
 .venv
-.spec
+*.spec
 .env
+ffmpeg
 
 # symlinks
 guts
