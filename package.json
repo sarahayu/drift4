@@ -3,7 +3,7 @@
   "version": "4.5.0",
   "description": "Drift is a highly accurate pitch-tracker that also incorporates the forced alignment features of Gentle, visualizing a pitch trace over time and aligning it with a transcript",
   "scripts": {
-    "dev": "REACT_APP_VERSION=$npm_package_version ./npm_drift.sh",
+    "dev": "REACT_APP_VERSION=$npm_package_version ./run_react_python.sh",
     "start": "react-scripts start",
     "build.web": "REACT_APP_BUILD=web REACT_APP_VERSION=$npm_package_version react-scripts build && rsync -a build/* www && rm -r build",
     "build.bundle": "REACT_APP_BUILD=bundle REACT_APP_VERSION=$npm_package_version react-scripts build && rsync -a build/* www && rm -r build",
