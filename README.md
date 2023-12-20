@@ -8,7 +8,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     ```shell
     git clone --recurse-submodules https://github.com/sarahayu/drift4.git
 2. Prepare the python environment
-    * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. At this time of development, the versions used are `2.7.18` for python2 and `3.8.10` for python3.
+    * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. At this time of development, the versions used are `2.7.18` for python2 and `3.8.2` for python3.
     * `scikits.audiolab` requires `libsndfile`, so install the latter first. On Mac, this can be done through Homebrew:
       ```shell
       brew install libsndfile
@@ -29,22 +29,17 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
     sudo apt update
     sudo apt install ffmpeg
     ```
-    \*\**When bundling, make sure to include the ffmpeg executable inside the main directory. You can download an executable from the [ffmpeg official website](https://www.ffmpeg.org/download.html).*
-4. Run Gentle. Then, run Drift by running the following command from inside Drift's main directory:
+4. Run the following command from inside Drift's main directory:
     ```shell
     npm run dev
     ```
-    This will run Drift's backend on port `9899` (you can change the port in the `npm_drift.sh` file). Navigate to React's endpoint (usually `localhost:3000` unless you've changed this) to see the compiled frontend. Editing/saving any file in `src/` will result in those changes being updated live.
+    React should open a tab in your preferred browser with the compiled frontend (usually `localhost:3000` unless you've changed this). Editing/saving any file in `src/` will result in those changes being updated live.
 
 ## Making a DMG
 
-Bundling Drift to a Mac DMG is a finicky process. The following steps seem to work only for High Sierra on Mac:
-1. Install the `PyInstaller` package on both python2 and python3
-2. Make sure to rollback PyQt to version 5.12.3 to avoid segfault errors:
-    ```shell
-    python3 -m pip install --upgrade PyQt5==5.12.3
-    ```
-3. Run `make_dmg.sh`. The DMG file will be found in the `dist` folder as `drift4.dmg`.
+1. Install the `PyInstaller==3.6` package on python2 and `PyInstaller` on python3
+2. Download an ffmpeg executable and place inside main directory. You can download an executable from the [ffmpeg official website](https://www.ffmpeg.org/download.html)
+2. Run `make_dmg.sh`. The DMG file will be found in the `dist` folder as `drift4.dmg`.
 
 ## Hosting Drift4
 
@@ -67,16 +62,7 @@ Bundling Drift to a Mac DMG is a finicky process. The following steps seem to wo
 
 # Running Gentle on Windows/Linux
 
-Gentle provides a DMG for Mac, but if you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you can still run Gentle with some extra steps. Follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle). [Docker](https://www.docker.com/) is the easiest option, but if you are building from source, make the following change:
-* Fix the broken download link in `ext/kaldi/tools/Makefile` by changing the link on line 87
-    ```shell
-    wget -T 10 -t 1 http://openfst.cs.nyu.edu/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
-    ```
-    to `openfst.org` so it looks like so
-    ```shell
-    wget -T 10 -t 1 http://openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
-    ```
-The following pointers may also help:
+Gentle provides a DMG for Mac, but if you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you can still run Gentle with some extra steps. Follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle). [Docker](https://www.docker.com/) is the easiest option, but if you are building from source, the following pointers may help:
 * Make sure to include submodules. Use `git clone --recurse-submodules` instead of downloading the released `zip` source code.
 * You might have to install gfortran with the following:
     ```shell

@@ -57,4 +57,4 @@ python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py --name drift
 mv serve-dist dist/drift.app/Contents/Resources/
 
 # make disk image
-hdiutil create dist/drift.dmg -volname "Drift4" -srcfolder dist/drift.app/
+hdiutil create dist/drift4.dmg -volname "Drift4" -srcfolder dist/drift.app/
