@@ -8,7 +8,7 @@
     ignore = dirty
 [submodule "ext/gentle"]
 	path = ext/gentle
-	url = https://github.com/lowerquality/gentle/
+	url = https://github.com/lowerquality/gentle.git
     ignore = dirty
 [submodule "ext/numpy-media-tricks"]
 	path = ext/numpy-media-tricks
