@@ -59,14 +59,3 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
       PRIVATE_KEY_FILENAME=/path/to/privatekey.pem
       CERT_FILENAME=/path/to/certificate.pem
       ```
-
-# Running Gentle on Windows/Linux
-
-Gentle provides a DMG for Mac, but if you need to put yourself through the ordeal of running Drift on Windows or Linux, either for development purposes or out of spite, you can still run Gentle with some extra steps. Follow the installation instructions on their [GitHub repository](https://github.com/lowerquality/gentle). [Docker](https://www.docker.com/) is the easiest option, but if you are building from source, the following pointers may help:
-* Make sure to include submodules. Use `git clone --recurse-submodules` instead of downloading the released `zip` source code.
-* You might have to install gfortran with the following:
-    ```shell
-    sudo apt install gfortran
-    ```
-* Compiling Gentle from source might require more memory than available. If Gentle fails to compile and running the command `dmesg` returns "Out of memory", you can follow [this StackOverflow answer](https://stackoverflow.com/a/47374605) and then rerun `install.sh`.
-* If you still run into errors, consult the [Gentle issues](https://github.com/lowerquality/gentle/issues) page; [this thread](https://github.com/lowerquality/gentle/issues/194) might be a good starting point.
