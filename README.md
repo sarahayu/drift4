@@ -5,8 +5,8 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
 # Development
 
 1. Clone this repository, including its submodules:
-    ```shell
-    git clone --recurse-submodules https://github.com/sarahayu/drift4.git
+    ```console
+    $ git clone --recurse-submodules https://github.com/sarahayu/drift4.git
 2. Prepare the python environment
     * Drift uses python2 and python3. Make sure the command `python` refers to python2 and `python3` refers to python3. At this time of development, the versions used are `2.7.18` for python2 and `3.8.2` for python3.
     * `scikits.audiolab` requires `libsndfile`, so install the latter first. On Mac, this can be done through Homebrew:
@@ -24,7 +24,7 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
       python -m pip install -r py2requirements.txt
       python3 -m pip install -r py3requirements.txt
       ```
-3. Install ffmpeg by running these commands:
+3. Install ffmpeg command-line tool:
     ```shell
     sudo apt update
     sudo apt install ffmpeg
@@ -38,8 +38,18 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
 ## Making a DMG
 
 1. Install the `PyInstaller==3.6` package on python2 and `PyInstaller` on python3
-2. Download an ffmpeg executable and place inside main directory. You can download an executable from the [ffmpeg official website](https://www.ffmpeg.org/download.html)
+    ```shell
+    python -m pip install PyInstaller==3.6
+    python3 -m pip install PyInstaller
+    ```
+2. Download an ffmpeg executable from the [official website](https://www.ffmpeg.org/download.html) and place inside main directory. 
+    ```shell
+    wget -O /tmp/z.$$ https://evermeet.cx/ffmpeg/ffmpeg-6.1.zip && unzip -j /tmp/z.$$ ffmpeg && rm /tmp/z.$$
+    ```
 2. Run `make_dmg.sh`. The DMG file will be found in the `dist` folder as `drift4.dmg`.
+    ```shell
+    ./make_dmg.sh
+    ```
 
 ## Hosting Drift4
 
