@@ -6,11 +6,11 @@
 	path = ext/calc_sbpca
 	url = https://github.com/dpwe/calc_sbpca.git
     ignore = dirty
-[submodule "numpy-media-tricks"]
-	path = numpy-media-tricks
-	url = https://github.com/strob/numpy-media-tricks.git
-    ignore = dirty
 [submodule "ext/gentle"]
 	path = ext/gentle
 	url = https://github.com/lowerquality/gentle/
+    ignore = dirty
+[submodule "ext/numpy-media-tricks"]
+	path = ext/numpy-media-tricks
+	url = https://github.com/strob/numpy-media-tricks.git
     ignore = dirty

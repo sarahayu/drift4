@@ -27,15 +27,11 @@ import time
 import pyworld
 import librosa
 import signal
+import dotenv
 
-from py import prosodic_measures
-from dotenv import load_dotenv
+from py import prosodic_measures, secureroot
 
-import threading
-import serve_gentle
-import secureroot
-
-load_dotenv()
+dotenv.load_dotenv()
 
 # add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
 # I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
@@ -79,15 +75,15 @@ def start_gentle(desired):
 
     # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
     if BUNDLE:
-        gentle_dir = os.path.join(os.path.abspath(
+        gentle_dir = os.path.abspath(
                 os.path.join(getattr(sys, "_MEIPASS", ""), "gentle")
-            ))
+            )
         proc = subprocess.Popen(
             ["./serve_gentle", '--port', str(port)],
             cwd=gentle_dir,
         )
     else:
-        proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)])
+        proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)], cwd=os.path.abspath("py"))
 
     return port, proc
 

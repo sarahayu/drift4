@@ -11,17 +11,13 @@ npm run build.bundle
 # bundle Drift serve
 python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all librosa --collect-all sklearn
 
-# bundle SAcC
-(
-cd ext/calc_sbpca/python;
-# for bundling SAcC, use python2 version of PyInstaller
-python2 -m PyInstaller --onedir -y SAcC.py; 
+# bundle SAcC (use python2 version of PyInstaller)
+python2 -m PyInstaller --onedir -y ext/calc_sbpca/python/SAcC.py
 # remove code signature (optional, uncomment if getting code signature invalid errors)
 codesign --remove-signature dist/SAcC/Python
-)
 
 # bundle Gentle
-python3 -m PyInstaller --onedir -y serve_gentle.py --add-data 'ext/gentle/exp:Resources/exp' --add-data 'ext/gentle/www:Resources/www' --add-data 'ext/gentle/ext/k3:Resources/ext/' --add-data 'ext/gentle/ext/m3:Resources/ext/'
+python3 -m PyInstaller --onedir -y py/serve_gentle.py --add-data 'ext/gentle/exp:Resources/exp' --add-data 'ext/gentle/www:Resources/www' --add-data 'ext/gentle/ext/k3:Resources/ext/' --add-data 'ext/gentle/ext/m3:Resources/ext/'
 
 ############
 # move directories around
@@ -58,7 +54,7 @@ mv serve-dist/gentle/Resources serve-dist/
 python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py --name drift
 
 # move remaining stuff into Resources folder
-mv serve-dist dist/drift_gui.app/Contents/Resources/
+mv serve-dist dist/drift.app/Contents/Resources/
 
 # make disk image
-hdiutil create dist/drift4.dmg -volname "Drift-4.5.0" -srcfolder dist/drift_gui.app/
+hdiutil create dist/drift.dmg -volname "Drift4" -srcfolder dist/drift.app/
