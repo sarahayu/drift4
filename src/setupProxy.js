@@ -1,5 +1,7 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+const DRIFT_PORT = 9899
+
 // allows frontend React stuff to access guts backend
 module.exports = function(app) {
     // normal routes
@@ -17,7 +19,7 @@ module.exports = function(app) {
         "/_csv",
         "/_mat",
     ].forEach(path => app.use(createProxyMiddleware(path, { 
-        target: `http://localhost:${ process.env.REACT_APP_DRIFT_PORT }` 
+        target: `http://localhost:${ DRIFT_PORT }` 
     })));
 
     // websocket routes
@@ -25,7 +27,7 @@ module.exports = function(app) {
         "/_db",
         "/_attach",
     ].forEach(path => app.use(createProxyMiddleware(path, { 
-        target: `http://localhost:${ process.env.REACT_APP_DRIFT_PORT }`,
+        target: `http://localhost:${ DRIFT_PORT }`,
         ws: true,
     })));
 };

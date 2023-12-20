@@ -12,6 +12,7 @@ driftargs = parser.parse_args()
 
 import guts
 from twisted.web.static import File
+from twisted.internet import reactor
 import os
 import csv
 import tempfile
@@ -28,41 +29,38 @@ import librosa
 import signal
 
 from py import prosodic_measures
-import secureroot
 from dotenv import load_dotenv
-from twisted.internet import reactor
 
 import threading
 import serve_gentle
+import secureroot
 
 load_dotenv()
+
+# add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
+# I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
+os.environ["PATH"] += os.pathsep + '.'
 
 # specifies if we are releasing for MAC DMG
 BUNDLE = hasattr(sys, "frozen")
 
 WEBSERVE = driftargs.web
 GENTLE_PORT = driftargs.gentle_port
-
-# add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
-# I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
-os.environ["PATH"] += os.pathsep + '.'
+DRIFT_PORT = driftargs.port
+CALC_INTENSE = driftargs.calc_intense
 
 def get_local():
     if BUNDLE:
         return os.path.join(os.environ["HOME"], ".drift4", "local")
     return "local"
 
-
 def get_attachpath():
     return os.path.join(get_local(), "_attachments")
-
 
 def get_calc_sbpca():
     if BUNDLE:
         return "./sacc/SAcC"
     return "./ext/calc_sbpca/python/SAcC.py"
-    # return "./py/py2/sacc_cli.py"
-
 
 def get_open_port(desired=0):
     import socket
@@ -79,10 +77,7 @@ def get_open_port(desired=0):
 def start_gentle(desired):
     port = get_open_port(desired)
 
-    # webthread = threading.Thread(target=serve_gentle.serve, args=(port,))
-    # webthread.start()
-
-    # return port, webthread
+    # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
     if BUNDLE:
         gentle_dir = os.path.join(os.path.abspath(
                 os.path.join(getattr(sys, "_MEIPASS", ""), "gentle")
@@ -91,124 +86,20 @@ def start_gentle(desired):
             ["./serve_gentle", '--port', str(port)],
             cwd=gentle_dir,
         )
-    # can't use threading library because gentle uses reactor, but so does drift, and reactor throws error on multiple instances
     else:
         proc = subprocess.Popen([sys.executable, 'serve_gentle.py', '--port', str(port)])
 
     return port, proc
 
-port = driftargs.port
-root = secureroot.FolderlessRoot(port=port, interface="0.0.0.0", dirpath="www") if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")) \
-    else secureroot.SecureRoot(port=port, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
-
-calc_intense = driftargs.calc_intense
-print(f"SYSTEM: CALC_INTENSE is { calc_intense }")
-print(f"SYSTEM: GENTLE_PORT is { GENTLE_PORT }")
-print(f"SYSTEM: WEBSERVE is { WEBSERVE }")
-
-GENTLE_PORT, gentle_proc = start_gentle(GENTLE_PORT)
-print(f"Starting Gentle on port {GENTLE_PORT} (this might different than GENTLE_PORT that was passed in)")
-
-db = guts.Babysteps(os.path.join(get_local(), "db"))
-
-rec_set = guts.BSFamily("recording", localbase=get_local())
-root.putChild(b"_rec", rec_set.res)
-
-def pitch(cmd):
-    docid = cmd["id"]
-
-    meta = rec_set.get_meta(docid)
-
-    # Create an 8khz wav file
-    with tempfile.NamedTemporaryFile(suffix=".wav") as wav_fp:
-        ff_start = time.time()
-        subprocess.call(
-            [
-                "ffmpeg",
-                "-y",
-                "-loglevel",
-                "panic",
-                "-i",
-                os.path.join(get_attachpath(), meta["path"]),
-                "-ar",
-                "8000",
-                "-ac",
-                "1",
-                wav_fp.name,
-            ]
-        )
-
-        print(f'SYSTEM: FFMPEG took {time.time() - ff_start:.2f}s')
-
-        # ...and use it to compute pitch
-        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as pitch_fp:
-            subprocess.call([get_calc_sbpca(), wav_fp.name, pitch_fp.name])
-
-    if len(open(pitch_fp.name).read().strip()) == 0:
-        return {"error": "Pitch computation failed"}
-
-    # XXX: frozen attachdir
-    pitchhash = guts.attach(pitch_fp.name, get_attachpath())
-
-    guts.bschange(
-        rec_set.dbs[docid],
-        {"type": "set", "id": "meta", "key": "pitch", "val": pitchhash},
-    )
-
-    return {"pitch": pitchhash}
-
-
-root.putChild(b"_pitch", guts.PostJson(pitch, runasync=True))
-
-def _harvest(cmd):
-    if not calc_intense:
-        return { }
+def cast_not_none(var, to_cast):
+    if var is not None and type(var) is not to_cast:
+        return to_cast(var)
+    return var
     
-    docid = cmd["id"]
-
-    meta = rec_set.get_meta(docid)
-
-    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
-    print("SYSTEM: harvesting...")
-    hv_start = time.time()
-    f0, timeaxis = pyworld.harvest(x.astype(np.float64), fs)
-    print(f"SYSTEM: finished harvesting! (took {time.time() - hv_start:.2f}s)")
-
-    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w") as harvest_fp:
-        for i in range(len(timeaxis)):
-            harvest_fp.write(f'{timeaxis[i]} {f0[i]}\n')
-
-    if len(open(harvest_fp.name).read().strip()) == 0:
-        return {"error": "Harvest computation failed"}
-
-    # XXX: frozen attachdir
-    harvesthash = guts.attach(harvest_fp.name, get_attachpath())
-
-    guts.bschange(
-        rec_set.dbs[docid],
-        {"type": "set", "id": "meta", "key": "harvest", "val": harvesthash},
-    )
-
-    return {"harvest": harvesthash}
-
-def save_audio_info(cmd):
-    docid = cmd["id"]
-
-    meta = rec_set.get_meta(docid)
-
-    if os.path.getsize(os.path.join(get_attachpath(), meta["path"])) > 10e6:
-        duration = sys.maxsize
-    else:
-        x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
-        duration = librosa.get_duration(y=x, sr=fs)
-
-    guts.bschange(
-        rec_set.dbs[docid],
-        {"type": "set", "id": "meta", "key": "info", "val": duration},
-    )
-
-    return {"info": duration}
-
+def bool_not_none(var):
+    if var is not None and type(var) is str:
+        return var.lower() == 'true'
+    return bool(var) if not None else None
 
 def parse_speakers_in_transcript(trans):
     segs = []
@@ -228,7 +119,6 @@ def parse_speakers_in_transcript(trans):
             segs.append({"speaker": cur_speaker, "line": line})
 
     return segs
-
 
 def gentle_punctuate(wdlist, transcript):
     # Use the punctuation from Gentle's transcript in a wdlist
@@ -288,7 +178,6 @@ def gentle_punctuate(wdlist, transcript):
 
     return gaps_and_unaligned(out)
 
-
 def gaps_and_unaligned(seq):
     out = []
 
@@ -340,7 +229,82 @@ def gaps_and_unaligned(seq):
     return out
 
 
-def align(cmd):
+
+def _pitch(cmd):
+    docid = cmd["id"]
+
+    meta = rec_set.get_meta(docid)
+
+    # Create an 8khz wav file
+    with tempfile.NamedTemporaryFile(suffix=".wav") as wav_fp:
+        ff_start = time.time()
+        subprocess.call(
+            [
+                "ffmpeg",
+                "-y",
+                "-loglevel",
+                "panic",
+                "-i",
+                os.path.join(get_attachpath(), meta["path"]),
+                "-ar",
+                "8000",
+                "-ac",
+                "1",
+                wav_fp.name,
+            ]
+        )
+
+        print(f'SYSTEM: FFMPEG took {time.time() - ff_start:.2f}s')
+
+        # ...and use it to compute pitch
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as pitch_fp:
+            subprocess.call([get_calc_sbpca(), wav_fp.name, pitch_fp.name])
+
+    if len(open(pitch_fp.name).read().strip()) == 0:
+        return {"error": "Pitch computation failed"}
+
+    # XXX: frozen attachdir
+    pitchhash = guts.attach(pitch_fp.name, get_attachpath())
+
+    guts.bschange(
+        rec_set.dbs[docid],
+        {"type": "set", "id": "meta", "key": "pitch", "val": pitchhash},
+    )
+
+    return {"pitch": pitchhash}
+
+def _harvest(cmd):
+    if not CALC_INTENSE:
+        return { }
+    
+    docid = cmd["id"]
+
+    meta = rec_set.get_meta(docid)
+
+    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
+    print("SYSTEM: harvesting...")
+    hv_start = time.time()
+    f0, timeaxis = pyworld.harvest(x.astype(np.float64), fs)
+    print(f"SYSTEM: finished harvesting! (took {time.time() - hv_start:.2f}s)")
+
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w") as harvest_fp:
+        for i in range(len(timeaxis)):
+            harvest_fp.write(f'{timeaxis[i]} {f0[i]}\n')
+
+    if len(open(harvest_fp.name).read().strip()) == 0:
+        return {"error": "Harvest computation failed"}
+
+    # XXX: frozen attachdir
+    harvesthash = guts.attach(harvest_fp.name, get_attachpath())
+
+    guts.bschange(
+        rec_set.dbs[docid],
+        {"type": "set", "id": "meta", "key": "harvest", "val": harvesthash},
+    )
+
+    return {"harvest": harvesthash}
+
+def _align(cmd):
     meta = rec_set.get_meta(cmd["id"])
 
     media = os.path.join(get_attachpath(), meta["path"])
@@ -462,11 +426,7 @@ def align(cmd):
 
     return {"align": alignhash}
 
-
-root.putChild(b"_align", guts.PostJson(align, runasync=True))
-
-
-def gen_csv(cmd):
+def _csv(cmd):
     docid = cmd["id"]
     meta = rec_set.get_meta(docid)
 
@@ -532,11 +492,7 @@ def gen_csv(cmd):
 
     return {"csv": csvhash}
 
-
-root.putChild(b"_csv", guts.PostJson(gen_csv, runasync=True))
-
-
-def rms(cmd):
+def _rms(cmd):
     docid = cmd["id"]
     info = rec_set.get_meta(docid)
 
@@ -569,8 +525,7 @@ def rms(cmd):
 
     return {"rms": rmshash}
 
-
-def gen_mat(cmd):
+def _mat(cmd):
     id = cmd["id"]
     # Hm!
     meta = rec_set.get_meta(id)
@@ -611,26 +566,27 @@ def gen_mat(cmd):
     
     return {"mat": mathash}
 
-
-root.putChild(b"_mat", guts.PostJson(gen_mat, runasync=True))
-
 def _settings(cmd):
-    global GENTLE_PORT, calc_intense, WEBSERVE
+    global GENTLE_PORT, CALC_INTENSE, WEBSERVE
 
     # if we're only querying settings and not changing them. idk if we can stack get+post requests in guts and i'm too lazy to check
     if "get_settings" in cmd or WEBSERVE:
-        return { "changed": False, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
-    
-    print(f"Settings before: GENTLE { GENTLE_PORT }, CALC_INTENSE { calc_intense }")
+        return { "changed": False, "calc_intense": CALC_INTENSE, "gentle_port": GENTLE_PORT }
 
     GENTLE_PORT = int(cmd["gentle_port"])
-    calc_intense = cmd["calc_intense"]
+    CALC_INTENSE = cmd["calc_intense"]
     
-    print(f"After: GENTLE { GENTLE_PORT }, CALC_INTENSE { calc_intense }")
+    print(f"After: GENTLE { GENTLE_PORT }, CALC_INTENSE { CALC_INTENSE }")
     
-    return { "changed": True, "calc_intense": calc_intense, "gentle_port": GENTLE_PORT }
+    return { "changed": True, "calc_intense": CALC_INTENSE, "gentle_port": GENTLE_PORT }
 
-def measure(id, start_time, end_time, force_gen, raw):
+# note: not passing start_time and end_time defaults to sending transcript duration
+def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
+
+    start_time = cast_not_none(start_time, float)
+    end_time = cast_not_none(end_time, float)
+    force_gen = bool_not_none(force_gen)
+    raw = bool_not_none(raw)
 
     meta = rec_set.get_meta(id)
 
@@ -638,14 +594,11 @@ def measure(id, start_time, end_time, force_gen, raw):
 
     # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
     if not meta.get("csv"):
-        gen_csv({ "id": id })
-
-    # if not meta.get("info"):
-    #     save_audio_info({ "id": id })
+        _csv({ "id": id })
 
     # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
     # Generate Harvest if nonexistent
-    if calc_intense and not meta.get("harvest"):
+    if CALC_INTENSE and not meta.get("harvest"):
         _harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
@@ -655,7 +608,7 @@ def measure(id, start_time, end_time, force_gen, raw):
     # while not rec_set.get_meta(id).get("info"):
     #     pass
     
-    while calc_intense and not rec_set.get_meta(id).get("harvest"):
+    while CALC_INTENSE and not rec_set.get_meta(id).get("harvest"):
         pass
     
     # update meta with new meta that has all needed data
@@ -680,10 +633,10 @@ def measure(id, start_time, end_time, force_gen, raw):
         cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
 
         # if dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
-        if 'Dynamism' in cached['measure'] or not calc_intense:
+        if 'Dynamism' in cached['measure'] or not CALC_INTENSE:
 
             # remove intense measures if we're on not calc_intense mode
-            if not calc_intense:
+            if not CALC_INTENSE:
                 dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
                 gentlecsv.seek(0)
                 driftcsv.seek(0)
@@ -712,7 +665,7 @@ def measure(id, start_time, end_time, force_gen, raw):
     
     full_data["measure"].update(gentle_drift_data)
 
-    if calc_intense:
+    if CALC_INTENSE:
         voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
             open(os.path.join(get_attachpath(), meta["pitch"])), 
             open(os.path.join(get_attachpath(), meta["harvest"])), 
@@ -734,26 +687,6 @@ def measure(id, start_time, end_time, force_gen, raw):
 
     return full_data
 
-def cast_not_none(var, to_cast):
-    if var is not None and type(var) is not to_cast:
-        return to_cast(var)
-    return var
-    
-def bool_not_none(var):
-    if var is not None and type(var) is str:
-        return var.lower() == 'true'
-    return bool(var) if not None else None
-
-# note: not passing start_time and end_time defaults to sending transcript duration
-def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
-
-    start_time = cast_not_none(start_time, float)
-    end_time = cast_not_none(end_time, float)
-    force_gen = bool_not_none(force_gen)
-    raw = bool_not_none(raw)
-
-    return measure(id, start_time, end_time, force_gen, raw)
-
 def _measure_all():    
     all_measures = {}
     all_docs = rec_set.get_infos()
@@ -761,10 +694,6 @@ def _measure_all():
         if rec_set.get_meta(doc["id"]).get("align"):
             all_measures[doc["id"]] = _measure(id=doc["id"])
             all_measures[doc["id"]]["title"] = doc["title"]
-            # guts.bschange(
-            #     rec_set.dbs[doc["id"]],
-            #     {"type": "set", "id": "meta", "key": "align_px", "val": cur_status})
-            # time.sleep(1)
     return all_measures
 
 def _windowed(cmd):
@@ -780,18 +709,18 @@ def _windowed(cmd):
 
     # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
     if not meta.get("csv"):
-        gen_csv({ "id": id })
+        _csv({ "id": id })
 
     # check, maybe Drift is now running on calc_intense mode even though it wasn't when the audio file was originally uploaded
     # Generate Harvest if nonexistent
-    if calc_intense and not meta.get("harvest"):
+    if CALC_INTENSE and not meta.get("harvest"):
         _harvest({ "id": id })
 
     # TODO will these hang? this is just to prevent concurrent calls to harvest/csv during their initialization throwing errors
     while not rec_set.get_meta(id).get("csv"):
         pass
     
-    while calc_intense and not rec_set.get_meta(id).get("harvest"):
+    while CALC_INTENSE and not rec_set.get_meta(id).get("harvest"):
         pass
 
     meta = rec_set.get_meta(id)
@@ -818,7 +747,7 @@ def _windowed(cmd):
         }
     }
     
-    if calc_intense:
+    if CALC_INTENSE:
         audio_path = os.path.join(get_attachpath(), meta["path"])
         pitch_file = open(os.path.join(get_attachpath(), meta["pitch"]))
         harvest_file = open(os.path.join(get_attachpath(), meta["harvest"]))
@@ -836,7 +765,7 @@ def _windowed(cmd):
             driftcsv.seek(0)
             gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, win_start, win_end)
 
-            if calc_intense:
+            if CALC_INTENSE:
                 # restart file streams
                 pitch_file.seek(0)
                 harvest_file.seek(0)
@@ -851,7 +780,7 @@ def _windowed(cmd):
             if len(full_data["measure"]) == 0:
                 full_data["measure"].update(gentle_drift_data)
 
-                if calc_intense:
+                if CALC_INTENSE:
                     full_data["measure"].update(voxit_data)
                     
                 for label in full_data["measure"]:
@@ -867,25 +796,38 @@ def _windowed(cmd):
 
     return full_data
 
+# detect SIGINT so we can kill Gentle process
+def cleanup(*args):
+    GENTLE_PROC.send_signal(signal.SIGINT)
+    # have to kill Twisted reactor manually, since it seems to keep running when we catch SIGINT
+    reactor.stop()
 
+signal.signal(signal.SIGINT, cleanup)
+
+if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")):
+    root = secureroot.FolderlessRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www")
+else:
+    root = secureroot.SecureRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
+
+db = guts.Babysteps(os.path.join(get_local(), "db"))
+rec_set = guts.BSFamily("recording", localbase=get_local())
+root.putChild(b"_rec", rec_set.res)
+root.putChild(b"_pitch", guts.PostJson(_pitch, runasync=True))
+root.putChild(b"_align", guts.PostJson(_align, runasync=True))
+root.putChild(b"_csv", guts.PostJson(_csv, runasync=True))
+root.putChild(b"_mat", guts.PostJson(_mat, runasync=True))
 root.putChild(b"_harvest", guts.PostJson(_harvest, runasync=True))
 root.putChild(b"_measure", guts.GetArgs(_measure, runasync=True))
 root.putChild(b"_measure_all", guts.GetArgs(_measure_all, runasync=True))
 root.putChild(b"_windowed", guts.PostJson(_windowed, runasync=True))
-root.putChild(b"_rms", guts.PostJson(rms, runasync=True))
+root.putChild(b"_rms", guts.PostJson(_rms, runasync=True))
 root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
 root.putChild(b"_db", db)
 root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
 root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
 root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
 
-# detect SIGINT so we can kill Gentle process
-def cleanup(*args):
-    gentle_proc.send_signal(signal.SIGINT)
-    # have to kill Twisted reactor manually, since it seems to keep running when we catch SIGINT
-    reactor.stop()
+print(f"Starting Gentle on port {GENTLE_PORT} (this might different than GENTLE_PORT that was passed in)")
+GENTLE_PORT, GENTLE_PROC = start_gentle(GENTLE_PORT)
 
-signal.signal(signal.SIGINT, cleanup)
-
-print(f"=== If you are running a development environment, DO NOT navigate to localhost:{port} to see the frontend. Go to React's endpoint (usually localhost:3000) ===")
 root.run_forever()

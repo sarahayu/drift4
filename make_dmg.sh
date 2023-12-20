@@ -55,10 +55,10 @@ mv serve-dist/gentle/Resources serve-dist/
 
 # bundle Drift GUI
 # NOTE: At this point of writing, PyQt5 v5.15 throws segfault on compilation and I had to rollback to PyQt5 v5.12.3
-python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py
+python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py --name drift
 
 # move remaining stuff into Resources folder
 mv serve-dist dist/drift_gui.app/Contents/Resources/
 
 # make disk image
-hdiutil create dist/drift4.dmg -volname "Drift4" -srcfolder dist/drift_gui.app/
+hdiutil create dist/drift4.dmg -volname "Drift-4.5.0" -srcfolder dist/drift_gui.app/

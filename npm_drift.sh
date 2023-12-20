@@ -1,15 +1,15 @@
+##########################################
 # DO NOT run this script directly. Use `npm run dev`
+##########################################
 
-# make www directory if it doesn't exist
-mkdir www
+# make www directory if it doesn't already exist
+mkdir -p www
 
 # ...but remove any preexisting compiled react stuff so I don't shoot myself in the foot accidentally accessing Drift on 9899 during development
-rm -r www/*
-
-# FYI: 9899 is the default port Drift runs on (see serve.py)
-DRIFT_PORT=9899
+rm -rf www/*
+echo '<h1>You are running a development environment. Go to <a href="http://localhost:3000"> localhost:3000</a>!</h1>' > www/index.html
 
 # allow both processes to be killed with single Ctrl+C https://unix.stackexchange.com/a/204619
-# you may modify the `python3 serve.py` part as you wish (see ./serve --help for list of options)
 trap 'pkill %1' INT
-REACT_APP_DRIFT_PORT=$DRIFT_PORT npm start | sed -e 's/^/[ReactJS] /' & python3 -u serve.py $DRIFT_PORT | sed -e 's/^/[Drift] /'
+REACT_APP_BUILD=bundle npm start 2>&1 | sed -e 's/^/[React] /' \
+    & python3 -u serve.py 2>&1 | sed -e 's/^/[Python] /'

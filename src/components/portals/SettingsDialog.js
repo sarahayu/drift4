@@ -92,10 +92,6 @@ function SettingsForm(props) {
             <label htmlFor="int-measures">Enable Intensive Measures</label>
             <input type="checkbox" name="int-measures" id="int-measures" checked={ props.formCalcIntense }
                 onChange={ ev => props.setFormCalcIntense(ev.target.checked) } />
-            <label htmlFor="gentle-port">Gentle Port*</label>
-            <input type="number" name="gentle-port" id="gentle-port" className="text-input" value={ props.formGentlePort }
-                onChange={ ev => props.setFormGentlePort(ev.target.value) } />
-            <i className="g-span-2">*Unless you're running Windows and Docker, Gentle port shouldn't be changed</i>
         </div>
     );
 }
