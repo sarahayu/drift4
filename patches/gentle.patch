@@ -1,0 +1,28 @@
+diff --git a/install_deps.sh b/install_deps.sh
+index 4328d4a..08e2252 100755
+--- a/install_deps.sh
++++ b/install_deps.sh
+@@ -13,6 +13,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
+ 	apt-get install -y ffmpeg || echo -n  "\n\nYou have to install ffmpeg from a PPA or from https://ffmpeg.org before you can run gentle\n\n"
+ 	python3 setup.py develop
+ elif [[ "$OSTYPE" == "darwin"* ]]; then
+-	brew install ffmpeg libtool automake autoconf wget python3
++	brew install libtool automake autoconf wget
++	wget -O /tmp/z.$$ https://evermeet.cx/ffmpeg/ffmpeg-6.1.zip \
++		&& unzip -j /tmp/z.$$ ffmpeg -d /usr/local/bin \
++		&& rm /tmp/z.$$
+ 	sudo python3 setup.py develop
+ fi
+diff --git a/install_models.sh b/install_models.sh
+index dc8fa11..54d0bba 100755
+--- a/install_models.sh
++++ b/install_models.sh
+@@ -8,7 +8,7 @@ download_models() {
+ 	local version="$1"
+ 	local filename="kaldi-models-$version.zip"
+ 	local url="https://lowerquality.com/gentle/$filename"
+-	wget -O $filename $url
++	wget -O $filename --no-check-certificate $url
+ 	unzip $filename
+ 	rm $filename
+ }
