@@ -37,10 +37,10 @@ Download a Mac DMG through the [Releases](https://github.com/sarahayu/drift4/rel
 
 ## Making a DMG
 
-1. Install the `PyInstaller==3.6` package on python2 and `PyInstaller` on python3
+1. Install the `PyInstaller` package on python2 and python3
     ```shell
     python -m pip install PyInstaller==3.6
-    python3 -m pip install PyInstaller
+    python3 -m pip install PyInstaller==5.8.0
     ```
 2. Download an ffmpeg executable from the [official website](https://www.ffmpeg.org/download.html) and place inside main directory. 
     ```shell
