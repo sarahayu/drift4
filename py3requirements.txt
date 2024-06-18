@@ -1,7 +1,8 @@
 pip==23.3.2
-numpy==1.24.3
+numpy==1.24.4
 Cython==0.29.35
 
+altgraph==0.17.4
 appdirs==1.4.4
 attrs==23.1.0
 audioread==3.0.0
@@ -21,6 +22,7 @@ joblib==1.2.0
 lazy_loader==0.2
 librosa==0.10.0.post2
 llvmlite==0.40.1
+macholib==1.16.3
 msgpack==1.0.5
 numba==0.57.1
 packaging==23.1
@@ -28,10 +30,10 @@ Pillow==9.5.0
 pooch==1.6.0
 pycparser==2.21
 pyOpenSSL==23.2.0
-PyQt5==5.12.3
+PyQt5==5.13.0
 PyQt5-sip==12.12.1
 python-dotenv==1.0.0
-pyworld==0.3.2
+pyworld==0.3.4
 requests==2.31.0
 scikit-learn==1.2.2
 scipy==1.10.1

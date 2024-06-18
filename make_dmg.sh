@@ -12,9 +12,11 @@ npm run build.bundle
 python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all librosa --collect-all sklearn
 
 # bundle SAcC (use python2 version of PyInstaller)
-python2 -m PyInstaller --onedir -y ext/calc_sbpca/python/SAcC.py
+cd ext/calc_sbpca/python
+python2 -m PyInstaller --onedir -y SAcC.py
 # remove code signature (optional, uncomment if getting code signature invalid errors)
-codesign --remove-signature dist/SAcC/Python
+# codesign --remove-signature dist/SAcC/Python
+cd ../../../
 
 # bundle Gentle
 python3 -m PyInstaller --onedir -y py/serve_gentle.py --add-data 'ext/gentle/exp:Resources/exp' --add-data 'ext/gentle/www:Resources/www' --add-data 'ext/gentle/ext/k3:Resources/ext/' --add-data 'ext/gentle/ext/m3:Resources/ext/'
@@ -38,10 +40,12 @@ cp -r ext/calc_sbpca/python/aux ext/calc_sbpca/python/*.config serve-dist/
 
 # copy sacc stuff
 rsync -avzPL ext/calc_sbpca/python/dist/SAcC/ serve-dist/sacc/
+# rsync -avzPL dist/SAcC/ serve-dist/sacc/
 
 # copy gentle stuff
 rsync -avzPL dist/serve_gentle/ serve-dist/gentle/
-cp ffmpeg serve-dist/gentle/Resources/
+# cp ffmpeg serve-dist/gentle/Resources/
+ln -s ../ffmpeg serve-dist/gentle/Resources/ffmpeg
 # move gentle Resources folder because gentle will look for Resources folder in parent folder
 mv serve-dist/gentle/Resources serve-dist/
 
@@ -55,6 +59,8 @@ python3 -m PyInstaller -i drift4.icns --windowed -y drift_gui.py --name drift
 
 # move remaining stuff into Resources folder
 mv serve-dist dist/drift.app/Contents/Resources/
+
+codesign --remove-signature dist/drift.app
 
 # make disk image
 hdiutil create dist/drift4.dmg -volname "Drift4" -srcfolder dist/drift.app/

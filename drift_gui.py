@@ -54,7 +54,11 @@ def serve(port):
         stderr=devnull,
     )
 
-serve(PORT)
+# serve(PORT)
+
+# Start a thread for the web server.
+webthread = threading.Thread(target=serve, args=(PORT,))
+webthread.start()
 
 
 def open_browser():
