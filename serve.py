@@ -636,13 +636,15 @@ def measure(id, start_time, end_time, force_gen, raw):
     # prosodic measures for these are cached so we can bulk download them.
     if full_ts and not force_gen and meta.get("full_ts"):
         cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
+        dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
 
-        # if dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
-        if 'Dynamism' in cached['measure'] or not calc_intense:
+        # if cached measures are up to date (because maybe we have added more measures to Drift),
+        # and dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
+        if set(dummy_measures.keys()).issubset(set(cached['measure'].keys())) and \
+            ('Dynamism' in cached['measure'] or not calc_intense):
 
             # remove intense measures if we're on not calc_intense mode
             if not calc_intense:
-                dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
                 gentlecsv.seek(0)
                 driftcsv.seek(0)
 
@@ -653,6 +655,11 @@ def measure(id, start_time, end_time, force_gen, raw):
                         del cached['measure'][measure_name]
 
             return cached
+
+        # TODO if cached measures are not up to date, guts does not rewrite the full_ts entry
+        # but rather creates another entry with the same name. guts automatically takes the more recent one
+        # conveniently, but deleting existing entries before replacing would be nice
+        # (this applies to any time we are updating entries to guts e.g. align).
 
     pitch = [
         [float(Y) for Y in X.split(" ")]
