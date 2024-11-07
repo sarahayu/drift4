@@ -637,6 +637,8 @@ def measure(id, start_time, end_time, force_gen, raw):
     if full_ts and not force_gen and meta.get("full_ts"):
         cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
         dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
+        gentlecsv.seek(0)
+        driftcsv.seek(0)
 
         # if cached measures are up to date (because maybe we have added more measures to Drift),
         # and dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
@@ -645,9 +647,6 @@ def measure(id, start_time, end_time, force_gen, raw):
 
             # remove intense measures if we're on not calc_intense mode
             if not calc_intense:
-                gentlecsv.seek(0)
-                driftcsv.seek(0)
-
                 for measure_name in list(cached['measure'].keys()):
                     if measure_name != "start_time" \
                         and measure_name != "end_time"\
