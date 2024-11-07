@@ -25,6 +25,8 @@ import sys
 import time
 import pyworld
 import librosa
+import audioread
+import math
 
 from py import prosodic_measures
 import secureroot
@@ -71,6 +73,11 @@ db = guts.Babysteps(os.path.join(get_local(), "db"))
 
 rec_set = guts.BSFamily("recording", localbase=get_local())
 root.putChild(b"_rec", rec_set.res)
+ 
+def get_audio_dur(filepath):
+    f = audioread.audio_open(filepath)
+    return f.duration
+
 
 def pitch(cmd):
     docid = cmd["id"]
@@ -125,11 +132,17 @@ def _harvest(cmd):
     docid = cmd["id"]
 
     meta = rec_set.get_meta(docid)
+    audio_filepath = os.path.join(get_attachpath(), meta["path"])
+    dur = get_audio_dur(audio_filepath)
 
-    x, fs = librosa.load(os.path.join(get_attachpath(), meta["path"]), sr=None)
+    # bug where librosa can't load mp3's without supplying a duration. so supply a duration for all audio file types just in case
+    x, fs = librosa.load(audio_filepath, duration=math.floor(float(dur)), sr=None)
+
     print("SYSTEM: harvesting...")
+
     hv_start = time.time()
     f0, timeaxis = pyworld.harvest(x.astype(np.float64), fs)
+
     print(f"SYSTEM: finished harvesting! (took {time.time() - hv_start:.2f}s)")
 
     with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w") as harvest_fp:
