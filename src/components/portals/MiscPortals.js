@@ -4,6 +4,7 @@ import SettingsDialog from './SettingsDialog';
 import GentleWarning from './GentleWarning';
 import UploadArea from './UploadArea';
 import BulkActions from './BulkActions';
+import DownloadGraphDialog from './DownloadGraphDialog';
 
 function MiscPortals(props) {
 
@@ -21,6 +22,7 @@ function MiscPortals(props) {
         <>
             { bundleBuild && <SettingsDialog />  }
             { bundleBuild && <GentleWarning /> }
+            <DownloadGraphDialog />
             <UploadArea />
             <BulkActions />
         </>

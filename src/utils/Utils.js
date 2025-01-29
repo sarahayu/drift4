@@ -388,6 +388,101 @@ async function downloadAllVoxitData() {
     saveAs(new Blob([cocatenated]), 'voxitcsvfiles.csv');
 }
 
+function downloadGraph({ id, title, selection, size }) {
+    let graphElement = document.getElementById(id + '-detdiv');
+
+    // axis
+    let svg1 = graphElement.children[0].cloneNode(true);
+    // graph area
+    let svg2 = graphElement.children[1].children[0].cloneNode(true);
+
+    // scoot graph area to the right to leave room for axis
+    svg2.setAttribute("x", svg1.width.baseVal.value);
+
+    let svgWhole = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svgWhole.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    
+    let svgDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'), 
+        svgStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+
+
+    // font face doesn't work with typekit... yet
+    // https://css-tricks.com/font-display-masses/#article-header-id-4
+    // maybe someday :/ so I'll leave this here
+    svgStyle.innerHTML = `
+
+@font-face {
+    font-family: futurafont;
+    src: url('https://use.typekit.net/wlm4hlx.css');
+}
+svg#dl-svg 
+{ 
+    font-family: futurafont, 'Helvetica', 'Arial', sans-serif; 
+    font-size: 14.4px; 
+    background: white; 
+}
+`
+    svgDefs.appendChild(svgStyle);
+    svgWhole.insertBefore(svgDefs, svgWhole.firstElementChild)
+
+    const svgWidth = svg1.width.baseVal.value + svg2.width.baseVal.value,
+        svgHeight = svg2.height.baseVal.value;
+
+    svgWhole.setAttribute("id", 'dl-svg');
+    svgWhole.setAttribute("width", svgWidth);
+    svgWhole.setAttribute("height", svgHeight);
+    svgWhole.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+    svgWhole.appendChild(svg1);
+    svgWhole.appendChild(svg2);
+    let pitchLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    pitchLabel.textContent = 'log';
+    pitchLabel.setAttribute('y', svgHeight - 50);
+    pitchLabel.setAttribute('style', 'font-weight: 600;');
+    let pitchLabel2 = pitchLabel.cloneNode(), pitchLabel3 = pitchLabel.cloneNode();
+    pitchLabel2.textContent = 'pitch'
+    pitchLabel2.setAttribute('dy', '1.1em');;
+    pitchLabel3.textContent = '(hz)'
+    pitchLabel3.setAttribute('dy', '2.2em');;
+    let secondsLabel = pitchLabel.cloneNode();
+    secondsLabel.textContent = 'seconds';
+    secondsLabel.setAttribute('x', 50);
+    secondsLabel.setAttribute('y', svgHeight - 20);
+    svgWhole.appendChild(pitchLabel);
+    svgWhole.appendChild(pitchLabel2);
+    svgWhole.appendChild(pitchLabel3);
+    svgWhole.appendChild(secondsLabel);
+    let razor = svgWhole.getElementsByClassName("graph-razor")[0];
+    if (razor) razor.remove();
+
+    // https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
+    // https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser
+    let svgBlob = new Blob([svgWhole.outerHTML], { type: "image/svg+xml" });
+    let svgUrl = URL.createObjectURL(svgBlob);
+    let img = new Image();
+    let canvas = document.createElement('canvas');
+    const scaleUpFactor = size / svgHeight;
+    let [width, height] = [svgWidth * scaleUpFactor, svgHeight * scaleUpFactor];
+
+    canvas.width = width;
+    canvas.height = height;
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    img.onload = function () {
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let filename = title.split('.').reverse();
+        filename.shift();
+        let { start_time, end_time } = selection;
+        start_time = Math.round(start_time * 100000) / 100000;
+        end_time = Math.round(end_time * 100000) / 100000;
+        filename = filename.reverse().join('') + '.' + start_time + '-' + end_time + '.png';
+        // eslint-disable-next-line no-undef
+        canvas.toBlob(canvasBlob => saveAs(canvasBlob, filename));
+    }
+
+    img.src = svgUrl;
+}
+
 export {
     RESOLVING,
     ENTER_KEY,
@@ -420,4 +515,5 @@ export {
     downloadAllZipped,
     downloadAllDriftData,
     downloadAllVoxitData,
+    downloadGraph,
 };

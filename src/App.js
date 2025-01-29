@@ -32,6 +32,7 @@ function App() {
     const [ gentlePort, setGentlePort ] = useState(RESOLVING);
     const [ foundGentle, setFoundGentle ] = useState(RESOLVING);
     const [ focusedDocID, setFocusedDocID ] = useState(null);
+    const [ modalContext, setModalContext ] = useState({});
 
     // --- START init const functions
 
@@ -196,6 +197,8 @@ function App() {
             attachPutFile,
             pushNewDoc,
             deleteDoc,
+            modalContext,
+            setModalContext
         }}>
             <FilelistPortal />
             <DocAreaPortal />

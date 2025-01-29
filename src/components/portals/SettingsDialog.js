@@ -73,8 +73,8 @@ function SettingsDialog(props) {
     const mutation = useMutation(postSettings, { onSuccess: setNewSettings });
 
     return createPortal(        
-        <div className="settings-dia-container accent-card">
-            <div className="settings-header">
+        <div className="dialog-container accent-card">
+            <div className="dialog-header">
                 <h3>Local Drift Settings</h3>
                 <button id="exit-settings-dialog" className="cancel-btn" onClick={ hideDialog }>&times;</button>
             </div>  
