@@ -1,14 +1,19 @@
-# fix some stuff in submodules
-(cd ext/gentle && git apply ../../patches/gentle.patch)
-(cd ext/gentle/ext/kaldi && git apply ../../../../patches/kaldi.patch)
+# uncomment to fix older version of Gentle (specifically commit f29245a)
+# # fix some stuff in submodules
+# (cd ext/gentle && git apply ../../patches/gentle.patch)
+# (cd ext/gentle/ext/kaldi && git apply ../../../../patches/kaldi.patch)
 
-# install Python 2 packages
+# install Python 2 packages. use xargs to ensure order preservation
 cat py2requirements.txt | xargs -n 1 python -m pip install
-# install Python 3 packages
+# install Python 3 packages. use xargs to ensure order preservation
 cat py3requirements.txt | xargs -n 1 python3 -m pip install
 # install Node packages
 npm i
-# install Gentle
+# # install Gentle (and openFST which Gentle depends on)
+# if [[ "$OSTYPE" == "linux-gnu" ]]; then
+#     # TODO install openfst?
+# elif [[ "$OSTYPE" == "darwin"* ]]; then
+#     brew install openfst
 (cd ext/gentle && ./install.sh)
 
 # check for broken symlinks

@@ -7,7 +7,7 @@ thumbs.db
 calc_sbpca
 __pycache__/
 local/
-.venv
+.venv*
 *.spec
 .env
 ffmpeg

@@ -15,7 +15,7 @@ python3 -m PyInstaller --onedir -y serve.py --collect-all pyworld --collect-all 
 cd ext/calc_sbpca/python
 python2 -m PyInstaller --onedir -y SAcC.py
 # remove code signature (optional, uncomment if getting code signature invalid errors)
-# codesign --remove-signature dist/SAcC/Python
+codesign --remove-signature dist/SAcC/Python
 cd ../../../
 
 # bundle Gentle
