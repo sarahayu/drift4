@@ -646,7 +646,7 @@ def _measure(id=None, start_time=None, end_time=None, force_gen=None, raw=None):
         # if cached measures are up to date (because maybe we have added more measures to Drift),
         # and dynamism is part of cached data, return it. otherwise, it is outdated and must be reloaded
         if set(dummy_measures.keys()).issubset(set(cached['measure'].keys())) and \
-            ('Dynamism' in cached['measure'] or not calc_intense):
+            ('Dynamism' in cached['measure'] or not CALC_INTENSE):
 
             # remove intense measures if we're on not calc_intense mode
             if not CALC_INTENSE:
