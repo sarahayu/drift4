@@ -24,7 +24,7 @@ table
     filter: var(--filter-black) var(--filter-primary-300);  
 }
 
-.settings-header
+.dialog-header
 {
     display: flex;
 }
@@ -34,7 +34,7 @@ table
     /* width: 50%; */
 }
 
-.settings-dia-container
+.dialog-container
 {
     --card-pd: 2em 2em 1.5em 2em;
     display: flex;
@@ -42,7 +42,7 @@ table
     gap: 2em;
 }
 
-.settings-dia-container .cancel-btn
+.dialog-container .cancel-btn
 {
     margin-left: auto;
 }
@@ -60,10 +60,30 @@ table
     width: 10ch;
 }
 
-.settings-dia-container > button
+.dialog-container > button
 {
     --btn-pd: 1em 2em;
     margin-inline: auto;
+}
+
+.dl-graph-modal-main 
+{
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    width: 30ch;
+}
+
+.dl-graph-modal-main .dl-graph-model-items 
+{
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.dl-graph-modal-main input[type="radio"] 
+{
+    /* margin-right: 0.2em; */
 }
 
 #sidebar

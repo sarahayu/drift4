@@ -184,7 +184,7 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
         if end_time and float(end_time) < float(measures[0]):
             continue
         # Ignore first line and filter out integer pitch values
-        # Voiced pitch only
+        # Voiced pitch only (this eliminates the need for ivuv array for calculating drift measures)
         if skip or not measures[1]:
             skip = False
             continue
@@ -250,14 +250,20 @@ def measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time):
         else: # for simplicity when calculating f0entropy
             f0log2prob.append(0)
 
-    # Pitch Range, in octaves (range of f0)
-    # max(diffoctf0(ivuv))-min(diffoctf0(ivuv));
+    # # Pitch Range, in octaves (range of f0)
+    # # max(diffoctf0(ivuv))-min(diffoctf0(ivuv));
+    # if len(diffoctf0) != 0:
+    #     PR = max(diffoctf0) - min(diffoctf0)
+    # else:
+    #     PR = 0
+
+    # Pitch Range 95%
     if len(diffoctf0) != 0:
-        PR = max(diffoctf0) - min(diffoctf0)
+        PR_95 = np.quantile(diffoctf0, .975) - np.quantile(diffoctf0, .025)
     else:
-        PR = 0
-    # print('7. Pitch range:', PR, 'octaves')
-    results["Drift_f0_Range_(octaves)"] = PR
+        PR_95 = 0
+
+    results["Drift_f0_Range_95_Percent_(octaves)"] = PR_95
 
     # Pitch speed and acceleration pre-calculations
 
