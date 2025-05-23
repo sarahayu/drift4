@@ -10,6 +10,7 @@ import decimal
 import sys
 import os
 import argparse
+import warnings
 
 # from lempel_ziv_complexity import lempel_ziv_complexity
 from numba import jit
@@ -358,7 +359,10 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
 
     lb_start = time.time()
 
-    x, fs = librosa.load(soundfile, sr=None, offset=start_time, duration=duration)
+    # this gives a warning when it has to use audioread, so we'll supress it for now
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        x, fs = librosa.load(soundfile, sr=None, offset=start_time, duration=duration)
 
     print(f'SYSTEM: Librosa took {time.time() - lb_start}s')
 
@@ -507,9 +511,9 @@ def measure_voxit(soundfile, sacctxt, harvesttxt, start_time, end_time):
     # results["Dynamism"] = (f0MeanAbsVelocity/.1167627388 + f0Entropy/.3331034878)/2 + ComplexityAllPauses/.6691896835
 
     results["Intensity_Mean_(decibels)"] = 10 ** np.mean(logPower[saccvuv] / 10)
-    results["Intensity_Mean_Abs_Velocity_(decibels/sec)"] = 0 if len(Ivelocity) is 0 else np.mean(np.abs(Ivelocity))
-    results["Intensity_Mean_Abs_Accel_(decibels/sec^2)"] = 0 if len(Ivelocity) is 0 else np.mean(np.abs(Iaccel))
-    results["Intensity_Segment_Range_95_Percent_(decibels)"] = 0 if len(IsegmentMeans) is 0 else np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
+    results["Intensity_Mean_Abs_Velocity_(decibels/sec)"] = 0 if len(Ivelocity) == 0 else np.mean(np.abs(Ivelocity))
+    results["Intensity_Mean_Abs_Accel_(decibels/sec^2)"] = 0 if len(Ivelocity) == 0 else np.mean(np.abs(Iaccel))
+    results["Intensity_Segment_Range_95_Percent_(decibels)"] = 0 if len(IsegmentMeans) == 0 else np.quantile(IsegmentMeans, .975) - np.quantile(IsegmentMeans, .025)
 
     # Output message
     print(f'SYSTEM: Finished calculating Voxit measurements (took {time.time() - entered:.2f}s)')
@@ -560,7 +564,7 @@ def contiguous(A, varargin):
 
 # pseudocode yoinked straight from https://en.wikipedia.org/wiki/Lempel-Ziv_complexity
 # lz causing bottleneck, slap on a jit annotation
-@jit
+@jit(nopython=True)
 def lempel_ziv_complexity(S):
     i = 0
     C = 1

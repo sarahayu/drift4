@@ -12,4 +12,4 @@ echo '<h1>You are running a development environment. Go to <a href="http://local
 # allow both processes to be killed with single Ctrl+C https://unix.stackexchange.com/a/204619
 trap 'pkill %1' INT
 REACT_APP_BUILD=bundle npm start 2>&1 | sed -e 's/^/[React] /' \
-    & python3 -u serve.py 2>&1 | sed -e 's/^/[Python] /'
+    & python3 -u serve.py -p 9899 2>&1 | sed -e 's/^/[Python] /'
