@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # uncomment to fix older version of Gentle (specifically commit f29245a)
 # # fix some stuff in submodules
 # (cd ext/gentle && git apply ../../patches/gentle.patch)
@@ -9,6 +11,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt install ffmpeg libsndfile1 libsndfile-dev
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install ffmpeg libsndfile # openfst
+fi
 
 # install Python 2 packages. use xargs to ensure order preservation
 cat py2requirements.txt | xargs -n 1 python -m pip install
