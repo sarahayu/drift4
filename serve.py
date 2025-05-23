@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import sys
 import subprocess
@@ -22,6 +21,7 @@ def is_free_port(port):
     import socket
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     success = True
 
     try:
@@ -33,13 +33,13 @@ def is_free_port(port):
 
     return success
     
-def get_local():
-    if BUNDLE:
-        return os.path.join(os.environ["HOME"], ".drift4", "local")
-    return "local"
+# def get_local():
+#     if BUNDLE:
+#         return os.path.join(os.environ["HOME"], ".drift4", "local")
+#     return "local"
 
-def get_attachpath():
-    return os.path.join(get_local(), "_attachments")
+# def attach_path:
+#     return os.path.join(get_local(), "_attachments")
 
 def get_calc_sbpca():
     if BUNDLE:
@@ -50,6 +50,7 @@ def get_open_port():
     import socket
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("",0))
     s.listen(1)
 
@@ -220,29 +221,31 @@ def main():
         return 1
 
     import guts
-    from twisted.internet import reactor
+    import twisted.internet as ti
     import csv
     import tempfile
     import requests
     import json
     import nmt
     import numpy as np
-    import scipy.io as sio
     import time
-    import sys
     import pyworld
     import librosa
     import signal
     import dotenv
     import math
-
-    from py import prosodic_measures, secureroot
+    import warnings
+    import py.prosodic_measures as pm
+    import py.secureroot as sr
 
     dotenv.load_dotenv()
 
     # add current directory to path so audioread (used by librosa) and nmt can use ffmpeg without prepending './'
     # I know nmt has the option to change how one calls ffmpeg, but audioread does not appear to have it
     os.environ["PATH"] += os.pathsep + '.'
+
+    db_path = "local" if not BUNDLE else os.path.join(os.environ["HOME"], ".drift4", "local")
+    attach_path = os.path.join(db_path, "_attachments") 
 
     def _pitch(cmd):
         docid = cmd["id"]
@@ -259,7 +262,7 @@ def main():
                     "-loglevel",
                     "panic",
                     "-i",
-                    os.path.join(get_attachpath(), meta["path"]),
+                    os.path.join(attach_path, meta["path"]),
                     "-ar",
                     "8000",
                     "-ac",
@@ -278,7 +281,7 @@ def main():
             return {"error": "Pitch computation failed"}
 
         # XXX: frozen attachdir
-        pitchhash = guts.attach(pitch_fp.name, get_attachpath())
+        pitchhash = guts.attach(pitch_fp.name, attach_path)
 
         guts.bschange(
             rec_set.dbs[docid],
@@ -294,11 +297,14 @@ def main():
         docid = cmd["id"]
 
         meta = rec_set.get_meta(docid)
-        audio_filepath = os.path.join(get_attachpath(), meta["path"])
+        audio_filepath = os.path.join(attach_path, meta["path"])
         dur = get_audio_dur(audio_filepath)
 
-        # bug where librosa can't load mp3's without supplying a duration. so supply a duration for all audio file types just in case
-        x, fs = librosa.load(audio_filepath, duration=math.floor(float(dur)), sr=None)
+        # this gives a warning when it has to use audioread, so we'll supress it for now
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # bug where librosa can't load mp3's without supplying a duration. so supply a duration for all audio file types just in case
+            x, fs = librosa.load(audio_filepath, duration=math.floor(float(dur)), sr=None)
 
         print("SYSTEM: harvesting...")
 
@@ -315,7 +321,7 @@ def main():
             return {"error": "Harvest computation failed"}
 
         # XXX: frozen attachdir
-        harvesthash = guts.attach(harvest_fp.name, get_attachpath())
+        harvesthash = guts.attach(harvest_fp.name, attach_path)
 
         guts.bschange(
             rec_set.dbs[docid],
@@ -327,9 +333,9 @@ def main():
     def _align(cmd):
         meta = rec_set.get_meta(cmd["id"])
 
-        media = os.path.join(get_attachpath(), meta["path"])
+        media = os.path.join(attach_path, meta["path"])
         segs = parse_speakers_in_transcript(
-            open(os.path.join(get_attachpath(), meta["transcript"])).read()
+            open(os.path.join(attach_path, meta["transcript"])).read()
         )
 
         tscript_txt = "\n".join([X["line"] for X in segs])
@@ -422,7 +428,7 @@ def main():
             json.dump(diary, dfh, indent=2)
 
             dfh.close()
-        alignhash = guts.attach(dfh.name, get_attachpath())
+        alignhash = guts.attach(dfh.name, attach_path)
 
         guts.bschange(
             rec_set.dbs[cmd["id"]],
@@ -437,7 +443,7 @@ def main():
             for line in aligncsv.iter_lines():
                 w.writerow(line.decode('utf-8').split(','))
             fp.close()
-        aligncsvhash = guts.attach(fp.name, get_attachpath())
+        aligncsvhash = guts.attach(fp.name, attach_path)
 
         guts.bschange(
             rec_set.dbs[cmd["id"]],
@@ -450,10 +456,10 @@ def main():
         docid = cmd["id"]
         meta = rec_set.get_meta(docid)
 
-        p_path = os.path.join(get_attachpath(), meta["pitch"])
+        p_path = os.path.join(attach_path, meta["pitch"])
         pitch = [float(X.split()[1]) for X in open(p_path) if len(X.split()) > 2]
 
-        a_path = os.path.join(get_attachpath(), meta["align"])
+        a_path = os.path.join(attach_path, meta["align"])
         align = json.load(open(a_path))
 
         words = []
@@ -504,7 +510,7 @@ def main():
 
             fp.flush()
 
-        csvhash = guts.attach(fp.name, get_attachpath())
+        csvhash = guts.attach(fp.name, attach_path)
         guts.bschange(
             rec_set.dbs[cmd["id"]],
             {"type": "set", "id": "meta", "key": "csv", "val": csvhash},
@@ -516,7 +522,7 @@ def main():
         docid = cmd["id"]
         info = rec_set.get_meta(docid)
 
-        vpath = os.path.join(get_attachpath(), info["path"])
+        vpath = os.path.join(attach_path, info["path"])
 
         R = 44100
 
@@ -537,7 +543,7 @@ def main():
             json.dump(rms.tolist(), fh)
             fh.close()
 
-        rmshash = guts.attach(fh.name, get_attachpath())
+        rmshash = guts.attach(fh.name, attach_path)
 
         guts.bschange(
             rec_set.dbs[docid], {"type": "set", "id": "meta", "key": "rms", "val": rmshash}
@@ -595,12 +601,12 @@ def main():
 
         ## --- end check we have all needed data
 
-        gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
-        driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))    
+        gentlecsv = open(os.path.join(attach_path, meta["aligncsv"]))
+        driftcsv = open(os.path.join(attach_path, meta["csv"]))    
 
         # set start/end to transcript start/end if they're None
         if start_time is None or end_time is None:
-            start_time, end_time = prosodic_measures.get_transcript_start_end(gentlecsv)
+            start_time, end_time = pm.get_transcript_start_end(gentlecsv)
             gentlecsv.seek(0)
             full_ts = True
         else:
@@ -609,8 +615,8 @@ def main():
         # full transcription duration should be the same for any given document,
         # prosodic measures for these are cached so we can bulk download them.
         if full_ts and not force_gen and meta.get("full_ts"):
-            cached = json.load(open(os.path.join(get_attachpath(), meta["full_ts"])))
-            dummy_measures = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
+            cached = json.load(open(os.path.join(attach_path, meta["full_ts"])))
+            dummy_measures = pm.measure_gentle_drift(gentlecsv, driftcsv, 0, 1)
             gentlecsv.seek(0)
             driftcsv.seek(0)
 
@@ -636,7 +642,7 @@ def main():
 
         pitch = [
             [float(Y) for Y in X.split(" ")]
-            for X in open(os.path.join(get_attachpath(), meta["pitch"]))
+            for X in open(os.path.join(attach_path, meta["pitch"]))
         ]
         
         full_data = {
@@ -646,14 +652,14 @@ def main():
             }
         }
 
-        gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
+        gentle_drift_data = pm.measure_gentle_drift(gentlecsv, driftcsv, start_time, end_time)
         
         full_data["measure"].update(gentle_drift_data)
 
         if CALC_INTENSE:
-            voxit_data = prosodic_measures.measure_voxit(os.path.join(get_attachpath(), meta["path"]), 
-                open(os.path.join(get_attachpath(), meta["pitch"])), 
-                open(os.path.join(get_attachpath(), meta["harvest"])), 
+            voxit_data = pm.measure_voxit(os.path.join(attach_path, meta["path"]), 
+                open(os.path.join(attach_path, meta["pitch"])), 
+                open(os.path.join(attach_path, meta["harvest"])), 
                 start_time, end_time)
             full_data["measure"].update(voxit_data)
 
@@ -663,7 +669,7 @@ def main():
                 json.dump(full_data, dfh, indent=2)
 
                 dfh.close()
-            fulltshash = guts.attach(dfh.name, get_attachpath())
+            fulltshash = guts.attach(dfh.name, attach_path)
 
             guts.bschange(
                 rec_set.dbs[id],
@@ -689,7 +695,7 @@ def main():
 
         pitch = [
             [float(Y) for Y in X.split(" ")]
-            for X in open(os.path.join(get_attachpath(), meta["pitch"]))
+            for X in open(os.path.join(attach_path, meta["pitch"]))
         ]
 
         # redundacy, CSV did not load sometimes on older versions of Drift. Generate if nonexistent
@@ -709,8 +715,8 @@ def main():
             pass
 
         meta = rec_set.get_meta(id)
-        driftcsv = open(os.path.join(get_attachpath(), meta["csv"]))
-        gentlecsv = open(os.path.join(get_attachpath(), meta["aligncsv"]))
+        driftcsv = open(os.path.join(attach_path, meta["csv"]))
+        gentlecsv = open(os.path.join(attach_path, meta["aligncsv"]))
 
         batched_windows = {}
 
@@ -733,9 +739,9 @@ def main():
         }
         
         if CALC_INTENSE:
-            audio_path = os.path.join(get_attachpath(), meta["path"])
-            pitch_file = open(os.path.join(get_attachpath(), meta["pitch"]))
-            harvest_file = open(os.path.join(get_attachpath(), meta["harvest"]))
+            audio_path = os.path.join(attach_path, meta["path"])
+            pitch_file = open(os.path.join(attach_path, meta["pitch"]))
+            harvest_file = open(os.path.join(attach_path, meta["harvest"]))
 
         for window_len in batched_windows:
             measure_labels = batched_windows[window_len]
@@ -748,13 +754,13 @@ def main():
                 # restart file streams
                 gentlecsv.seek(0)
                 driftcsv.seek(0)
-                gentle_drift_data = prosodic_measures.measure_gentle_drift(gentlecsv, driftcsv, win_start, win_end)
+                gentle_drift_data = pm.measure_gentle_drift(gentlecsv, driftcsv, win_start, win_end)
 
                 if CALC_INTENSE:
                     # restart file streams
                     pitch_file.seek(0)
                     harvest_file.seek(0)
-                    voxit_data = prosodic_measures.measure_voxit(audio_path, 
+                    voxit_data = pm.measure_voxit(audio_path, 
                         pitch_file, 
                         harvest_file, 
                         win_start, win_end)
@@ -785,17 +791,17 @@ def main():
     def cleanup(*args):
         GENTLE_PROC.send_signal(signal.SIGINT)
         # have to kill Twisted reactor manually, since it seems to keep running when we catch SIGINT
-        reactor.stop()
+        ti.reactor.stop()
 
     signal.signal(signal.SIGINT, cleanup)
 
     if not (os.getenv("PRIVATE_KEY_FILENAME") and os.getenv("CERT_FILENAME")):
-        root = secureroot.FolderlessRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www")
+        root = sr.FolderlessRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www")
     else:
-        root = secureroot.SecureRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
+        root = sr.SecureRoot(port=DRIFT_PORT, interface="0.0.0.0", dirpath="www", key_path=os.getenv("PRIVATE_KEY_FILENAME"), crt_path=os.getenv("CERT_FILENAME"))
 
-    db = guts.Babysteps(os.path.join(get_local(), "db"))
-    rec_set = guts.BSFamily("recording", localbase=get_local())
+    db = guts.Babysteps(os.path.join(db_path, "db"))
+    rec_set = guts.BSFamily("recording", localbase=db_path)
     root.putChild(b"_rec", rec_set.res)
     root.putChild(b"_pitch", guts.PostJson(_pitch, runasync=True))
     root.putChild(b"_align", guts.PostJson(_align, runasync=True))
@@ -807,9 +813,9 @@ def main():
     root.putChild(b"_rms", guts.PostJson(_rms, runasync=True))
     root.putChild(b"_settings", guts.PostJson(_settings, runasync=True))
     root.putChild(b"_db", db)
-    root.putChild(b"_attach", guts.Attachments(get_attachpath()))        
+    root.putChild(b"_attach", guts.Attachments(attach_path))        
     root.putChild(b"_stage", guts.Codestage(wwwdir="www"))
-    root.putChild(b"media", secureroot.FolderlessFile(get_attachpath()))
+    root.putChild(b"media", sr.FolderlessFile(attach_path))
 
     GENTLE_PORT, GENTLE_PROC = start_gentle()
     print(f"Starting Gentle on port {GENTLE_PORT}")

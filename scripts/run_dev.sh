@@ -1,7 +1,3 @@
-##########################################
-# DO NOT run this script directly. Use `npm run dev`
-##########################################
-
 # make www directory if it doesn't already exist
 mkdir -p www
 
@@ -11,5 +7,10 @@ echo '<h1>You are running a development environment. Go to <a href="http://local
 
 # allow both processes to be killed with single Ctrl+C https://unix.stackexchange.com/a/204619
 trap 'pkill %1' INT
-REACT_APP_BUILD=bundle npm start 2>&1 | sed -e 's/^/[React] /' \
-    & python3 -u serve.py -p 9899 2>&1 | sed -e 's/^/[Python] /'
+
+export REACT_APP_BUILD=bundle
+export REACT_APP_VERSION=$npm_package_version
+export REACT_APP_DRIFTPORT=9898
+
+npm run start.classic 2>&1 | sed -e 's/^/[React] /' \
+    & python3 -u serve.py -p $REACT_APP_DRIFTPORT 2>&1 | sed -e 's/^/[Python] /'

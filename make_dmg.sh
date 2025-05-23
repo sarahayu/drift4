@@ -1,6 +1,11 @@
 # remove folders made from previous execution of make_dmg.sh
 rm -rf build dist
 
+# download ffmpeg executable if it doesn't exist
+if ! [ -f ffmpeg ]; then
+    wget -O /tmp/z.$$ https://evermeet.cx/ffmpeg/ffmpeg-6.1.zip && unzip -j /tmp/z.$$ ffmpeg && rm /tmp/z.$$
+fi
+
 ############
 # build and bundle
 ############

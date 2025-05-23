@@ -1,6 +1,6 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const DRIFT_PORT = 9899
+const DRIFT_PORT = process.env.REACT_APP_DRIFTPORT
 
 // allows frontend React stuff to access guts backend
 module.exports = function(app) {
