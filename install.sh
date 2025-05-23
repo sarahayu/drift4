@@ -8,7 +8,7 @@
 # install dependencies
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt update
-    sudo apt install ffmpeg libsndfile1 libsndfile-dev
+    sudo apt install ffmpeg libsndfile1 libsndfile-dev sox
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install ffmpeg libsndfile # openfst
 fi
