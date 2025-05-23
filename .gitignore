@@ -17,3 +17,6 @@ ffmpeg
 # nmt
 # numpy-media-tricks
 # serve
+
+*.log
+*.pid
