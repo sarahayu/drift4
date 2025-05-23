@@ -9,7 +9,13 @@ function DocCard(props) {
     let { doc, onDragEnter } = props;
 
     const [ hasUnfolded, setHasUnfolded ] = useState(false);        // for roll-down animation not to activate every time docs are re-ordered
-    const [ pmContext, setPMContext ] = useState();                 // so header can know prosodic content data, like selection window
+    const [ pmContext, setPMContext ] = useState({
+        selection: {
+            start_time: null,
+            end_time: null,
+        },
+        docReady: false
+    });                 // so header can know prosodic content data, like selection window
 
     const classList = `driftitem ${ doc.grabbed ? 'grabbed' : '' } ${ !hasUnfolded ? 'firstunfold' : '' }`;
 
