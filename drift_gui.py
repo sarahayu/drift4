@@ -48,7 +48,7 @@ devnull = None  # open(os.devnull, 'w')
 def serve(port):
     global S_PROC
     S_PROC = subprocess.Popen(
-        ["./serve", str(port)],
+        ["./serve", "-p", str(port)],
         cwd=get_serve_dir(),
         stdout=devnull,
         stderr=devnull,
